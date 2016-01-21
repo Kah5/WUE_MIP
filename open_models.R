@@ -45,16 +45,16 @@ files.lpj.g.y <- files.lpj.g[substr(files.lpj.g, index, index+5)=="annual"]
 dir.lpj.w <- file.path(model.dir, "LPJ-WSL.v5")
 files.lpj.w <- dir(dir.lpj.w)
 
-dir.jules.s <- file.path(model.dir,  paste(site.list[4], "JULES_STATIC", sep="_"))
+dir.jules.s <- file.path(model.dir,  paste(site.list[1], "JULES_STATIC", sep="_"))
 files.jules.s <- dir(dir.jules.s)
 
-dir.jules.triff <- file.path(model.dir,  paste(site.list[4], "JULES_TRIFFID", sep="_"))
+dir.jules.triff <- file.path(model.dir,  paste(site.list[1], "JULES_TRIFFID", sep="_"))
 files.jules.triff <- dir(dir.jules.triff)
 
-dir.linkages <- file.path(model.dir,  paste(site.list[4], "LINKAGES", sep="_"))
+dir.linkages <- file.path(model.dir,  paste(site.list[1], "LINKAGES", sep="_"))
 files.linkages <- dir(dir.linkages, ".nc")
 
-dir.sib <- file.path(model.dir, paste(site.list[4], "SiBCASA", sep="_"))
+dir.sib <- file.path(model.dir, paste(site.list[1], "SiBCASA", sep="_"))
 files.sib <- dir(dir.sib, ".nc")
 
 # Opening an example file from each model
@@ -65,9 +65,9 @@ clm.cn      <- nc_open(file.path(dir.clm.cn, files.clm.cn[1]))
 lpj.g.m     <- nc_open(file.path(dir.lpj.g, files.lpj.g.m[1]))
 lpj.g.y     <- nc_open(file.path(dir.lpj.g, files.lpj.g.y[1]))
 lpj.w       <- nc_open(file.path(dir.lpj.w, paste(site.list[1], "LPJ-wsl.850.nc", sep=".")))
-jules.s     <- nc_open(file.path(dir.jules.s, files.jules.s[1]))
-jules.triff <- nc_open(file.path(dir.jules.triff, files.jules.triff[1]))
-linkages    <- nc_open(file.path(dir.linkages, files.linkages[1]))
+#jules.s     <- nc_open(file.path(dir.jules.s, files.jules.s[1]))
+#jules.triff <- nc_open(file.path(dir.jules.triff, files.jules.triff[1]))
+#linkages    <- nc_open(file.path(dir.linkages, files.linkages[1]))
 sib         <- nc_open(file.path(dir.sib, files.sib[1]))
 
 # extracting variable names
@@ -91,8 +91,8 @@ sib.var2 <- recode(sib.var, "'Tranp'='Transp'")
 var.diversity <- c("BA", "Dens", "Fcomp", "PFT", "fpc", "pft-vegc", "pft-lai", "pft-npp", "pft-diam", "pft-height", "nind", "estrate")
 
 # summary(clm$var)
-# summary(ncvar_get(clm, "Fcomp"))
-#ncvar_get(clm, "pft")
+# summary(ncvar_get(clm.cn, "Fcomp"))
+# ncvar_get(clm, "pft")
 
 # -----------------------------------
 # Soil variables have different layers and need to be indexed accordingly
@@ -144,7 +144,7 @@ for(i in 1:(length(soil.lpj.w)-1)){
   vol.lpj.w[i] <- abs(abs(soil.lpj.w[i]) - abs(soil.lpj.w[i+1]))
 }
 
-# soil.jules.s <- ncvar_get(jules.s, "soil.depths")
+#soil.jules.s <- ncvar_get(jules.s, "soil.depths")
 vol.jules.s <- c(0.1, 0.25, 0.65, 2)
 soil.jules.s <- vol.jules.s[1]
 for(i in 2:length(vol.jules.s)){
@@ -771,7 +771,7 @@ summary(NPP[[1]])
 #GPP/WUE
 summary(GPP[[1]])
 X11(width = 6)
-plot(GPP[[1]][,"ed2"]/Transp[[1]][,"ed2"], type="l", ylab="NPP", xlab="months since 850-01-01", main=paste(site.list[1], "NPP", sep=": "))
+plot(GPP[[1]][,"ed2"]/Transp[[1]][,"ed2"], type="l", ylab="GPP", xlab="months since 850-01-01", main=paste(site.list[1], "NPP", sep=": "))
 lines(GPP[[1]][,"clm45"]/Transp[[1]][,"clm45"], col="green3", lwd=0.1)
 lines(GPP[[1]][,"lpj.guess"]/Transp[[1]][,"lpj.guess"], col="lightblue", lwd=0.1)
 lines(GPP[[1]][,"lpj.wsl"]/Transp[[1]][,"lpj.wsl"], col="orange3", lwd=0.1)

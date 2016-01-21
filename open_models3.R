@@ -55,7 +55,7 @@ for(i in 1:length(sites)){
   RH[[i]]        <- data.frame(t(ncvar_get(hetero.resp, sites[i])))
   SOILCARB[[i]]  <- data.frame(t(ncvar_get(soilcarb, sites[i])))
   SOILMOIST[[i]] <- data.frame(t(ncvar_get(soilmoist, sites[i])))
- # TRANSP[[i]]    <- data.frame(t(ncvar_get(transp, sites[i])))
+ TRANSP[[i]]    <- data.frame(t(ncvar_get(transp, sites[i])))
   EVAP[[i]]      <- data.frame(t(ncvar_get(evap, sites[i])))
   
   TAIR[[i]]    <- data.frame(t(ncvar_get(tair   , sites[i])))

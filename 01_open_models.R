@@ -24,6 +24,7 @@ mo2sec <- 1/(12*24*60*60)
 # ------------------------------------------------------------------------
 # Extracting Variables names to make life easier
 # ------------------------------------------------------------------------
+i <- 1
 # Setting up directories to pull an example file
 dir.ed <- file.path(model.dir, "ED2.v7", site.list[i])
 files.ed <- dir(dir.ed)
@@ -183,6 +184,8 @@ nc_close(jules.s)
 nc_close(jules.triff)
 nc_close(linkages)
 nc_close(sib)
+
+rm(i)
 # ------------------------------------------------------------------------
 # EXTRACTING MODEL OUTPUTS
 # ------------------------------------------------------------------------
@@ -939,13 +942,18 @@ names(qair[[s]])<- names(tair[[s]]) <-c("clm45","clm.bgc", "ed2", "ed.lu", "sibc
 
 # # -------------------------------------
 # # Missing LPJ-WSL
- NPP[[s]] <- data.frame(cbind(clm.cn[["NPP"]][,s], ed[["NPP"]][,s], lpj.g[["NPP"]][,s], c(jules.s[["NPP"]][,s], rep(NA, 12))))   
- LAI.m[[s]] <- data.frame(cbind(clm.cn[["LAI"]][,s], ed[["LAI"]][,s], lpj.g[["LAI"]][,s], c(jules.s[["LAI"]][,s], rep(NA, 12))))  
+ NPP[[s]] <- data.frame(cbind(clm.cn[["NPP"]][,s],clm.bgc[["LAI"]][,s], ed[["NPP"]][,s], ed.lu[["NPP"]][,s],#lpj.g[["NPP"]][,s], c(jules.s[["NPP"]][,s], rep(NA, 12)), 
+                              sib[["LAI"]][,s]))   
+ LAI.m[[s]] <- data.frame(cbind(clm.cn[["LAI"]][,s], clm.bgc[["LAI"]][,s], ed[["LAI"]][,s], ed.lu[["LAI"]][,s], #lpj.g[["LAI"]][,s], c(jules.s[["LAI"]][,s], rep(NA, 12)), 
+                                sib[["LAI"]][,s]))  
  SoilTemp[[s]] <- data.frame(cbind(clm.cn[["SoilTemp"]][,s], ed[["SoilTemp"]][,s], lpj.g[["SoilTemp"]][,s], c(jules.s[["SoilTemp"]][,s], rep(NA, 12))))  
  SWE[[s]] <- data.frame(cbind(clm.cn[["SWE"]][,s], ed[["SWE"]][,s], lpj.g[["SWE"]][,s], c(jules.s[["SWE"]][,s], rep(NA, 12))))  
 
 
- names(NPP[[s]]) <- names(LAI.m[[s]]) <- names(SoilTemp[[s]]) <- names(SWE[[s]]) <- c("clm45", "ed2", "lpj.guess", "jules.stat")
+ names(NPP[[s]]) <- names(LAI.m[[s]]) <- c("clm45", "clm.bgc","ed2","ed.lu", #"lpj.guess", "jules.stat", 
+                                           "sibcasa")
+
+  names(SoilTemp[[s]]) <- names(SWE[[s]]) <- c("clm45","ed2", "lpj.guess", "jules.stat")
 
 # # -------------------------------------
 # # Missing LPJ-WSL and LPJ-GUESS

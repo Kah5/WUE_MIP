@@ -25,7 +25,7 @@ for(s in 1:length(site.list)){
             }}
     nc_close(ncMT)      
   }
-names(Fcomp.clm.bgc) <- names(Tranp.clm.bgc) <- 
+names(Fcomp.clm.bgc) <- names(Tranp.clm.bgc) <- site.list
   names(CWDI.clm.bgc)<- names(CPOOL_TO_GRESP_PFT.clm.bgc) <- names(NPP.clm.bgc) <- site.list
 
 
@@ -37,6 +37,11 @@ clm.pft <- c("bare", "TeNE", "BNE", "BNS", "TrBE", "TeBE", "TrBS", "TeBS", "BBS"
 for(i in 1:length(site.list)){
   names(Tranp.clm.bgc[[i]]) <- clm.pft
 }
+
+
+
+
+
 
 
 
@@ -53,7 +58,7 @@ for(s in 1:length(site.list)){
   clm.var.diversity <- c("Fcomp","Tranp", "CWDI", "CPOOL_TO_GRESP_PFT","LEAFC_LOSS_PFT", "FROOTC_LOSS_PFT", "CPOOL_TO_LIVESTEM_PFT","NPP_PFT" )
   div.list<- list()
 
-  
+}
   
 ###################good code
 #this code works for fcomp and transp
@@ -127,10 +132,158 @@ for(i in 1:length(site.list)){
 
 
 x11(width =11)
-par(mfrow=c(2,1))
-plot(clm.fcomp[[4]]$TeNE, col = "red")
-plot(WUEi[[4]][,"clm.bgc"]*10, col = "red")
-lines(WUEt[[4]][,"clm.bgc"], col = "blue")
+pdf("clm_pft_WUEallsites.pdf")
+for(s in 1:length(site.list)){
+plot(clm.fcomp[[s]]$TeNE, col = "red", ylim = c(0, 1), ylab = "PFT abundance", 
+     xlab= "Time (months)", 
+     main = paste("PFT over time at", site.list[s]))
+points(clm.fcomp[[s]]$TeBS, col = "green")
+legend("topleft", pch = 15,col = c("red", "green"), c("TeNE", "TeBS"))
+
+plot(WUEi[[s]][,"clm.bgc"]*10, type = "l", ylim= c(0, 40),col = "red", ylab = "WUE",  xlab= "Time (months)",
+     main = paste("Metrics of WUE over time", site.list[s]))
+lines(WUEt[[s]][,"clm.bgc"], col = "blue")
+lines(IWUE[[s]][,"clm.bgc"], col = "green")
+legend("topright", pch = "-", col = c("red", "blue", "green"), c("WUEi", "WUEt", "IWUE"))
+}
+dev.off()
+
+
+
+
+#this loop doesn't work because some sites have no veg pft shift
+pdf("wue_veg_change_boxplots.pdf")
+for(s in 1:length(site.list)){
+s <- 4
+pdf("BL_veg_change_boxplots.pdf")
+#create an index for when pft is only TeBS
+TeBSonly<- clm.fcomp[[s]]$TeBS > 0.99
+#index for when pft is a "stable" mix of TeBS and TeNE (roughly)
+TeBS.TeNE <- clm.fcomp[[s]]$TeBS < 0.65
+#fix the shift pwart
+#indext when pft is shifting, but not yet just TeBS
+TeBS.shift <-  clm.fcomp[[s]]$TeBS >= 0.7 & clm.fcomp[[s]]$TeBS <  0.99 
+
+
+##Get the WUEi and WUEt for each of these time periods 
+WUEii<- WUEi[[s]][,"clm.bgc"] 
+WUEi.TeBS <- WUEii[TeBSonly]
+WUEi.TeBS.TeNE <- WUEii[TeBS.TeNE]
+WUEi.shift <- WUEii[clm.fcomp[[s]]$TeBS >= 0.65 & clm.fcomp[[s]]$TeBS <  0.99 ]
+
+WUEtt<- WUEt[[s]][,"clm.bgc"] 
+WUEt.TeBS <- WUEtt[TeBSonly]
+WUEt.TeBS.TeNE <- WUEtt[TeBS.TeNE]
+WUEt.shift <- WUEtt[clm.fcomp[[s]]$TeBS >= 0.65 & clm.fcomp[[s]]$TeBS <  0.99 ]
+
+IIWUE<- IWUE[[s]][,"clm.bgc"] 
+IWUE.TeBS <- IIWUE[TeBSonly]
+IWUE.TeBS.TeNE <- IIWUE[TeBS.TeNE]
+IWUE.shift <- IIWUE[clm.fcomp[[s]]$TeBS >= 0.65 & clm.fcomp[[s]]$TeBS <  0.99 ]
+
+#make a boxplots for each of these
+#for WUEt
+a <- data.frame(group = "TeBS only", value = WUEt.TeBS)
+b <- data.frame(group = "TeBS + TeNE coexisting", value = WUEt.TeBS.TeNE)
+c <- data.frame(group = "vegetation shift", value = WUEt.shift)
+
+WUEt.df <- rbind(a, b, c)
+
+ggplot(WUEt.df, aes(x = group, y = value, fill = group)) + 
+  geom_boxplot() + ylim(0, 7) + ggtitle(paste(site.list[s],"WUEt"))
+
+
+#for WUEi
+#make a boxplots for each of these
+a <- data.frame(group = "TeBS only", value = WUEi.TeBS)
+b <- data.frame(group = "TeBS + TeNE coexisting", value = WUEi.TeBS.TeNE)
+c <- data.frame(group = "vegetation shift", value = WUEi.shift)
+
+WUEi.df <- rbind(a, b, c)
+
+ggplot(WUEi.df, aes(x = group, y = value, fill = group)) + 
+  geom_boxplot() + ylim(0, 7) + ggtitle(paste(site.list[s],"WUEi"))
+
+#for IWUE
+
+#make a boxplots for each of these
+a <- data.frame(group = "TeBS only", value = IWUE.TeBS)
+b <- data.frame(group = "TeBS + TeNE coexisting", value = IWUE.TeBS.TeNE)
+c <- data.frame(group = "vegetation shift", value = IWUE.shift)
+
+IWUE.df <- rbind(a, b, c)
+
+ggplot(IWUE.df, aes(x = group, y = value, fill = group)) + 
+  geom_boxplot() + ylim(0, 7) + ggtitle(paste(site.list[s],"IWUE"))
+
+#boxplot( WUEi.TeBS.TeNE, WUEi.shift, WUEi.TeBS, main = paste(site.list[s]))
+#boxplot( WUEt.TeBS.TeNE, WUEt.shift, WUEt.TeBS, ylim = c(0, 10),main = paste(site.list[s]))
+#boxplot( IWUE.TeBS.TeNE, IWUE.shift, IWUE.TeBS, ylim = c(0, 10),main = paste(site.list[s]))
+
+##another way of looking at these dynamics
+TeBS <- clm.fcomp[[s]]$TeBS
+
+difference <- diff(TeBS, lag = 1)
+
+#boxplots for IWUE differences
+
+IWUE.pos<- IIWUE[difference > 0.00003 ]
+IWUE.neg <- IIWUE[difference < 0]
+IWUE.shift <- IIWUE[difference >= -0.00003 & difference <= 0]
+
+a <- data.frame(group = "TeBS increasing", value = IWUE.pos)
+b <- data.frame(group = "TeBS decreasing", value = IWUE.neg)
+c <- data.frame(group = "TeBS same", value = IWUE.shift)
+
+IWUE.df <- rbind(a, b, c)
+
+ggplot(IWUE.df, aes(x = group, y = value, fill = group)) + 
+  geom_boxplot() + ylim(0, 10) + ggtitle(paste(site.list[s],"IWUE"))
+
+#boxplots for WUEi difference
+
+
+WUEi.pos<- WUEii[difference > 0.00003 ]
+WUEi.neg <- WUEii[difference < 0]
+WUEi.shift <- WUEii[difference >= -0.00003 & difference <= 0]
+
+
+a <- data.frame(group = "TeBS increasing", value = WUEi.pos)
+b <- data.frame(group = "TeBS decreasing", value = WUEi.neg)
+c <- data.frame(group = "TeBS same", value = WUEi.shift)
+
+WUEi.df <- rbind(a, b, c)
+
+ggplot(WUEi.df, aes(x = group, y = value, fill = group)) + 
+  geom_boxplot() + ylim(0, 2.0) + ggtitle(paste(site.list[s],"WUEi"))
+
+
+#boxplots for WUEt differeces
+WUEt.pos<- WUEtt[difference > 0.00003 ]
+WUEt.neg <- WUEtt[difference <  0]
+WUEt.shift <- WUEtt[difference >= -0.00003 & difference <= 0]
+
+a <- data.frame(group = "TeBS increasing", value = WUEt.pos)
+b <- data.frame(group = "TeBS decreasing", value = WUEt.neg)
+c <- data.frame(group = "TeBS same", value = WUEt.shift)
+
+WUEt.df <- rbind(a, b, c)
+
+ggplot(WUEt.df, aes(x = group, y = value, fill = group)) + 
+  geom_boxplot() + ylim(0, 7) + ggtitle(paste(site.list[s],"WUEt"))
+
+
+
+}
+dev.off()
+
+#plain boxplots
+boxplot(IWUE.pos, IWUE.shift, IWUE.neg, ylim = c(0, 10), notch = TRUE)
+boxplot(WUEi.pos,  WUEi.shift, WUEi.neg, notch = TRUE)
+boxplot(WUEt.pos,  WUEt.shift, WUEt.neg,ylim = c(0, 10), notch = TRUE)
+
+
+
 
 
 #make billy's lake WUE a datafram

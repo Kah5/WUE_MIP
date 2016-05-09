@@ -24,9 +24,6 @@ inputfile <-"C:/Users/Kelly/Documents/MIP/WUE_MIP/phase_2/env_paleon/biome/biome
 #i love the raster package...you can just make it a raster
 biome <- raster(inputfile)
 
-
-
-
 mip_lon = c(-72.18,-68.73,-89.53,-94.58,-95.17,-82.83)
 mip_lat = c(42.54,45.25,46.22,46.28,47.17,43.61)
 mip_names = c("PHA","PHO","PUN","PBL","PDL","PMB")
@@ -64,3 +61,75 @@ title(main = "PalEON MIP Sites")
 dev.off()
 
 
+#biome.dir <- "C:/Users/Kelly/Documents/MIP/WUE_MIP/phase_2/env_paleon/biome/"
+inputfile <-"C:/Users/Kelly/Documents/MIP/WUE_MIP/phase_2/env_paleon/biome/biome_potential_vegtype_pft_fraction.nc"
+biome <- raster(inputfile)
+b<- nc_open(inputfile)
+pft<- ncvar_get(b, "pft")
+pft_frac <- ncvar_get(b, "pft_frac")
+
+#need to transpose the matrix to have it portrayed correctly
+
+test1 <- raster(t(pft_frac[1:80,1:30,1]), xmn= -100, xmx = -60, ymn= 35, ymx = 50)
+test2 <- raster(t(pft_frac[1:80,1:30,2]), xmn= -100, xmx = -60, ymn= 35, ymx = 50)
+test3 <- raster(t(pft_frac[1:80,1:30,3]), xmn= -100, xmx = -60, ymn= 35, ymx = 50)
+test4 <- raster(t(pft_frac[1:80,1:30,4]), xmn= -100, xmx = -60, ymn= 35, ymx = 50)
+test5 <- raster(t(pft_frac[1:80,1:30,5]), xmn= -100, xmx = -60, ymn= 35, ymx = 50)
+test6 <- raster(t(pft_frac[1:80,1:30,6]), xmn= -100, xmx = -60, ymn= 35, ymx = 50)
+test7 <- raster(t(pft_frac[1:80,1:30,7]), xmn= -100, xmx = -60, ymn= 35, ymx = 50)
+test8 <- raster(t(pft_frac[1:80,1:30,8]), xmn= -100, xmx = -60, ymn= 35, ymx = 50)
+test9 <- raster(t(pft_frac[1:80,1:30,9]), xmn= -100, xmx = -60, ymn= 35, ymx = 50)
+test10 <- raster(t(pft_frac[1:80,1:30,10]), xmn= -100, xmx = -60, ymn= 35, ymx = 50)
+
+
+
+# Convert to data.frame
+r_df = as.data.frame(as(test1, 'SpatialPixelsDataFrame'))
+print(str(r_df))
+#now add columns for the other rasters
+r_df$TBED = as.data.frame(as(test2, "SpatialPixelsDataFrame"))$layer
+r_df$TNEV = as.data.frame(as(test3, "SpatialPixelsDataFrame"))$layer
+r_df$TNED = as.data.frame(as(test4, "SpatialPixelsDataFrame"))$layer
+r_df$SBEV = as.data.frame(as(test5, "SpatialPixelsDataFrame"))$layer
+r_df$SBRD = as.data.frame(as(test6, "SpatialPixelsDataFrame"))$layer
+r_df$SNEE = as.data.frame(as(test7, "SpatialPixelsDataFrame"))$layer
+r_df$SNED = as.data.frame(as(test8, "SpatialPixelsDataFrame"))$layer
+r_df$grass = as.data.frame(as(test9, "SpatialPixelsDataFrame"))$layer
+r_df$Bare = as.data.frame(as(test10, "SpatialPixelsDataFrame"))$layer
+
+  print(str(r_df))
+  colnames(r_df) <- c( "Tree, Broadleaf Evergreen", "x", "y",
+                       "Tree, Broadleaf Decidious",
+                       "Tree, Needleleaf Evergreen",
+                       "Tree, Needleleaf Decidious",
+                       "Shrub, Broadleaf Evergreen",
+                       "Shrub, Broadleaf Decidious",
+                       "Shrub, Needleleaf Evergreen",
+                       "Shrub, Needleleaf Decidious",
+                       "C3 grass",
+                       "Bare/non-vegetated")
+
+  # Reshape the data for ggplot
+  plotData = melt(r_df, id.vars = c('x','y'))
+
+  
+  
+  
+  domain <- fortify(mip.domain)
+  d.join = join(domain, mip.domain@data)
+  
+  pdf("PFT_frac.pdf")
+  ggplot(aes(x = x, y = y), data = plotData) +
+      geom_tile(aes(fill = value)) +
+      geom_polygon(data=d.join, aes(x = long, y = lat, group = group),alpha=1,colour="grey", fill=NA, size=0.7)+
+    xlim(-100,-65)+ ylim(35,50)+
+    xlab("Long") +ylab("Lat")+
+  facet_wrap(~ variable) +
+      scale_fill_gradient("Fraction PFT",low = 'white', high = 'forestgreen') +
+      coord_equal()+ 
+    theme(strip.text.x = element_text(size = 6))
+dev.off()
+ 
+  
+ 
+ 

@@ -20,13 +20,15 @@ plot(CO2[[s]][,"sibcasa"],type = "l", ylab = "CO2 ppm", xlab = "Time (months sin
      main = "sibcasa")
 dev.off()
 
+#create index for the growing season only
+index <- Month< 9 & Month >4
 
 #use CO2 from ed.lu?
-CO2.df <- CO2[[s]][, "ed.lu"]
-WUEii<- WUEi[[s]]
-WUEii <- WUEt[[s]]
-WUEii <- IWUE[[s]]
-
+CO2.df <- CO2[[s]][index, "ed.lu"]
+WUEii<- WUEi[[s]][index,]
+#WUEii <- WUEt[[s]][index,]
+#WUEii <- IWUE[[s]][index,]
+WUEii <- WUEet[[s]][index,]
 below280 <- WUEii[CO2.df < 280,] #cut off WUEii over 10
 above280.300 <- WUEii[CO2.df < 300 & CO2.df >280, ]
 above300.320 <- WUEii[CO2.df < 320 & CO2.df >300,]
@@ -48,7 +50,7 @@ df.m <- melt(data = df, id = c("group"))
 
 pdf("CO2_IWUE_response.pdf")
 ggplot(df.m, aes(x = variable, y = value, fill = group )) + 
-  geom_boxplot() + ylim(0,7.5)+ ggtitle(paste(site.list[s],"IWUE"))
+  geom_boxplot() + ylim(0,7.5)+ ggtitle(paste(site.list[s],"WUEi"))
 dev.off()
 #plots for all models --ggplot?
 

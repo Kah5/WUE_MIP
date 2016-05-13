@@ -112,17 +112,26 @@ r_df$Bare = as.data.frame(as(test10, "SpatialPixelsDataFrame"))$layer
   # Reshape the data for ggplot
   plotData = melt(r_df, id.vars = c('x','y'))
 
+  library("PBSmapping")
+  library("maps")
+  library("data.table")
+  #need to be able to cut off the polygons outside of the spatial domain,
+  #we use pbsmapping and the state borders from the maps package
   
+  statemap = map_data("state")
+  setnames(statemap, c("X","Y","PID","POS","region","subregion"))
+  statemap = clipPolys(statemap, xlim = c(-100,-60), ylim = c(35,50))
+  #setnames(mip.domain, c("X","Y","PID","POS","region","subregion"))
+  #mip.domain <- clipPolys(mip.domain, keepExtra = TRUE,xlim = c(-100,-60), ylim = c(35,50))
   
+ # domain <- fortify(mip.domain)
+  #d.join = join(domain, mip.domain@data)
   
-  domain <- fortify(mip.domain)
-  d.join = join(domain, mip.domain@data)
-  
-  pdf("PFT_frac.pdf")
+  png("PFT_frac.png")
   ggplot(aes(x = x, y = y), data = plotData) +
       geom_tile(aes(fill = value)) +
-      geom_polygon(data=d.join, aes(x = long, y = lat, group = group),alpha=1,colour="grey", fill=NA, size=0.7)+
-    xlim(-100,-65)+ ylim(35,50)+
+      geom_polygon(data=statemap,aes(X,Y,group=PID),alpha=1,colour="grey", fill=NA, size=0.7)+
+    coord_cartesian( xlim= c(-90,-55),ylim= c(45,50))+
     xlab("Long") +ylab("Lat")+
   facet_wrap(~ variable) +
       scale_fill_gradient("Fraction PFT",low = 'white', high = 'forestgreen') +

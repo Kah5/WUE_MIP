@@ -17,7 +17,7 @@ library(ggplot2)
 # -----------------------------
 # Setting paths & directories
 # -----------------------------
-setwd("C:/Users/JMac/Documents/Kelly/MIP/WUE_MIP")
+setwd("C:/Users/JMac/Documents/Kelly/MIP/WUE_MIP/")
 path.figs <- "phase2_model_output/Exploratory_Figs"
 if(!dir.exists(path.figs)) dir.create(path.figs)
 
@@ -54,6 +54,21 @@ for(v in names(guess.ann$var)){
 }
 
 dim(guess.out$Fcomp)
+
+# lets pull out density for year == 1850
+dens1850 <- Dens[,,,1000]
+tab<- melt(dens1850)
+
+
+df0 <- as.data.frame.table(dens1850)
+head(df0)
+
+library("tidyr")
+df1 <- df0 %>% spread(key = Var1, value = Freq)
+head(df1)
+
+ggplot(df1)
+
 # -----------------------------
 
 # -----------------------------
@@ -134,6 +149,41 @@ for(y in 1:dim(guess.out$Fcomp)[3]){
   if(y==1) guess.fcomp <- rbind(dat.evg, dat.decid, dat.grass) else guess.fcomp <- rbind(guess.fcomp, dat.evg, dat.decid, dat.grass)
 }
 summary(guess.fcomp)
+
+# lets try to make this run without taking up as much memory
+bylat <- function(y)
+  {
+  print(paste0(" ---- Lat: ", y, " ---- "))
+  dat.evg <- stack(data.frame(apply(guess.out$Fcomp[c(1,2,7,8,9),,y,], c(2,3), FUN=sum)))
+  names(dat.evg) <- c("Fcomp", "Year")
+  dat.evg$Year <- as.numeric(substr(dat.evg$Year,2,nchar(paste(dat.evg$Year)))) + 849
+  dat.evg$lat  <- guess.out$lat[y]
+  dat.evg$lon  <- guess.out$lon
+  dat.evg$PFT  <- as.factor("Evergreen")    
+  dat.evg
+
+  dat.decid <- stack(data.frame(apply(guess.out$Fcomp[c(3:6,10),,y,], c(2,3), FUN=sum)))
+  names(dat.decid) <- c("Fcomp", "Year")
+  dat.decid$Year <- as.numeric(substr(dat.decid$Year,2,nchar(paste(dat.decid$Year)))) + 849
+  dat.decid$lat  <- guess.out$lat[y]
+  dat.decid$lon  <- guess.out$lon
+  dat.decid$PFT  <- as.factor("Deciduous")
+  
+  dat.grass <- stack(data.frame(apply(guess.out$Fcomp[c(11:12),,y,], c(2,3), FUN=sum)))
+  names(dat.grass) <- c("Fcomp", "Year")
+  dat.grass$Year <- as.numeric(substr(dat.grass$Year,2,nchar(paste(dat.grass$Year)))) + 849
+  dat.grass$lat  <- guess.out$lat[y]
+  dat.grass$lon  <- guess.out$lon
+  dat.grass$PFT  <- "Grass"        
+  
+  if(y==1) guess.fcomp <- rbind(dat.evg, dat.decid, dat.grass) else guess.fcomp <- rbind(guess.fcomp, dat.evg, dat.decid, dat.grass)
+  guess.fcomp
+  }
+summary(guess.fcomp)
+
+
+
+test <- apply(seq_along(1:2), FUN = bylat(y))
 
 # Graphing Fraction PFT
 X11 (width = 12)

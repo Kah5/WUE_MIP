@@ -56,18 +56,85 @@ for(v in names(guess.ann$var)){
 dim(guess.out$Fcomp)
 
 # lets pull out density for year == 1850
-dens1850 <- Dens[,,,1000]
-tab<- melt(dens1850)
+plotdes <- function(Dens, yearno, PFT){
+Year <- yearno+850
+dens1850 <- Dens[,,,yearno]
+#dens1850$evg <- rowSums
+tab <- melt(dens1850)
+
+colnames(tab) <- c("pft", "lon", "lat", "Dens")
+
+# plot the density of each PFT for 1850
+ggplot(tab[tab$pft == PFT,], aes(x = lon, y = lat, fill = Dens))+geom_raster()+theme_bw()+ggtitle(paste0("Total Density ", Year))
+#ggplot(tab, aes(x = lon, y = lat, fill = Dens))+geom_raster()+facet_wrap(~pft)
+}
 
 
-df0 <- as.data.frame.table(dens1850)
-head(df0)
+for (i in 1:10) {
+  plotdes(Dens = Dens, yearno= i)
+}
 
-library("tidyr")
-df1 <- df0 %>% spread(key = Var1, value = Freq)
-head(df1)
 
-ggplot(df1)
+plotlatlon <- function(Dens, lon,lat){
+  #Year <- yearno+850
+  dens1850 <- Dens[,lon,lat,]
+  #dens1850$evg <- rowSums
+  tab <- melt(dens1850)
+  
+  colnames(tab) <- c("pft", "year", "Dens")
+  
+  # plot the density of each PFT for 1850
+  ggplot(tab, aes(x = year, y = Dens))+geom_point()+theme_bw()+ggtitle(paste0("Total Density "))+ facet_wrap(~pft)
+  #ggplot(tab, aes(x = lon, y = lat, fill = Dens))+geom_raster()+facet_wrap(~pft)
+}
+
+plotlatlon(Dens = Dens, lon = 1, lat = 20) # lower density in past
+plotlatlon(Dens = Dens, lon = 5, lat = 20) # lower density in past
+plotlatlon(Dens = Dens, lon = 10,lat = 20) # MN area
+plotlatlon(Dens = Dens, lon = 15,lat = 20) # MN area
+plotlatlon(Dens = Dens, lon = 20,lat = 20) # wisconsin area
+plotlatlon(Dens = Dens, lon = 21,lat = 20) # wisconsin area
+plotlatlon(Dens = Dens, lon = 25,lat = 20) # wisconsin area
+plotlatlon(Dens = Dens, lon = 30,lat = 20) # michigan area
+
+
+plotlatlon(Dens = Dens, lon = 1, lat = 13) # lower density in past
+plotlatlon(Dens = Dens, lon = 5, lat = 13) # lower density in past
+plotlatlon(Dens = Dens, lon = 10,lat = 13) # MN area
+plotlatlon(Dens = Dens, lon = 15,lat = 13) # MN area
+plotlatlon(Dens = Dens, lon = 20,lat = 13) # wisconsin area
+plotlatlon(Dens = Dens, lon = 21,lat = 13) # wisconsin area
+plotlatlon(Dens = Dens, lon = 25,lat = 13) # wisconsin area
+plotlatlon(Dens = Dens, lon = 30,lat = 13) # michigan area
+
+
+# places that were lower density in the past, show some increases in total density in the 20th cent.
+# this is what we would expect, 
+# places with higher density in the past don't have much of a noticible shift
+# do these shifts corespond to higher increases in WUE in the prev. low denisty places?
+
+
+# for 1850
+pdf("Total_density_plots.pdf")
+plotdes(Dens = Dens, yearno = 800, PFT = 13)
+plotdes(Dens = Dens, yearno = 900, PFT = 13)
+plotdes(Dens = Dens, yearno = 950, PFT = 13)
+plotdes(Dens = Dens, yearno = 1000, PFT = 13)
+plotdes(Dens = Dens, yearno = 1010, PFT = 13)
+plotdes(Dens = Dens, yearno = 1060, PFT = 13)
+plotdes(Dens = Dens, yearno = 1090, PFT = 13)
+plotdes(Dens = Dens, yearno = 1110, PFT = 13)
+plotdes(Dens = Dens, yearno = 1130, PFT = 13)
+plotdes(Dens = Dens, yearno = 1150, PFT = 13)
+plotdes(Dens = Dens, yearno = 1160, PFT = 13)
+dev.off()
+
+
+# next we want to extract GPP and ET to calculate WUE
+# this may be in the montly LPJ runs
+# we then want to relate 
+
+unique(guess.out$PFT)
 
 # -----------------------------
 

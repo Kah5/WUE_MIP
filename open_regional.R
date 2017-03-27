@@ -12,6 +12,7 @@ library(raster)
 #library(car)
 library(abind)
 library(ggplot2)
+library(reshape2)
 # -----------------------------
 
 # -----------------------------
@@ -55,7 +56,17 @@ for(v in names(guess.ann$var)){
 
 dim(guess.out$Fcomp)
 
+# pull out density
+Dens <- guess.out$Dens
+# oull out fire
+Fire <- guess.out$Fire
+# pull out GWBI--Gross Woody biomass increment(akin to tree ring width increment)
+# in KgC/m2/mo
+GWBI <- guess.out$GWBI
+
 # lets pull out density for year == 1850
+
+
 plotdes <- function(Dens, yearno, PFT){
 Year <- yearno+850
 dens1850 <- Dens[,,,yearno]
@@ -70,10 +81,17 @@ ggplot(tab[tab$pft == PFT,], aes(x = lon, y = lat, fill = Dens))+geom_raster()+t
 }
 
 
-for (i in 1:10) {
-  plotdes(Dens = Dens, yearno= i)
-}
 
+
+
+pft <- data.frame(1:13)
+pft$names <- as.character(guess.out$PFT)
+colnames(pft) <- c("pft", "names")
+pft$fullnames <- c("Boreal needleleaf evergreeen", "Boreal needleleaf evergreen shade intolerant", 
+                   "Boreal needleleaf summergreen", "Boreal needleleaf summergreen shade intolerant", 
+                   "Temperate broadleaf summergreen", "Temperate broadleaf summergreen shade intolerant",
+                   "Temperate broadleaf evergreen", "Tropical broadleaf evergreen", "Tropical broadleaf evergreen shade intolerant", 
+                   "Tropical broadleaf raingreen", "C3 grass", "C4 grass", "Total")
 
 plotlatlon <- function(Dens, lon,lat){
   #Year <- yearno+850
@@ -82,12 +100,14 @@ plotlatlon <- function(Dens, lon,lat){
   tab <- melt(dens1850)
   
   colnames(tab) <- c("pft", "year", "Dens")
-  
+  tab <- merge(tab, pft, by = "pft")
   # plot the density of each PFT for 1850
-  ggplot(tab, aes(x = year, y = Dens))+geom_point()+theme_bw()+ggtitle(paste0("Total Density "))+ facet_wrap(~pft)
+  ggplot(tab, aes(x = year, y = Dens))+geom_point()+theme_bw()+ggtitle(paste0("Total Density ","lat = ", lat,"lon" =lon))+ 
+    facet_wrap(~names)
   #ggplot(tab, aes(x = lon, y = lat, fill = Dens))+geom_raster()+facet_wrap(~pft)
 }
 
+pdf("transect_1_density_LPJ_lat_20.pdf")
 plotlatlon(Dens = Dens, lon = 1, lat = 20) # lower density in past
 plotlatlon(Dens = Dens, lon = 5, lat = 20) # lower density in past
 plotlatlon(Dens = Dens, lon = 10,lat = 20) # MN area
@@ -96,8 +116,9 @@ plotlatlon(Dens = Dens, lon = 20,lat = 20) # wisconsin area
 plotlatlon(Dens = Dens, lon = 21,lat = 20) # wisconsin area
 plotlatlon(Dens = Dens, lon = 25,lat = 20) # wisconsin area
 plotlatlon(Dens = Dens, lon = 30,lat = 20) # michigan area
+dev.off()
 
-
+pdf("transect_2_denisty_LPJ_lat_13.pdf")
 plotlatlon(Dens = Dens, lon = 1, lat = 13) # lower density in past
 plotlatlon(Dens = Dens, lon = 5, lat = 13) # lower density in past
 plotlatlon(Dens = Dens, lon = 10,lat = 13) # MN area
@@ -106,6 +127,49 @@ plotlatlon(Dens = Dens, lon = 20,lat = 13) # wisconsin area
 plotlatlon(Dens = Dens, lon = 21,lat = 13) # wisconsin area
 plotlatlon(Dens = Dens, lon = 25,lat = 13) # wisconsin area
 plotlatlon(Dens = Dens, lon = 30,lat = 13) # michigan area
+dev.off()
+
+
+plotlatlonone <- function(fact, lon,lat, name){
+  #Year <- yearno+850
+  dens1850 <- fact[,lon,lat,]
+  #dens1850$evg <- rowSums
+  tab <- melt(dens1850)
+  
+  colnames(tab) <- c("pft", "year", name)
+  colnames(tab) <- c("pft", "year", name)
+  tab <- merge(tab, pft, by = "pft")
+  # plot the density of each PFT for 1850
+  #pft # that show up in LPJ guess: 1,2, 4,5,6,7, 11, 13
+  pftsin <- c(1,2,4,5,6,7, 11)
+  tab <- tab[tab$pft %in% pftsin,]
+  ggplot(tab, aes(x = year, y = tab[,c(name)], color = fullnames))+geom_line()+theme_bw()+
+    ggtitle(paste0(name,"lat = ", lat,"lon" =lon)) + ylab(name) +xlab("Years after 850 AD")
+  #ggplot(tab, aes(x = lon, y = lat, fill = Dens))+geom_raster()+facet_wrap(~pft)
+}
+
+pdf("transect_1_density_one_LPJ_lat_20.pdf")
+plotlatlonone(fact = Dens, lon = 1, lat = 20, name = "Dens") # lower density in past
+plotlatlonone(fact = Dens, lon = 5, lat = 20, name = "Dens") # lower density in past
+plotlatlonone(fact = Dens, lon = 10,lat = 20, name = "Dens") # MN area
+plotlatlonone(fact = Dens, lon = 15,lat = 20, name = "Dens") # MN area
+plotlatlonone(fact = Dens, lon = 20,lat = 20, name = "Dens") # wisconsin area
+plotlatlonone(fact = Dens, lon = 21,lat = 20, name = "Dens") # wisconsin area
+plotlatlonone(fact = Dens, lon = 25,lat = 20, name = "Dens") # wisconsin area
+plotlatlonone(fact = Dens, lon = 30,lat = 20, name = "Dens") # michigan area
+dev.off()
+
+pdf("transect_2_denisty_one_LPJ_lat_13.pdf")
+plotlatlonone(fact = Dens, lon = 1, lat = 13, name = "Dens") # lower density in past
+plotlatlonone(fact = Dens, lon = 5, lat = 13, name = "Dens") # lower density in past
+plotlatlonone(fact = Dens, lon = 10,lat = 13, name = "Dens") # MN area
+plotlatlonone(fact = Dens, lon = 15,lat = 13, name = "Dens") # MN area
+plotlatlonone(fact = Dens, lon = 20,lat = 13, name = "Dens") # wisconsin area
+plotlatlonone(fact = Dens, lon = 21,lat = 13, name = "Dens") # wisconsin area
+plotlatlonone(fact = Dens, lon = 25,lat = 13, name = "Dens") # wisconsin area
+plotlatlonone(fact = Dens, lon = 30,lat = 13, name = "Dens") # michigan area
+dev.off()
+
 
 
 # places that were lower density in the past, show some increases in total density in the 20th cent.
@@ -130,6 +194,51 @@ plotdes(Dens = Dens, yearno = 1160, PFT = 13)
 dev.off()
 
 
+# extracting GWBI
+
+##################3
+plotgwbi <- function(GWBI, yearno, PFT){
+  Year <- yearno+850
+  gwbi1850 <- GWBI[,,,yearno]
+  #dens1850$evg <- rowSums
+  tab <- melt(gwbi1850)
+  
+  colnames(tab) <- c("pft", "lon", "lat", "GWBI")
+  
+  # plot the density of each PFT for 1850
+  ggplot(tab[tab$pft == PFT,], aes(x = lon, y = lat, fill = GWBI))+geom_raster()+theme_bw()+ggtitle(paste0("Total Density ", Year))
+  #ggplot(tab, aes(x = lon, y = lat, fill = Dens))+geom_raster()+facet_wrap(~pft)
+}
+plotgwbi(GWBI, 1000, 13)
+plotgwbi(GWBI, 1150, 13)
+
+
+
+#use the function plotlatlonone to plot GWBI at a variety of sites
+pdf("transect_1_GWBI_one_LPJ_lat_20.pdf")
+plotlatlonone(fact = GWBI, lon = 1, lat = 20, name = "GWBI") # lower density in past
+plotlatlonone(fact = GWBI, lon = 5, lat = 20, name = "GWBI") # lower density in past
+plotlatlonone(fact = GWBI, lon = 10,lat = 20, name = "GWBI") # MN area
+plotlatlonone(fact = GWBI, lon = 15,lat = 20, name = "GWBI") # MN area
+plotlatlonone(fact = GWBI, lon = 20,lat = 20, name = "GWBI") # wisconsin area
+plotlatlonone(fact = GWBI, lon = 21,lat = 20, name = "GWBI") # wisconsin area
+plotlatlonone(fact = GWBI, lon = 25,lat = 20, name = "GWBI") # wisconsin area
+plotlatlonone(fact = GWBI, lon = 30,lat = 20, name = "GWBI") # michigan area
+dev.off()
+
+pdf("transect_2_GWBI_one_LPJ_lat_13.pdf")
+plotlatlonone(fact = GWBI, lon = 1, lat = 13, name = "GWBI") # lower density in past
+plotlatlonone(fact = GWBI, lon = 5, lat = 13, name = "GWBI") # lower density in past
+plotlatlonone(fact = GWBI, lon = 10,lat = 13, name = "GWBI") # MN area
+plotlatlonone(fact = GWBI, lon = 15,lat = 13, name = "GWBI") # MN area
+plotlatlonone(fact = GWBI, lon = 20,lat = 13, name = "GWBI") # wisconsin area
+plotlatlonone(fact = GWBI, lon = 21,lat = 13, name = "GWBI") # wisconsin area
+plotlatlonone(fact = GWBI, lon = 25,lat = 13, name = "GWBI") # wisconsin area
+plotlatlonone(fact = GWBI, lon = 30,lat = 13, name = "GWBI") # michigan area
+dev.off()
+
+
+# 
 # next we want to extract GPP and ET to calculate WUE
 # this may be in the montly LPJ runs
 # we then want to relate 

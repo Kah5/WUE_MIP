@@ -63,7 +63,7 @@ Fire <- guess.out$Fire
 # pull out GWBI--Gross Woody biomass increment(akin to tree ring width increment)
 # in KgC/m2/mo
 GWBI <- guess.out$GWBI
-
+Fcomp <- guess.out$Fcomp
 # lets pull out density for year == 1850
 
 
@@ -103,7 +103,7 @@ plotlatlon <- function(Dens, lon,lat){
   tab <- merge(tab, pft, by = "pft")
   # plot the density of each PFT for 1850
   ggplot(tab, aes(x = year, y = Dens))+geom_point()+theme_bw()+ggtitle(paste0("Total Density ","lat = ", lat,"lon" =lon))+ 
-    facet_wrap(~names)
+    facet_wrap(~names) + scale_color_manual(name = "PFT", values = )
   #ggplot(tab, aes(x = lon, y = lat, fill = Dens))+geom_raster()+facet_wrap(~pft)
 }
 
@@ -144,7 +144,15 @@ plotlatlonone <- function(fact, lon,lat, name){
   pftsin <- c(1,2,4,5,6,7, 11)
   tab <- tab[tab$pft %in% pftsin,]
   ggplot(tab, aes(x = year, y = tab[,c(name)], color = fullnames))+geom_line()+theme_bw()+
-    ggtitle(paste0(name,"lat = ", lat,"lon" =lon)) + ylab(name) +xlab("Years after 850 AD")
+    scale_color_manual(name = "PFT", values = c('#e41a1c',
+      '#377eb8',
+      '#984ea3',
+      'forestgreen',
+      '#ff7f00',
+      'black',
+      '#a65628'))+
+    ggtitle(paste(name, "lat = ", lat, "lon =", lon)) + ylab(name) +xlab("Years after 850 AD")+ 
+    theme(legend.position = "bottom")+guides(fill=guide_legend(ncol =2,byrow=FALSE))
   #ggplot(tab, aes(x = lon, y = lat, fill = Dens))+geom_raster()+facet_wrap(~pft)
 }
 
@@ -193,6 +201,63 @@ plotdes(Dens = Dens, yearno = 1150, PFT = 13)
 plotdes(Dens = Dens, yearno = 1160, PFT = 13)
 dev.off()
 
+dens.hists <- function(Dens, yearno){
+  Year <- yearno+850
+  dens1850 <- Dens[,,,yearno]
+  #dens1850$evg <- rowSums
+  tab <- melt(dens1850)
+  
+  colnames(tab) <- c("pft", "lat","lon", "Dens")
+  tab <- merge(tab, pft, by = "pft")
+  # plot the density of each PFT for 1850
+  ggplot(tab[tab$pft == 13,], aes(x = Dens))+geom_histogram()+theme_bw()+ ggtitle(paste0("Histogram of Total Density across space ", Year ))+xlab("Total Density")
+    
+  #facet_wrap(~names) + scale_color_manual(name = "PFT", values = )
+  #ggplot(tab, aes(x = lon, y = lat, fill = Dens))+geom_raster()+facet_wrap(~pft)
+}
+
+dens.hists(Dens, 950)# 1800
+dens.hists(Dens, 1000)# 1850
+dens.hists(Dens, 1050)# 1900
+dens.hists(Dens, 1100)
+dens.hists(Dens, 1161)#2011
+
+
+# look at density histograms of a grid cell throuh time
+dens.hists.time <- function(Dens, lat,lon){
+  #Year <- yearno+850
+  dens1850 <- Dens[,lat,lon,]
+  #dens1850$evg <- rowSums
+  tab <- melt(dens1850)
+  
+  colnames(tab) <- c("pft", "year", "Dens")
+  tab <- merge(tab, pft, by = "pft")
+  # plot the density of each PFT for 1850
+  ggplot(tab[tab$pft == 13,], aes(x = Dens))+geom_histogram()+theme_bw()+ ggtitle(paste0("Histogram of Total Density 850-2011 at lat = ",lat, "lon = ",lon  ))+xlab("Total Density")
+  
+  #facet_wrap(~names) + scale_color_manual(name = "PFT", values = )
+  #ggplot(tab, aes(x = lon, y = lat, fill = Dens))+geom_raster()+facet_wrap(~pft)
+}
+
+# plot histograms of temporal densitys in time:
+# not stem density is supposedly in trees/ha, but these are very high estimates
+# perhaps there is a unit issue, or perhaps the grass stem density is inflating the total estimates
+dens.hists.time(Dens, lon = 1, lat = 20)
+dens.hists.time(Dens, lon = 5, lat = 20)
+dens.hists.time(Dens, lon = 10, lat = 20)
+dens.hists.time(Dens, lon = 15, lat = 20)
+dens.hists.time(Dens, lon = 20, lat = 20)
+dens.hists.time(Dens, lon = 25, lat = 20)
+dens.hists.time(Dens, lon = 30, lat = 20)
+
+
+dens.hists.time(Dens, lon = 1, lat = 13)
+dens.hists.time(Dens, lon = 5, lat = 13)
+dens.hists.time(Dens, lon = 10, lat = 13)
+dens.hists.time(Dens, lon = 15, lat = 13)
+dens.hists.time(Dens, lon = 20, lat = 13)
+dens.hists.time(Dens, lon = 25, lat = 13)
+dens.hists.time(Dens, lon = 30, lat = 13)
 
 # extracting GWBI
 
@@ -236,9 +301,113 @@ plotlatlonone(fact = GWBI, lon = 21,lat = 13, name = "GWBI") # wisconsin area
 plotlatlonone(fact = GWBI, lon = 25,lat = 13, name = "GWBI") # wisconsin area
 plotlatlonone(fact = GWBI, lon = 30,lat = 13, name = "GWBI") # michigan area
 dev.off()
+# plot out from 1800-2011
+
+plotlatlonmod <- function(fact, lon,lat, name){
+  #Year <- yearno+850
+  dens1850 <- fact[,lon,lat,]
+  #dens1850$evg <- rowSums
+  tab <- melt(dens1850)
+  
+  colnames(tab) <- c("pft", "year", name)
+  colnames(tab) <- c("pft", "year", name)
+  tab <- merge(tab, pft, by = "pft")
+  # plot the density of each PFT for 1850
+  #pft # that show up in LPJ guess: 1,2, 4,5,6,7, 11, 13
+  pftsin <- c(1,2,4,5,6,7, 11)
+  tab <- tab[tab$pft %in% pftsin,]
+  tab <- tab[tab$year %in% 950:1161,]
+  ggplot(tab, aes(x = year, y = tab[,c(name)], color = fullnames))+geom_line()+theme_bw()+
+    scale_color_manual(name = "PFT", values = c('#e41a1c',
+                                                '#377eb8',
+                                                '#984ea3',
+                                                'forestgreen',
+                                                '#ff7f00',
+                                                'black',
+                                                '#a65628'))+
+    ggtitle(paste(name, "lat = ", lat, "lon =", lon)) + ylab(name) +xlab("Years after 850 AD")+ 
+    theme(legend.position = "bottom")+guides(fill=guide_legend(ncol =2,byrow=FALSE))
+  #ggplot(tab, aes(x = lon, y = lat, fill = Dens))+geom_raster()+facet_wrap(~pft)
+}
+
+pdf("transect_1_GWBI_one_LPJ_lat_20_1800_2011.pdf")
+plotlatlonmod(fact = GWBI, lon = 1, lat = 20, name = "GWBI") # lower density in past
+plotlatlonmod(fact = GWBI, lon = 5, lat = 20, name = "GWBI") # lower density in past
+plotlatlonmod(fact = GWBI, lon = 10,lat = 20, name = "GWBI") # MN area
+plotlatlonmod(fact = GWBI, lon = 15,lat = 20, name = "GWBI") # MN area
+plotlatlonmod(fact = GWBI, lon = 20,lat = 20, name = "GWBI") # wisconsin area
+plotlatlonmod(fact = GWBI, lon = 21,lat = 20, name = "GWBI") # wisconsin area
+plotlatlonmod(fact = GWBI, lon = 25,lat = 20, name = "GWBI") # wisconsin area
+plotlatlonmod(fact = GWBI, lon = 30,lat = 20, name = "GWBI") # michigan area
+dev.off()
+
+pdf("transect_2_GWBI_one_LPJ_lat_13_1800_2011.pdf")
+plotlatlonmod(fact = GWBI, lon = 1, lat = 13, name = "GWBI") # lower density in past
+plotlatlonmod(fact = GWBI, lon = 5, lat = 13, name = "GWBI") # lower density in past
+plotlatlonmod(fact = GWBI, lon = 10,lat = 13, name = "GWBI") # MN area
+plotlatlonmod(fact = GWBI, lon = 15,lat = 13, name = "GWBI") # MN area
+plotlatlonmod(fact = GWBI, lon = 20,lat = 13, name = "GWBI") # wisconsin area
+plotlatlonmod(fact = GWBI, lon = 21,lat = 13, name = "GWBI") # wisconsin area
+plotlatlonmod(fact = GWBI, lon = 25,lat = 13, name = "GWBI") # wisconsin area
+plotlatlonmod(fact = GWBI, lon = 30,lat = 13, name = "GWBI") # michigan area
+dev.off()
 
 
-# 
+
+#use the function plotlatlonone to plot Fcomp at a variety of sites
+pdf("transect_1_Fcomp_one_LPJ_lat_20.pdf")
+plotlatlonone(fact = Fcomp, lon = 1, lat = 20, name = "Fcomp") # lower density in past
+plotlatlonone(fact = Fcomp, lon = 5, lat = 20, name = "Fcomp") # lower density in past
+plotlatlonone(fact = Fcomp, lon = 10,lat = 20, name = "Fcomp") # MN area
+plotlatlonone(fact = Fcomp, lon = 15,lat = 20, name = "Fcomp") # MN area
+plotlatlonone(fact = Fcomp, lon = 20,lat = 20, name = "Fcomp") # wisconsin area
+plotlatlonone(fact = Fcomp, lon = 21,lat = 20, name = "Fcomp") # wisconsin area
+plotlatlonone(fact = Fcomp, lon = 25,lat = 20, name = "Fcomp") # wisconsin area
+plotlatlonone(fact = Fcomp, lon = 30,lat = 20, name = "Fcomp") # michigan area
+dev.off()
+
+pdf("transect_2_Fcomp_one_LPJ_lat_13.pdf")
+plotlatlonone(fact = Fcomp, lon = 1, lat = 13, name = "Fcomp") # lower density in past
+plotlatlonone(fact = Fcomp, lon = 5, lat = 13, name = "Fcomp") # lower density in past
+plotlatlonone(fact = Fcomp, lon = 10,lat = 13, name = "Fcomp") # MN area
+plotlatlonone(fact = Fcomp, lon = 15,lat = 13, name = "Fcomp") # MN area
+plotlatlonone(fact = Fcomp, lon = 20,lat = 13, name = "Fcomp") # wisconsin area
+plotlatlonone(fact = Fcomp, lon = 21,lat = 13, name = "Fcomp") # wisconsin area
+plotlatlonone(fact = Fcomp, lon = 25,lat = 13, name = "Fcomp") # wisconsin area
+plotlatlonone(fact = Fcomp, lon = 30,lat = 13, name = "Fcomp") # michigan area
+dev.off()
+
+# # plot fcomp 
+
+plotfcomp <- function(Fcomp, yearno){
+  Year <- yearno+850
+  gwbi1850 <- Fcomp[,,,yearno]
+  #dens1850$evg <- rowSums
+  tab <- melt(gwbi1850)
+  
+  colnames(tab) <- c("pft", "lon", "lat", "Fcomp")
+  tab <- merge(tab, pft, by = "pft")
+  pftsin <- c(1,2,4,5,6,7, 11)
+  tab <- tab[tab$pft %in% pftsin,]
+  # plot the density of each PFT for 1850
+  ggplot(tab, aes(x = lon, y = lat, fill = Fcomp))+geom_raster()+theme_bw()+
+    ggtitle(paste0("Fractional Composition of PFT's ", Year))+facet_wrap(~fullnames)+
+    scale_fill_gradient(low = "white", high = "forestgreen")
+  #ggplot(tab, aes(x = lon, y = lat, fill = Dens))+geom_raster()+facet_wrap(~pft)
+}
+#X11(width = 12)
+#pdf("LPJ-Guess_Fcomp_maps.pdf")
+png(height = 8, width = 13, units = 'in', res= 300, "Fcomp_1800_LPJ_guess.png")
+plotfcomp(Fcomp, 950)
+dev.off()
+
+png(height = 8, width = 13, units = 'in', res= 300, "Fcomp_1850_LPJ_guess.png")
+plotfcomp(Fcomp, 1000)
+dev.off()
+
+png(height = 8, width = 13, units = 'in', res= 300, "Fcomp_2000_LPJ_guess.png")
+plotfcomp(Fcomp, 1150)
+dev.off()
 # next we want to extract GPP and ET to calculate WUE
 # this may be in the montly LPJ runs
 # we then want to relate 

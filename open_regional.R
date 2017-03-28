@@ -178,6 +178,74 @@ plotlatlonone(fact = Dens, lon = 25,lat = 13, name = "Dens") # wisconsin area
 plotlatlonone(fact = Dens, lon = 30,lat = 13, name = "Dens") # michigan area
 dev.off()
 
+# working with fires
+
+plotlatlonfire <- function(fact, lon,lat, name){
+  #Year <- yearno+850
+  dens1850 <- fact[lon,lat,]
+  #dens1850$evg <- rowSums
+  tab <- melt(dens1850)
+  
+  colnames(tab) <- c(name)
+  tab$year <- 1:1161
+  # plot the density of each PFT for 1850
+  #pft # that show up in LPJ guess: 1,2, 4,5,6,7, 11, 13
+  
+  ggplot(tab, aes(x = year, y = tab[,c(name)]))+geom_line()+theme_bw()+
+    ggtitle(paste(name, "lat = ", lat, "lon =", lon)) + ylab(name) +xlab("Years after 850 AD")+ 
+    theme(legend.position = "bottom")+guides(fill=guide_legend(ncol =2,byrow=FALSE))
+  #ggplot(tab, aes(x = lon, y = lat, fill = Dens))+geom_raster()+facet_wrap(~pft)
+}
+
+plotfire <- function(fact, yearno,name){
+  Year <- yearno+850
+  dens1850 <- fact[,,yearno]
+  #dens1850$evg <- rowSums
+  tab <- melt(dens1850)
+  
+  colnames(tab) <- c('lat','lon',name)
+  
+  # plot the density of each PFT for 1850
+  #pft # that show up in LPJ guess: 1,2, 4,5,6,7, 11, 13
+  
+  ggplot(tab, aes(x = lat, y = lon,fill= tab[,c(name)]))+geom_raster()+theme_bw()+
+    ggtitle(paste("Pfire for", Year)) + ylab(name) 
+  #ggplot(tab, aes(x = lon, y = lat, fill = Dens))+geom_raster()+facet_wrap(~pft)
+}
+
+plotfire(Fire, 1000, "Fire")
+plotfire(Fire, 1010, "Fire")
+plotfire(Fire, 1020, "Fire")
+plotfire(Fire, 1030, "Fire")
+plotfire(Fire, 1050, "Fire")
+plotfire(Fire, 1090, "Fire")
+plotfire(Fire, 1100, "Fire")
+plotfire(Fire, 1161, "Fire")
+
+
+
+
+pdf("transect_1_fire_one_LPJ_lat_20.pdf")
+plotlatlonfire(fact = Fire, lon = 1, lat = 20, name = "Fire") # lower density in past
+plotlatlonfire(fact = Dens, lon = 5, lat = 20, name = "Dens") # lower density in past
+plotlatlonfire(fact = Dens, lon = 10,lat = 20, name = "Dens") # MN area
+plotlatlonfire(fact = Dens, lon = 15,lat = 20, name = "Dens") # MN area
+plotlatlonfire(fact = Dens, lon = 20,lat = 20, name = "Dens") # wisconsin area
+plotlatlonfire(fact = Dens, lon = 21,lat = 20, name = "Dens") # wisconsin area
+plotlatlonfire(fact = Dens, lon = 25,lat = 20, name = "Dens") # wisconsin area
+plotlatlonfire(fact = Dens, lon = 30,lat = 20, name = "Dens") # michigan area
+dev.off()
+
+pdf("transect_2_denisty_one_LPJ_lat_13.pdf")
+plotlatlonone(fact = Dens, lon = 1, lat = 13, name = "Dens") # lower density in past
+plotlatlonone(fact = Dens, lon = 5, lat = 13, name = "Dens") # lower density in past
+plotlatlonone(fact = Dens, lon = 10,lat = 13, name = "Dens") # MN area
+plotlatlonone(fact = Dens, lon = 15,lat = 13, name = "Dens") # MN area
+plotlatlonone(fact = Dens, lon = 20,lat = 13, name = "Dens") # wisconsin area
+plotlatlonone(fact = Dens, lon = 21,lat = 13, name = "Dens") # wisconsin area
+plotlatlonone(fact = Dens, lon = 25,lat = 13, name = "Dens") # wisconsin area
+plotlatlonone(fact = Dens, lon = 30,lat = 13, name = "Dens") # michigan area
+dev.off()
 
 
 # places that were lower density in the past, show some increases in total density in the 20th cent.
@@ -242,6 +310,7 @@ dens.hists.time <- function(Dens, lat,lon){
 # plot histograms of temporal densitys in time:
 # not stem density is supposedly in trees/ha, but these are very high estimates
 # perhaps there is a unit issue, or perhaps the grass stem density is inflating the total estimates
+pdf("Transect_1_dens_hists_850_2011.pdf")
 dens.hists.time(Dens, lon = 1, lat = 20)
 dens.hists.time(Dens, lon = 5, lat = 20)
 dens.hists.time(Dens, lon = 10, lat = 20)
@@ -249,8 +318,9 @@ dens.hists.time(Dens, lon = 15, lat = 20)
 dens.hists.time(Dens, lon = 20, lat = 20)
 dens.hists.time(Dens, lon = 25, lat = 20)
 dens.hists.time(Dens, lon = 30, lat = 20)
+dev.off()
 
-
+pdf("Transect_2_dens_hists_850_2011.pdf")
 dens.hists.time(Dens, lon = 1, lat = 13)
 dens.hists.time(Dens, lon = 5, lat = 13)
 dens.hists.time(Dens, lon = 10, lat = 13)
@@ -258,6 +328,7 @@ dens.hists.time(Dens, lon = 15, lat = 13)
 dens.hists.time(Dens, lon = 20, lat = 13)
 dens.hists.time(Dens, lon = 25, lat = 13)
 dens.hists.time(Dens, lon = 30, lat = 13)
+dev.off()
 
 # extracting GWBI
 

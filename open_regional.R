@@ -227,24 +227,24 @@ plotfire(Fire, 1161, "Fire")
 
 pdf("transect_1_fire_one_LPJ_lat_20.pdf")
 plotlatlonfire(fact = Fire, lon = 1, lat = 20, name = "Fire") # lower density in past
-plotlatlonfire(fact = Dens, lon = 5, lat = 20, name = "Dens") # lower density in past
-plotlatlonfire(fact = Dens, lon = 10,lat = 20, name = "Dens") # MN area
-plotlatlonfire(fact = Dens, lon = 15,lat = 20, name = "Dens") # MN area
-plotlatlonfire(fact = Dens, lon = 20,lat = 20, name = "Dens") # wisconsin area
-plotlatlonfire(fact = Dens, lon = 21,lat = 20, name = "Dens") # wisconsin area
-plotlatlonfire(fact = Dens, lon = 25,lat = 20, name = "Dens") # wisconsin area
-plotlatlonfire(fact = Dens, lon = 30,lat = 20, name = "Dens") # michigan area
+plotlatlonfire(fact = Fire, lon = 5, lat = 20, name = "Fire") # lower Fireity in past
+plotlatlonfire(fact = Fire, lon = 10,lat = 20, name = "Fire") # MN area
+plotlatlonfire(fact = Fire, lon = 15,lat = 20, name = "Fire") # MN area
+plotlatlonfire(fact = Fire, lon = 20,lat = 20, name = "Fire") # wisconsin area
+plotlatlonfire(fact = Fire, lon = 21,lat = 20, name = "Fire") # wisconsin area
+plotlatlonfire(fact = Fire, lon = 25,lat = 20, name = "Fire") # wisconsin area
+plotlatlonfire(fact = Fire, lon = 30,lat = 20, name = "Fire") # michigan area
 dev.off()
 
-pdf("transect_2_denisty_one_LPJ_lat_13.pdf")
-plotlatlonone(fact = Dens, lon = 1, lat = 13, name = "Dens") # lower density in past
-plotlatlonone(fact = Dens, lon = 5, lat = 13, name = "Dens") # lower density in past
-plotlatlonone(fact = Dens, lon = 10,lat = 13, name = "Dens") # MN area
-plotlatlonone(fact = Dens, lon = 15,lat = 13, name = "Dens") # MN area
-plotlatlonone(fact = Dens, lon = 20,lat = 13, name = "Dens") # wisconsin area
-plotlatlonone(fact = Dens, lon = 21,lat = 13, name = "Dens") # wisconsin area
-plotlatlonone(fact = Dens, lon = 25,lat = 13, name = "Dens") # wisconsin area
-plotlatlonone(fact = Dens, lon = 30,lat = 13, name = "Dens") # michigan area
+pdf("transect_2_Fire_one_LPJ_lat_13.pdf")
+plotlatlonone(fact = Fire, lon = 1, lat = 13, name = "Fire") # lower Fireity in past
+plotlatlonone(fact = Fire, lon = 5, lat = 13, name = "Fire") # lower Fireity in past
+plotlatlonone(fact = Fire, lon = 10,lat = 13, name = "Fire") # MN area
+plotlatlonone(fact = Fire, lon = 15,lat = 13, name = "Fire") # MN area
+plotlatlonone(fact = Fire, lon = 20,lat = 13, name = "Fire") # wisconsin area
+plotlatlonone(fact = Fire, lon = 21,lat = 13, name = "Fire") # wisconsin area
+plotlatlonone(fact = Fire, lon = 25,lat = 13, name = "Fire") # wisconsin area
+plotlatlonone(fact = Fire, lon = 30,lat = 13, name = "Fire") # michigan area
 dev.off()
 
 

@@ -62,8 +62,11 @@ Dens <- guess.out$Dens
 Fire <- guess.out$Fire
 # pull out GWBI--Gross Woody biomass increment(akin to tree ring width increment)
 # in KgC/m2/mo
-GWBI <- guess.out$GWBI
+FPC <- guess.out$FPC
 Fcomp <- guess.out$Fcomp
+Mort <- guess.out$Mort
+Estab <- guess.out$Estab
+BA <- guess.out$BA
 # lets pull out density for year == 1850
 
 
@@ -84,7 +87,8 @@ ggplot(tab[tab$pft == PFT,], aes(x = lon, y = lat, fill = Dens))+geom_raster()+t
 
 
 
-pft <- data.frame(1:13)
+pft <- data.frame(pft = 1:13, 
+                  names = 1:13)
 pft$names <- as.character(guess.out$PFT)
 colnames(pft) <- c("pft", "names")
 pft$fullnames <- c("Boreal needleleaf evergreeen", "Boreal needleleaf evergreen shade intolerant", 

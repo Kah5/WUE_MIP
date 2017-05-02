@@ -10,9 +10,9 @@ ED2.gwbi <- readRDS(file = "Data/ED_montly_gwbi.RDS")
 ED2.tair <- readRDS(file = "Data/ED_montly_tair.RDS")
 ED2.transp <- readRDS(file = "Data/ED_montly_transp.RDS")
 ED2.Fire <- readRDS(file = "Data/ED_montly_Fire.RDS")
-#test<- raster(ED2.CO2)
 
-ed.co2<- ED2.CO2$CO2
+
+ed.co2 <- ED2.CO2$CO2
 ed.gpp<- ED2.GPP$GPP
 ed.gwbi<- ED2.gwbi$GWBI
 

@@ -45,7 +45,8 @@ datain <- tab[!is.na(tab$value),]
 
 datain<- merge(datain, lats, by = "lat")
 datain <- merge(datain, lons, by = "lon")
-
+datain$ID <- 1:40, 
+datain$site.name <- paste0("site", datain$ID)
 # function to extract data from grid cells that have data (there is likely a way to do this better):
 
 extractnonna <-function(datain, x){
@@ -53,16 +54,19 @@ extractnonna <-function(datain, x){
   test<- data.frame(test)
   for(i in 1:nrow(datain)){
     test[,i] <- x[datain[i,]$latrow, datain[i,]$lonrow,]
-    colnames(test[i]) <- datain[i,]$ID
+    colnames(test[i]) <- datain[i,]$site.name
   }
+  
+  colnames(test) <- datain$site.name
   test
 }
 
 co2 <- extractnonna(datain = datain, x = ed.co2)
 GPP <- extractnonna(datain = datain, x = ed.gpp)
 GWBI <- extractnonna(datain = datain, x = ed.gwbi)
-#co2<- extractnonna(datain = datain, x = ed.co2)
 
-#test <- adply(ED2.CO2$CO2, c(1,2,3))
-#plot(ED2.GPP$GPP, ED2.CO2$CO2)
-#plot(ED2.gwbi$GWBI, ED2.CO2$CO2)
+# get the years
+timevec <- ed.co2[,,]
+
+# work on finding the total annual gpp for each year 
+# also find the summer gpp and GWBI?

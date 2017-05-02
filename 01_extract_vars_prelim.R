@@ -12,12 +12,12 @@
 #    9. yrmax -- the last year of interest; defaults to 2010 (last year of simulations)
 #
 # Note: This will by default return the entire time series at the raw time step provided by each model
-mod <- "LPJ-GUESS"
-mdir <- "C:/Users/JMac/Documents/Kelly/MIP/WUE_MIP/WUE_MIP/Data/LPJ-GUESS/"
+mod <- "ED2"
+mdir <- "C:/Users/JMac/Documents/Kelly/MIP/WUE_MIP/WUE_MIP/Data/ED2.v1.2016-05-03.tar/ED2.v1.2016-05-03/ED2.v1.2016-05-03/"
 
 #vector of variables
 vars <- c("CO2", "NPP", "Dens", "Fire", "PFT", "Fcomp", "GWBI", "tair")
-
+vars <- "NPP"
 # bounding box info:
 xmin <- -100
 xmax <- -70
@@ -26,7 +26,50 @@ ymax <- 50
 yrmin <- 850
 yrmax <- 2010
 
-source("extract_output_region.R")
+source("C:/Users/JMac/Documents/Kelly/MIP/WUE_MIP/WUE_MIP/extract_output_region.R")
 
-extract.paleon.site(model = mod, model.dir = mdir, vars = vars, xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+ED2.npp <- extract.paleon.site(model = mod, model.dir = mdir, vars = vars, xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.npp, file = "Data/ED_monthly_npp.RDS")
+
+ED2.gpp <- extract.paleon.site(model = mod, model.dir = mdir, vars = "GPP", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.gpp, file = "Data/ED_montly_gpp.RDS")
+
+ED2.transp <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Transp", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.transp, file = "Data/ED_montly_transp.RDS")
+
+ED2.evap <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Evap", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.evap, file = "Data/ED_montly_evap.RDS")
+
+ED2.dens <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Dens", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.dens, file = "Data/ED_montly_dens.RDS")
+
+ED2.gwbi <- extract.paleon.site(model = mod, model.dir = mdir, vars = "GWBI", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.gwbi, file = "Data/ED_montly_gwbi.RDS")
+
+ED2.pft <- extract.paleon.site(model = mod, model.dir = mdir, vars = "PFT", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.pft, file = "Data/ED_montly_pft.RDS")
+
+ED2.Fcomp <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Fcomp", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.Fcomp, file = "Data/ED_montly_Fcomp.RDS")
+
+ED2.Fire <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Fire", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.Fire, file = "Data/ED_montly_Fire.RDS")
+
+ED2.tair <- extract.paleon.site(model = mod, model.dir = mdir, vars = "tair", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.tair, file = "Data/ED_montly_tair.RDS")
+
+# the extractions are very slow. I Need to be able to work with the timeseries data
+
+plotlatlon <- function(Dens, lat,lon){
+  #Year <- yearno+850
+  dens1850 <- ED2.evap$Evap[1,1,]
+  #dens1850$evg <- rowSums
+  tab <- melt(dens1850)
   
+  colnames(tab) <- c( "year", "Dens")
+  tab <- merge(tab, pft, by = "pft")
+  # plot the density of each PFT for 1850
+  ggplot(tab, aes(x = year, y = Dens))+geom_point()+theme_bw()+ggtitle(paste0("Total Density ","lat = ", lat,"lon" =lon))+ 
+    facet_wrap(~names) + scale_color_manual(name = "PFT", values = )
+  #ggplot(tab, aes(x = lon, y = lat, fill = Dens))+geom_raster()+facet_wrap(~pft)
+}

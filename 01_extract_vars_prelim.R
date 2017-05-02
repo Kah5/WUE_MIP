@@ -58,6 +58,18 @@ saveRDS(ED2.Fire, file = "Data/ED_montly_Fire.RDS")
 ED2.tair <- extract.paleon.site(model = mod, model.dir = mdir, vars = "tair", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.tair, file = "Data/ED_montly_tair.RDS")
 
+ED2.LAI <- extract.paleon.site(model = mod, model.dir = mdir, vars = "LAI", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.LAI, file = "Data/ED_montly_LAI.RDS")
+
+ED2.Estab <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Estab", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.Estab, file = "Data/ED_montly_Estab.RDS")
+
+ED2.Mort <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Mort", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.Mort, file = "Data/ED_montly_Mort.RDS")
+
+ED2.CO2 <- extract.paleon.site(model = mod, model.dir = mdir, vars = "CO2", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.CO2, file = "Data/ED_montly_CO2.RDS")
+
 # the extractions are very slow. I Need to be able to work with the timeseries data
 
 plotlatlon <- function(Dens, lat,lon){

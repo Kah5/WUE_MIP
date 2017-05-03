@@ -90,7 +90,7 @@ evap <- extractnonna(datain = datain, x = ed.evap)
 # plot the seasonal cycle for each variable at each site
 plot.seasonal <- function(df){
   m <- melt(df, id.vars=c("Year", "Month", "mo"))
-  ggplot(data = m, aes(x = Month, y = value, color = variable))+geom_point()#+facet_grid(variable~.)
+  ggplot(data = m, aes(x = Month, y = value, color = variable))+geom_point()+facet_grid(variable~.)
 }
 
 X11(width = 12)

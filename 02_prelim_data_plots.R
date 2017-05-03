@@ -3,6 +3,7 @@ library(plyr)
 library(ggplot2)
 library(reshape2)
 library(tidyr)
+library(zoo)
 # read in model outputs that were extracted
 
 ED2.CO2 <- readRDS(file = "Data/ED_montly_CO2.RDS")
@@ -88,7 +89,7 @@ evap <- extractnonna(datain = datain, x = ed.evap)
 
 #------------------------------------------------ preliminary plots:--------------------------------------------
 
-# plot the seasonal cycle for each variable at each site
+# plot the seasonal cycle for each variable at each site and save in outputs/preliminaryplots
 plot.seasonal <- function(df, name){
   png(height = 12, width = 12, units= "in", res = 100, file = paste0("outputs/preliminaryplots/ED2_", name, "_seasonal_site.png"))
   m <- melt(df, id.vars=c("Year", "Month", "mo"))
@@ -105,7 +106,62 @@ plot.seasonal(fire, "Fire")
 plot.seasonal(lai, "LAI")
 plot.seasonal(evap, "Evap")
 
+# calculate the means for the years:
+
+plot.yrmean.ts <- function(df, name){
+  m <- melt(df, id.vars=c("Year", "Month", "mo"))
+  yrmeans<-dcast(m, Year ~ variable, mean)
+  m2 <- melt(yrmeans, id.vars= "Year")
+  m2$Year <- as.numeric(m2$Year)
+  png(height = 7, width = 18, units= "in", res = 100, file = paste0("outputs/preliminaryplots/ED2_", name, "_mean_timeseries_site.png"))
+  print(ggplot(data = m2, aes(x = Year, y = value, color = variable))+geom_line())
+  dev.off()
+}
+
+plot.yrmean.ts(GPP, "GPP")
+plot.yrmean.ts(GWBI, "GWBI")
+plot.yrmean.ts(tair, "Tair")
+plot.yrmean.ts(transp, "Transp")
+plot.yrmean.ts(fire, "Fire")
+plot.yrmean.ts(lai, "LAI")
+plot.yrmean.ts(evap, "Evap")
+plot.yrmean.ts(CO2, "CO2")
+
+# plot and calulate only summer JJA yearly values:
+
+plot.JJA.ts <- function(df, name){
+  m <- melt(df, id.vars=c("Year", "Month", "mo"))
+  yrmeans<-dcast(m[m$Month %in% c(6,7,8),], Year ~ variable, mean)
+  m2 <- melt(yrmeans, id.vars= "Year")
+  m2$Year <- as.numeric(m2$Year)
+  png(height = 7, width = 18, units= "in", res = 100, file = paste0("outputs/preliminaryplots/ED2_", name, "_JJA_mean_timeseries_site.png"))
+  print(ggplot(data = m2, aes(x = Year, y = value, color = variable))+geom_line())
+  dev.off()
+}
 
 
+plot.JJA.ts (GPP, "GPP")
+plot.JJA.ts (GWBI, "GWBI")
+plot.JJA.ts (tair, "Tair")
+plot.JJA.ts (transp, "Transp")
+plot.JJA.ts (fire, "Fire")
+plot.JJA.ts (lai, "LAI")
+plot.JJA.ts (evap, "Evap")
+plot.JJA.ts (CO2, "CO2")
+# plot moving averages in ggplot:
+#rollmean(, 50, fill=0)
 # work on finding the total annual gpp for each year 
 # also find the summer gpp and GWBI?
+
+
+
+# ---------------------------------------saving as CSV or RDS files for WUE calculations
+saveRDS(GPP, "Data/extracted/ED_monthly_GPP.RDS")
+#saveRDS(NPP, "Data/extracted/ED_monthly_NPP.RDS")
+saveRDS(CO2, "Data/extracted/ED_monthly_CO2.RDS")
+saveRDS(GWBI, "Data/extracted/ED_monthly_GWBI.RDS")
+saveRDS(tair, "Data/extracted/ED_monthly_tair.RDS")
+saveRDS(transp, "Data/extracted/ED_monthly_Transp.RDS")
+saveRDS(evap, "Data/extracted/ED_monthly_evap.RDS")
+saveRDS(lai, "Data/extracted/ED_monthly_lai.RDS")
+saveRDS(fire, "Data/extracted/ED_monthly_fire.RDS")

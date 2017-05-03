@@ -2,6 +2,7 @@ library(raster)
 library(plyr)
 library(ggplot2)
 library(reshape2)
+library(tidyr)
 # read in model outputs that were extracted
 
 ED2.CO2 <- readRDS(file = "Data/ED_montly_CO2.RDS")
@@ -10,16 +11,25 @@ ED2.gwbi <- readRDS(file = "Data/ED_montly_gwbi.RDS")
 ED2.tair <- readRDS(file = "Data/ED_montly_tair.RDS")
 ED2.transp <- readRDS(file = "Data/ED_montly_transp.RDS")
 ED2.Fire <- readRDS(file = "Data/ED_montly_Fire.RDS")
+ED2.LAI <- readRDS(file = "Data/ED_montly_LAI.RDS")
+#ED2.dens <- readRDS(file = "Data/ED_montly_dens.RDS") # dens, pft, etc is split by pft
+ED2.evap <- readRDS(file = "Data/ED_montly_evap.RDS")
 
-
+# this converts them into arrays, there is likely an easier way, but using array(unlist(L), dim = c(nrow(L[[1]]), ncol(L[[1]]), length(L))) takes too long
 ed.co2 <- ED2.CO2$CO2
 ed.gpp<- ED2.GPP$GPP
 ed.gwbi<- ED2.gwbi$GWBI
+ed.tair <- ED2.tair$tair
+ed.transp<- ED2.transp$Transp
+ed.fire<- ED2.Fire$Fire
+ed.LAI <- ED2.LAI$LAI
+ed.evap<- ED2.evap$Evap
+
 
 
 yr <- "850"
-dens1850 <- ed.co2[,,yr]
-tab <- melt(dens1850)
+co2850 <- ed.co2[,,yr]
+tab <- melt(co21850)
 
 #find the indices for lat lons where we have data:
 
@@ -27,14 +37,7 @@ colnames(tab) <- c("lat", "lon", "CO2")
 ggplot(tab, aes(x = lon, y = lat, fill = CO2))+geom_raster()+theme_bw()+coord_equal()
 
 
-
-
-lat <- "35.2"
-lon <- "-99.8"
-CO2 <- ed.co2[1,1,]
-tab <- melt(CO2)
-
-# create for lookup
+# create a dataframe with lat and lon values for lookup later
 lats <- data.frame(lat = as.numeric(dimnames(ed.co2)$lat),
                    latrow = 1:30)
 
@@ -45,8 +48,10 @@ datain <- tab[!is.na(tab$value),]
 
 datain<- merge(datain, lats, by = "lat")
 datain <- merge(datain, lons, by = "lon")
-datain$ID <- 1:40, 
+datain$ID <- 1:40 
 datain$site.name <- paste0("site", datain$ID)
+
+
 # function to extract data from grid cells that have data (there is likely a way to do this better):
 
 extractnonna <-function(datain, x){
@@ -58,15 +63,46 @@ extractnonna <-function(datain, x){
   }
   
   colnames(test) <- datain$site.name
+  
+  # get the years listed for ED monthly runs
+  timevec <- attributes(ed.co2)$dimnames$time
+  test$Yearmo <- timevec
+  test  <- separate(data = test, col = Yearmo, into = c("Year", "mo"), sep = "\\.") # separate the year and month
+  test[is.na(test$mo),]$mo <- 0
+  
+  # now convert the decimals into  months 1:12:
+  time.match <- data.frame(mo = unique(test$mo), Month = 1:12)
+  test <- merge(test, time.match, by = "mo")
   test
 }
 
-co2 <- extractnonna(datain = datain, x = ed.co2)
+CO2 <- extractnonna(datain = datain, x = ed.co2)
 GPP <- extractnonna(datain = datain, x = ed.gpp)
 GWBI <- extractnonna(datain = datain, x = ed.gwbi)
+tair <- extractnonna(datain = datain, x = ed.tair)
+transp <- extractnonna(datain = datain, x = ed.transp)
+fire <- extractnonna(datain = datain, x = ed.fire)
+lai <- extractnonna(datain = datain, x = ed.LAI)
+evap <- extractnonna(datain = datain, x = ed.evap)
 
-# get the years
-timevec <- ed.co2[,,]
+#------------------------------------------------ preliminary plots:--------------------------------------------
+
+# plot the seasonal cycle for each variable at each site
+plot.seasonal <- function(df){
+  m <- melt(df, id.vars=c("Year", "Month", "mo"))
+  ggplot(data = m, aes(x = Month, y = value, color = variable))+geom_point()#+facet_grid(variable~.)
+}
+
+X11(width = 12)
+plot.seasonal(GPP)
+plot.seasonal(GWBI)
+plot.seasonal(tair)
+plot.seasonal(transp)
+plot.seasonal(fire)
+plot.seasonal(lai)
+plot.seasonal(evap)
+
+
 
 # work on finding the total annual gpp for each year 
 # also find the summer gpp and GWBI?

@@ -104,10 +104,37 @@ require(mgcv)
 # there are a couple of "inf" values for some of the WUE. Remove them here:
 all.clean <- do.call(data.frame,lapply(all.y, function(x) replace(x, is.infinite(x),NA)))
 
-testlm <- bam(IWUE ~ s(Year, by = Site), data = all.clean)
-par(mfrow=c(1,2), cex=1.1)
-# random intercepts:
-plot(testlm, select=3)
-# random slopes:
-plot(testlm, select=4)
+testlm <- bam(WUEi ~ s(precip) + s(Tair) +s(CO2), data = all.clean)
+
+summary(testlm) # 31.3% of variance
+
 plot(testlm, select=1)
+plot(testlm, select=2)
+plot(testlm, select=3)
+
+
+gwbi.mod <- bam(GWBI ~ s(precip) + s(Tair) + s(CO2) + s(WUEi), data = all.clean)
+
+summary(gwbi.mod) # 31.3% of variance
+
+plot(gwbi.mod, select=1)
+plot(gwbi.mod, select=2)
+plot(gwbi.mod, select=3)
+plot(gwbi.mod, select=4)
+
+# check out gavin simpsons blog to generate ci for gams and modeling through time:
+#http://www.fromthebottomoftheheap.net/2011/06/12/additive-modelling-and-the-hadcrut3v-global-mean-temperature-series/
+
+lai.mod <- bam(LAI ~ s(WUEi), data = all.clean)
+summary(lai.mod)
+plot(lai.mod)
+
+#-----------------------------------------------
+# We want to model:
+# 1. WUE ~ temp, precip, CO2
+# 2. GWBI ~ temp, precip, WUE (and co2)
+# 3. Density ~ temp, precip, wUE (with PFT effect)
+# 4. fcomp ~ temp, precip, wue (with pft effects)
+
+# but we also want to know how the effects of temp, precip, etc changes over time?
+# potentially use some of the tools idenified on the "from the bottom of the heap" blog

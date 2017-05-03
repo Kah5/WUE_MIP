@@ -6,7 +6,7 @@ library(tidyr)
 library(zoo)
 # read in model outputs that were extracted
 
-ED2.CO2 <- readRDS(file = "Data/ED_montly_CO2.RDS")
+ED2.CO2 <- readRDS(file = paste0(getwd(),"/Data/ED_montly_CO2.RDS"))
 ED2.GPP <- readRDS(file = "Data/ED_montly_gpp.RDS")
 ED2.gwbi <- readRDS(file = "Data/ED_montly_gwbi.RDS")
 ED2.tair <- readRDS(file = "Data/ED_montly_tair.RDS")
@@ -27,7 +27,8 @@ ed.fire<- ED2.Fire$Fire
 ed.LAI <- ED2.LAI$LAI
 ed.evap<- ED2.evap$Evap
 ed.qair <- ED2.qair$qair
-
+ed.precip <- ED2.precip$precipf
+#ed.soilmoist <- ED2.soilmoist$SoilMoist
 
 yr <- "850"
 co2850 <- ed.co2[,,yr]
@@ -89,7 +90,8 @@ transp <- extractnonna(datain = datain, x = ed.transp)
 fire <- extractnonna(datain = datain, x = ed.fire)
 lai <- extractnonna(datain = datain, x = ed.LAI)
 evap <- extractnonna(datain = datain, x = ed.evap)
-
+precip <- extractnonna(datain = datain, x = ed.precip)
+#soilmoist <- extractnonna(datain = datain, x = ed.soilmoist)
 #------------------------------------------------ preliminary plots:--------------------------------------------
 
 # plot the seasonal cycle for each variable at each site and save in outputs/preliminaryplots
@@ -109,6 +111,8 @@ plot.seasonal(fire, "Fire")
 plot.seasonal(lai, "LAI")
 plot.seasonal(evap, "Evap")
 plot.seasonal(qair, "Qair")
+#plot.seasonal(soilmoist, "SoilMoist")
+plot.seasonal(precip, "Precipf")
 # calculate the means for the years:
 
 plot.yrmean.ts <- function(df, name){
@@ -130,6 +134,8 @@ plot.yrmean.ts(fire, "Fire")
 plot.yrmean.ts(lai, "LAI")
 plot.yrmean.ts(evap, "Evap")
 plot.yrmean.ts(CO2, "CO2")
+plot.yrmean.ts(precip, "Precip")
+#plot.yrmean.ts(soilmoist, "SoilMoist")
 
 # plot and calulate only summer JJA yearly values:
 
@@ -153,6 +159,8 @@ plot.JJA.ts (fire, "Fire")
 plot.JJA.ts (lai, "LAI")
 plot.JJA.ts (evap, "Evap")
 plot.JJA.ts (CO2, "CO2")
+plot.JJA.ts(precip, "Precip")
+#plot.JJA.ts(soilmoist, "SoilMoist")
 # plot moving averages in ggplot:
 #rollmean(, 50, fill=0)
 # work on finding the total annual gpp for each year 
@@ -167,6 +175,9 @@ saveRDS(CO2, "Data/extracted/ED_monthly_CO2.RDS")
 saveRDS(GWBI, "Data/extracted/ED_monthly_GWBI.RDS")
 saveRDS(tair, "Data/extracted/ED_monthly_tair.RDS")
 saveRDS(qair, paste0(getwd(),"/Data/extracted/ED_monthly_qair.RDS"))
+saveRDS(precip, paste0(getwd(),"/Data/extracted/ED_monthly_precip.RDS"))
+#saveRDS(soilmoist, paste0(getwd(),"/Data/extracted/ED_monthly_soilmoist.RDS"))
+
 saveRDS(transp, "Data/extracted/ED_monthly_Transp.RDS")
 saveRDS(evap, "Data/extracted/ED_monthly_evap.RDS")
 saveRDS(lai, "Data/extracted/ED_monthly_lai.RDS")

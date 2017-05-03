@@ -17,7 +17,7 @@ mdir <- "C:/Users/JMac/Documents/Kelly/MIP/WUE_MIP/WUE_MIP/Data/ED2.v1.2016-05-0
 
 #vector of variables
 vars <- c("CO2", "NPP", "Dens", "Fire", "PFT", "Fcomp", "GWBI", "tair")
-vars <- "NPP"
+vars <- "Fcomp"
 # bounding box info:
 xmin <- -100
 xmax <- -70
@@ -26,7 +26,7 @@ ymax <- 50
 yrmin <- 850
 yrmax <- 2010
 
-source("C:/Users/JMac/Documents/Kelly/MIP/WUE_MIP/WUE_MIP/extract_output_region.R")
+source('D:/Kelly/WUE_MIP/R/extract_output_region.R') # for external harddrive
 
 ED2.npp <- extract.paleon.site(model = mod, model.dir = mdir, vars = vars, xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.npp, file = "Data/ED_monthly_npp.RDS")
@@ -57,6 +57,10 @@ saveRDS(ED2.Fire, file = "Data/ED_montly_Fire.RDS")
 
 ED2.tair <- extract.paleon.site(model = mod, model.dir = mdir, vars = "tair", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.tair, file = "Data/ED_montly_tair.RDS")
+
+ED2.qair <- extract.paleon.site(model = mod, model.dir = mdir, vars = "qair", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.qair, file = "Data/ED_montly_qair.RDS")
+
 
 ED2.LAI <- extract.paleon.site(model = mod, model.dir = mdir, vars = "LAI", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.LAI, file = "Data/ED_montly_LAI.RDS")

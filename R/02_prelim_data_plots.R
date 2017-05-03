@@ -10,6 +10,7 @@ ED2.CO2 <- readRDS(file = "Data/ED_montly_CO2.RDS")
 ED2.GPP <- readRDS(file = "Data/ED_montly_gpp.RDS")
 ED2.gwbi <- readRDS(file = "Data/ED_montly_gwbi.RDS")
 ED2.tair <- readRDS(file = "Data/ED_montly_tair.RDS")
+ED2.qair <- readRDS(file = "Data/ED_montly_qair.RDS")
 ED2.transp <- readRDS(file = "Data/ED_montly_transp.RDS")
 ED2.Fire <- readRDS(file = "Data/ED_montly_Fire.RDS")
 ED2.LAI <- readRDS(file = "Data/ED_montly_LAI.RDS")
@@ -25,7 +26,7 @@ ed.transp<- ED2.transp$Transp
 ed.fire<- ED2.Fire$Fire
 ed.LAI <- ED2.LAI$LAI
 ed.evap<- ED2.evap$Evap
-
+ed.qair <- ED2.qair$qair
 
 
 yr <- "850"
@@ -78,10 +79,12 @@ extractnonna <-function(datain, x){
   test
 }
 
+
 CO2 <- extractnonna(datain = datain, x = ed.co2)
 GPP <- extractnonna(datain = datain, x = ed.gpp)
 GWBI <- extractnonna(datain = datain, x = ed.gwbi)
 tair <- extractnonna(datain = datain, x = ed.tair)
+qair <- extractnonna(datain = datain, x = ed.qair)
 transp <- extractnonna(datain = datain, x = ed.transp)
 fire <- extractnonna(datain = datain, x = ed.fire)
 lai <- extractnonna(datain = datain, x = ed.LAI)
@@ -91,7 +94,7 @@ evap <- extractnonna(datain = datain, x = ed.evap)
 
 # plot the seasonal cycle for each variable at each site and save in outputs/preliminaryplots
 plot.seasonal <- function(df, name){
-  png(height = 12, width = 12, units= "in", res = 100, file = paste0("outputs/preliminaryplots/ED2_", name, "_seasonal_site.png"))
+  png(height = 12, width = 12, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/ED2_", name, "_seasonal_site.png"))
   m <- melt(df, id.vars=c("Year", "Month", "mo"))
   print(ggplot(data = m, aes(x = Month, y = value))+geom_point()+facet_wrap(~variable,  ncol = 5))
   dev.off()
@@ -105,7 +108,7 @@ plot.seasonal(transp, "Transp")
 plot.seasonal(fire, "Fire")
 plot.seasonal(lai, "LAI")
 plot.seasonal(evap, "Evap")
-
+plot.seasonal(qair, "Qair")
 # calculate the means for the years:
 
 plot.yrmean.ts <- function(df, name){
@@ -113,7 +116,7 @@ plot.yrmean.ts <- function(df, name){
   yrmeans<-dcast(m, Year ~ variable, mean)
   m2 <- melt(yrmeans, id.vars= "Year")
   m2$Year <- as.numeric(m2$Year)
-  png(height = 7, width = 18, units= "in", res = 100, file = paste0("outputs/preliminaryplots/ED2_", name, "_mean_timeseries_site.png"))
+  png(height = 7, width = 18, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/ED2_", name, "_mean_timeseries_site.png"))
   print(ggplot(data = m2, aes(x = Year, y = value, color = variable))+geom_line())
   dev.off()
 }
@@ -121,6 +124,7 @@ plot.yrmean.ts <- function(df, name){
 plot.yrmean.ts(GPP, "GPP")
 plot.yrmean.ts(GWBI, "GWBI")
 plot.yrmean.ts(tair, "Tair")
+plot.yrmean.ts(qair, "Qair")
 plot.yrmean.ts(transp, "Transp")
 plot.yrmean.ts(fire, "Fire")
 plot.yrmean.ts(lai, "LAI")
@@ -134,7 +138,7 @@ plot.JJA.ts <- function(df, name){
   yrmeans<-dcast(m[m$Month %in% c(6,7,8),], Year ~ variable, mean)
   m2 <- melt(yrmeans, id.vars= "Year")
   m2$Year <- as.numeric(m2$Year)
-  png(height = 7, width = 18, units= "in", res = 100, file = paste0("outputs/preliminaryplots/ED2_", name, "_JJA_mean_timeseries_site.png"))
+  png(height = 7, width = 18, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/ED2_", name, "_JJA_mean_timeseries_site.png"))
   print(ggplot(data = m2, aes(x = Year, y = value, color = variable))+geom_line())
   dev.off()
 }
@@ -143,6 +147,7 @@ plot.JJA.ts <- function(df, name){
 plot.JJA.ts (GPP, "GPP")
 plot.JJA.ts (GWBI, "GWBI")
 plot.JJA.ts (tair, "Tair")
+plot.JJA.ts (qair, "Qair")
 plot.JJA.ts (transp, "Transp")
 plot.JJA.ts (fire, "Fire")
 plot.JJA.ts (lai, "LAI")
@@ -161,6 +166,7 @@ saveRDS(GPP, "Data/extracted/ED_monthly_GPP.RDS")
 saveRDS(CO2, "Data/extracted/ED_monthly_CO2.RDS")
 saveRDS(GWBI, "Data/extracted/ED_monthly_GWBI.RDS")
 saveRDS(tair, "Data/extracted/ED_monthly_tair.RDS")
+saveRDS(qair, "Data/extracted/ED_monthly_aair.RDS")
 saveRDS(transp, "Data/extracted/ED_monthly_Transp.RDS")
 saveRDS(evap, "Data/extracted/ED_monthly_evap.RDS")
 saveRDS(lai, "Data/extracted/ED_monthly_lai.RDS")

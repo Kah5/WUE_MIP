@@ -108,6 +108,7 @@ plot.yrmean.ts(IWUE, "IWUE")
 plot.yrmean.ts(WUEi, "WUEi")
 plot.yrmean.ts(WUEt, "WUEt")
 
+# plot seasonal cycles
 plot.seasonal <- function(df, name){
   png(height = 12, width = 12, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/ED2_", name, "_seasonal_site.png"))
   m <- melt(df, id.vars=c("Year", "Month", "mo"))
@@ -120,7 +121,7 @@ plot.seasonal(IWUE, "IWUE")
 plot.seasonal(WUEi, "WUEi")
 plot.seasonal(WUEt, "IWUEt")
 
-
+# plot june july auguest means
 plot.JJA.ts <- function(df, name){
   m <- melt(df, id.vars=c("Year", "Month", "mo"))
   yrmeans<-dcast(m[m$Month %in% c(6,7,8),], Year ~ variable, mean)
@@ -135,3 +136,8 @@ plot.JJA.ts <- function(df, name){
 plot.JJA.ts (IWUE, "IWUE")
 plot.JJA.ts (WUEi, "WUEi")
 plot.JJA.ts (WUEt, "WUEt")
+
+# save the WUE values as RDS files
+saveRDS(IWUE, paste0(getwd(),"/Data/extracted/ED_monthly_IWUE.RDS"))
+saveRDS(WUEi, paste0(getwd(),"/Data/extracted/ED_monthly_WUEi.RDS"))
+saveRDS(WUEt, paste0(getwd(),"/Data/extracted/ED_monthly_WUEt.RDS"))

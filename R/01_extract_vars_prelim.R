@@ -61,6 +61,11 @@ saveRDS(ED2.tair, file = "Data/ED_montly_tair.RDS")
 ED2.qair <- extract.paleon.site(model = mod, model.dir = mdir, vars = "qair", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.qair, file = "Data/ED_montly_qair.RDS")
 
+ED2.precip <- extract.paleon.site(model = mod, model.dir = mdir, vars = "precipf", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.precip, file = paste0(getwd(),"/Data/ED_montly_precip.RDS"))
+
+ED2.soilmoist <- extract.paleon.site(model = mod, model.dir = mdir, vars = "SoilMoist", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.soilmoist, file =paste0(getwd(),"/Data/ED_montly_soilmoist.RDS"))
 
 ED2.LAI <- extract.paleon.site(model = mod, model.dir = mdir, vars = "LAI", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.LAI, file = "Data/ED_montly_LAI.RDS")

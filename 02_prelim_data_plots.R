@@ -29,12 +29,12 @@ ed.evap<- ED2.evap$Evap
 
 yr <- "850"
 co2850 <- ed.co2[,,yr]
-tab <- melt(co21850)
+tab <- melt(co2850)
 
 #find the indices for lat lons where we have data:
 
-colnames(tab) <- c("lat", "lon", "CO2")
-ggplot(tab, aes(x = lon, y = lat, fill = CO2))+geom_raster()+theme_bw()+coord_equal()
+#colnames(tab) <- c("lat", "lon", "CO2")
+ggplot(tab, aes(x = lon, y = lat, fill = value))+geom_raster()+theme_bw()+coord_equal()
 
 
 # create a dataframe with lat and lon values for lookup later
@@ -44,6 +44,7 @@ lats <- data.frame(lat = as.numeric(dimnames(ed.co2)$lat),
 lons <- data.frame(lon = as.numeric(dimnames(ed.co2)$lon),
                    lonrow = 1:80)
 
+# only get the grid cells that the model has been run at
 datain <- tab[!is.na(tab$value),]
 
 datain<- merge(datain, lats, by = "lat")
@@ -88,19 +89,21 @@ evap <- extractnonna(datain = datain, x = ed.evap)
 #------------------------------------------------ preliminary plots:--------------------------------------------
 
 # plot the seasonal cycle for each variable at each site
-plot.seasonal <- function(df){
+plot.seasonal <- function(df, name){
+  png(height = 12, width = 12, units= "in", res = 100, file = paste0("outputs/preliminaryplots/ED2_", name, "_seasonal_site.png"))
   m <- melt(df, id.vars=c("Year", "Month", "mo"))
-  ggplot(data = m, aes(x = Month, y = value, color = variable))+geom_point()+facet_grid(variable~.)
+  print(ggplot(data = m, aes(x = Month, y = value))+geom_point()+facet_wrap(~variable,  ncol = 5))
+  dev.off()
 }
 
-X11(width = 12)
-plot.seasonal(GPP)
-plot.seasonal(GWBI)
-plot.seasonal(tair)
-plot.seasonal(transp)
-plot.seasonal(fire)
-plot.seasonal(lai)
-plot.seasonal(evap)
+
+plot.seasonal(GPP, "GPP")
+plot.seasonal(GWBI, "GWBI")
+plot.seasonal(tair, "Tair")
+plot.seasonal(transp, "Transp")
+plot.seasonal(fire, "Fire")
+plot.seasonal(lai, "LAI")
+plot.seasonal(evap, "Evap")
 
 
 

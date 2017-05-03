@@ -104,4 +104,10 @@ require(mgcv)
 # there are a couple of "inf" values for some of the WUE. Remove them here:
 all.clean <- do.call(data.frame,lapply(all.y, function(x) replace(x, is.infinite(x),NA)))
 
-testlm <- lm(IWUE ~ precip, data = all.clean)
+testlm <- bam(IWUE ~ s(Year, by = Site), data = all.clean)
+par(mfrow=c(1,2), cex=1.1)
+# random intercepts:
+plot(testlm, select=3)
+# random slopes:
+plot(testlm, select=4)
+plot(testlm, select=1)

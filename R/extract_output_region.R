@@ -262,7 +262,9 @@ extract.paleon.site <- function(model, model.dir, vars, xmin=-100, xmax=-60, ymi
         if(pft==FALSE){
           dat.all <- aperm(dat.all, c(dim.lat, dim.lon, dim.time)) 
         } else {
-          dat.all <- aperm(dat.all, c(dim.lat, dim.lon, dim.time, dim.pft)) 
+          #kh changed this because aperm was failing--not enough memory to allocate
+          #dat.all <- aperm(dat.all, c(dim.lat, dim.lon, dim.time, dim.pft)) 
+          dat.all <- dat.all
         } # end data rearranging
         
         # Figure out which times we want

@@ -13,11 +13,11 @@
 #
 # Note: This will by default return the entire time series at the raw time step provided by each model
 mod <- "ED2"
-mdir <- "C:/Users/JMac/Documents/Kelly/MIP/WUE_MIP/WUE_MIP/Data/ED2.v1.2016-05-03.tar/ED2.v1.2016-05-03/ED2.v1.2016-05-03/"
-
+#mdir <- "C:/Users/JMac/Documents/Kelly/MIP/WUE_MIP/WUE_MIP/Data/ED2.v1.2016-05-03.tar/ED2.v1.2016-05-03/ED2.v1.2016-05-03/"
+mdir <- paste0(getwd(), "/Data/ED2.v1.2016-05-03.tar/ED2.v1.2016-05-03/ED2.v1.2016-05-03/")
 #vector of variables
 vars <- c("CO2", "NPP", "Dens", "Fire", "PFT", "Fcomp", "GWBI", "tair")
-vars <- "Fcomp"
+vars <- "Dens"
 # bounding box info:
 xmin <- -100
 xmax <- -70
@@ -26,7 +26,8 @@ ymax <- 50
 yrmin <- 850
 yrmax <- 2010
 
-source('D:/Kelly/WUE_MIP/R/extract_output_region.R') # for external harddrive
+source(paste0(getwd(),'/R/extract_output_region.R')) # for external harddrive
+#source('D:/Kelly/WUE_MIP/R/extract_output_region_pft.R') # for external harddrive
 
 ED2.npp <- extract.paleon.site(model = mod, model.dir = mdir, vars = vars, xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.npp, file = "Data/ED_monthly_npp.RDS")
@@ -40,8 +41,12 @@ saveRDS(ED2.transp, file = "Data/ED_montly_transp.RDS")
 ED2.evap <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Evap", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.evap, file = "Data/ED_montly_evap.RDS")
 
-ED2.dens <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Dens", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
-saveRDS(ED2.dens, file = "Data/ED_montly_dens.RDS")
+# split up because we dont have enough memory to extract the whole spatial extent
+# look at western density
+ED2.denswest <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Dens", xmin=-100, xmax=-90, ymin=35, ymax=48, yrmin=850, yrmax=2010)
+saveRDS(ED2.denswest, file = "Data/ED_montly_dens.RDS")
+
+
 
 ED2.gwbi <- extract.paleon.site(model = mod, model.dir = mdir, vars = "GWBI", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.gwbi, file = "Data/ED_montly_gwbi.RDS")
@@ -49,6 +54,7 @@ saveRDS(ED2.gwbi, file = "Data/ED_montly_gwbi.RDS")
 ED2.pft <- extract.paleon.site(model = mod, model.dir = mdir, vars = "PFT", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.pft, file = "Data/ED_montly_pft.RDS")
 
+ED2.Fcomp <- mod.out
 ED2.Fcomp <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Fcomp", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.Fcomp, file = "Data/ED_montly_Fcomp.RDS")
 

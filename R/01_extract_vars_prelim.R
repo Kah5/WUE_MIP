@@ -41,10 +41,7 @@ saveRDS(ED2.transp, file = "Data/ED_montly_transp.RDS")
 ED2.evap <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Evap", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.evap, file = "Data/ED_montly_evap.RDS")
 
-# split up because we dont have enough memory to extract the whole spatial extent
-# look at western density
-ED2.denswest <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Dens", xmin=-100, xmax=-90, ymin=35, ymax=48, yrmin=850, yrmax=2010)
-saveRDS(ED2.denswest, file = "Data/ED_montly_dens.RDS")
+
 
 
 
@@ -85,7 +82,30 @@ saveRDS(ED2.Mort, file = "Data/ED_montly_Mort.RDS")
 ED2.CO2 <- extract.paleon.site(model = mod, model.dir = mdir, vars = "CO2", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.CO2, file = "Data/ED_montly_CO2.RDS")
 
-# the extractions are very slow. I Need to be able to work with the timeseries data
+
+# extractions for the PFT specific runs need to be split up:
+
+# split up because we dont have enough memory to extract the whole spatial extent
+# look at western density
+maxes <- c(-90,-80,-70, -60)
+mins <- c(-100, -90, -80, -70)
+
+for (i in 1:1){
+ED2.denswest <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Dens", xmin=mins[i], xmax=maxes[i], ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.denswest, file = paste0("Data/ED_montly_dens_",mins[i],"_",maxes[i],".RDS"))
+}
+ED2.denswest <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Dens", xmin=-100, xmax=-90, ymin=30, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.denswest, file = "Data/ED_montly_dens_west.RDS")
+
+
+
+
+
+
+
+
+
+#the extractions are very slow. I Need to be able to work with the timeseries data
 
 plotlatlon <- function(Dens, lat,lon){
   #Year <- yearno+850

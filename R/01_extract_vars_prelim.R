@@ -42,18 +42,19 @@ ED2.evap <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Evap", xm
 saveRDS(ED2.evap, file = "Data/ED_montly_evap.RDS")
 
 
+ED2.bai <- extract.paleon.site(model = mod, model.dir = mdir, vars = "BAI", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+saveRDS(ED2.bai, file = "Data/ED_monthly_BAI.RDS")
 
 
-
-ED2.gwbi <- extract.paleon.site(model = mod, model.dir = mdir, vars = "GWBI", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+fdsfED2.gwbi <- extract.paleon.site(model = mod, model.dir = mdir, vars = "GWBI", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.gwbi, file = "Data/ED_montly_gwbi.RDS")
 
-ED2.pft <- extract.paleon.site(model = mod, model.dir = mdir, vars = "PFT", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
-saveRDS(ED2.pft, file = "Data/ED_montly_pft.RDS")
+#ED2.pft <- extract.paleon.site(model = mod, model.dir = mdir, vars = "PFT", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+#saveRDS(ED2.pft, file = "Data/ED_montly_pft.RDS")
 
-ED2.Fcomp <- mod.out
-ED2.Fcomp <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Fcomp", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
-saveRDS(ED2.Fcomp, file = "Data/ED_montly_Fcomp.RDS")
+#ED2.Fcomp <- mod.out
+#ED2.Fcomp <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Fcomp", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+#saveRDS(ED2.Fcomp, file = "Data/ED_montly_Fcomp.RDS")
 
 ED2.Fire <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Fire", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.Fire, file = "Data/ED_montly_Fire.RDS")
@@ -73,37 +74,26 @@ saveRDS(ED2.soilmoist, file =paste0(getwd(),"/Data/ED_montly_soilmoist.RDS"))
 ED2.LAI <- extract.paleon.site(model = mod, model.dir = mdir, vars = "LAI", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.LAI, file = "Data/ED_montly_LAI.RDS")
 
-ED2.Estab <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Estab", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
-saveRDS(ED2.Estab, file = "Data/ED_montly_Estab.RDS")
 
-ED2.Mort <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Mort", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
-saveRDS(ED2.Mort, file = "Data/ED_montly_Mort.RDS")
 
 ED2.CO2 <- extract.paleon.site(model = mod, model.dir = mdir, vars = "CO2", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.CO2, file = "Data/ED_montly_CO2.RDS")
 
 
-# extractions for the PFT specific runs need to be split up:
+# extractions for the PFT specific runs need to be done on only the grid cells where the model has been run
+source(paste0(getwd(),"/R/extract_output_pft.R"))
 
-# split up because we dont have enough memory to extract the whole spatial extent
-# look at western density
-maxes <- c(-90,-80,-70, -60)
-mins <- c(-100, -90, -80, -70)
+Ed.Fcomp <- extract.ED.nona(model = mod, model.dir = mdir, var = "Fcomp")
+saveRDS(Ed.Fcomp, paste0(getwd(), "/Data/ED_monthly_Fcomp_nona.RDS"))
 
-for (i in 1:1){
-ED2.denswest <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Dens", xmin=mins[i], xmax=maxes[i], ymin=35, ymax=50, yrmin=850, yrmax=2010)
-saveRDS(ED2.denswest, file = paste0("Data/ED_montly_dens_",mins[i],"_",maxes[i],".RDS"))
-}
-ED2.denswest <- extract.paleon.site(model = mod, model.dir = mdir, vars = "Dens", xmin=-100, xmax=-90, ymin=30, ymax=50, yrmin=850, yrmax=2010)
-saveRDS(ED2.denswest, file = "Data/ED_montly_dens_west.RDS")
+Ed.Dens <- extract.ED.nona(model = mod, model.dir = mdir, var = "Dens")
+saveRDS(Ed.Dens, paste0(getwd(), "/Data/ED_monthly_Dens_nona.RDS"))
 
+Ed.BA <- extract.ED.nona(model = mod, model.dir = mdir, var = "BA")
+saveRDS(Ed.BA, paste0(getwd(), "/Data/ED_monthly_BA_nona.RDS"))
 
-
-
-
-
-
-
+Ed.Mort <- extract.ED.nona(model = mod, model.dir = mdir, var = "Mort")
+saveRDS(Ed.Mort, paste0(getwd(), "/Data/ED_monthly_Mort_nona.RDS"))
 
 #the extractions are very slow. I Need to be able to work with the timeseries data
 

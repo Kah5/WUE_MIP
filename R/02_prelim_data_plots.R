@@ -14,22 +14,35 @@ ED2.qair <- readRDS(file = "Data/ED_montly_qair.RDS")
 ED2.transp <- readRDS(file = "Data/ED_montly_transp.RDS")
 ED2.Fire <- readRDS(file = "Data/ED_montly_Fire.RDS")
 ED2.LAI <- readRDS(file = "Data/ED_montly_LAI.RDS")
-#ED2.dens <- readRDS(file = "Data/ED_montly_dens.RDS") # dens, pft, etc is split by pft
 ED2.evap <- readRDS(file = "Data/ED_montly_evap.RDS")
+ED2.npp <- readRDS(file = "Data/ED_monthly_npp.RDS")
+ED2.bai <- readRDS(file = "Data/ED_monthly_BAI.RDS")
+ED2.precipf <- readRDS(file = "Data/ED_montly_precip.RDS")
+
+# laod pft specific variables:
+ED2.BA <- readRDS(file = "Data/ED_monthly_BA_nona.RDS")
+ED2.dens <- readRDS(file = "Data/ED_monthly_Dens_nona.RDS")
+ED2.Fcomp <- readRDS(file = "Data/ED_monthly_Fcomp_nona.RDS")
 
 # this converts them into arrays, there is likely an easier way, but using array(unlist(L), dim = c(nrow(L[[1]]), ncol(L[[1]]), length(L))) takes too long
 ed.co2 <- ED2.CO2$CO2
-ed.gpp<- ED2.GPP$GPP
-ed.gwbi<- ED2.gwbi$GWBI
+ed.gpp <- ED2.GPP$GPP
+ed.gwbi <- ED2.gwbi$GWBI
 ed.tair <- ED2.tair$tair
-ed.transp<- ED2.transp$Transp
-ed.fire<- ED2.Fire$Fire
+ed.transp <- ED2.transp$Transp
+ed.fire <- ED2.Fire$Fire
 ed.LAI <- ED2.LAI$LAI
-ed.evap<- ED2.evap$Evap
+ed.evap <- ED2.evap$Evap
 ed.qair <- ED2.qair$qair
-ed.precip <- ED2.precip$precipf
-#ed.soilmoist <- ED2.soilmoist$SoilMoist
+ed.precip <- ED2.precipf$precipf
+ed.bai <- ED2.bai$BAI
 
+
+ed.Fcomp <- ED2.Fcomp$Fcomp
+ed.Dens <- ED2.dens$Dens
+#ed.BA <- ED2.BA$BA
+
+# ----------------get lats and long dimensions----------------------
 yr <- "850"
 co2850 <- ed.co2[,,yr]
 tab <- melt(co2850)
@@ -106,7 +119,9 @@ fire <- extractnonna(datain = datain, x = ed.fire)
 lai <- extractnonna(datain = datain, x = ed.LAI)
 evap <- extractnonna(datain = datain, x = ed.evap)
 precip <- extractnonna(datain = datain, x = ed.precip)
+bai <- extractnona(datain = datain, x = ed.bai)
 #soilmoist <- extractnonna(datain = datain, x = ed.soilmoist)
+
 #------------------------------------------------ preliminary plots:--------------------------------------------
 
 # plot the seasonal cycle for each variable at each site and save in outputs/preliminaryplots
@@ -183,7 +198,7 @@ plot.JJA.ts(precip, "Precip")
 
 
 
-# ---------------------------------------saving as CSV or RDS files for WUE calculations
+# ---------------------saving as CSV or RDS files for WUE calculations-----------------
 saveRDS(GPP, "Data/extracted/ED_monthly_GPP.RDS")
 #saveRDS(NPP, "Data/extracted/ED_monthly_NPP.RDS")
 saveRDS(CO2, "Data/extracted/ED_monthly_CO2.RDS")

@@ -8,10 +8,59 @@ IWUE <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_IWUE.RDS"))
 WUEi <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_WUEi.RDS"))
 WUEt <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_WUEt.RDS"))
 CO2 <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_CO2.RDS"))
-precip<- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_precip.RDS"))
-tair<- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_tair.RDS"))
-gwbi<- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_GWBI.RDS"))
-lai<- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_lai.RDS"))
+precip <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_precip.RDS"))
+tair <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_tair.RDS"))
+gwbi <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_GWBI.RDS"))
+lai <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_lai.RDS"))
+
+# load the pft specific data:
+dens <- readRDS("Data/ED_monthly_Dens_nona.RDS")
+Fcomp <- readRDS("Data/ED_monthly_Fcomp_nona.RDS")
+
+#convert list to array
+Fcomp <- Fcomp$Fcomp
+dens <- dens$Dens
+
+# plot pfts that occurred in ED runs:
+pft.list <- dimnames(Fcomp)$pft
+
+pdf("test.fcomp.pdf")
+for(i in 1:length(pft.list)){
+plot(as.numeric(dimnames(Fcomp)$time), Fcomp[1,1,,pft.list[i]], main = pft.list[i]) # c3 temp grass 
+}
+dev.off()
+linecolor <- c('Earlypine' = "red", 'lateconifer'="orange", 'earlydeciduous'="blue",
+               'middeciduous' ="grey", 'latedeciduous'='forestgreen')
+
+datain <- read.csv( paste0(getwd(), "/Data/ED_site_list_lat_lon.csv") )
+
+
+#---------------------- make a plot of fcomp at each site-------------------
+
+ggplot()+ geom_line(aes(x = as.numeric(dimnames(Fcomp)$time), y = Fcomp[datain[i,"latrow"],datain[i,"lonrow"],,pft.list[6]],colour = "Earlypine" ))+theme_bw()+
+  geom_line(aes(x = as.numeric(dimnames(Fcomp)$time), y = Fcomp[datain[i,"latrow"],datain[i,"lonrow"],,pft.list[8]], colour = "lateconifer"))+
+  geom_line(aes(x = as.numeric(dimnames(Fcomp)$time), y = Fcomp[datain[i,"latrow"],datain[i,"lonrow"],,pft.list[9]], colour = "earlydeciduous"))+
+  geom_line(aes(x = as.numeric(dimnames(Fcomp)$time), y =Fcomp[datain[i,"latrow"],datain[i,"lonrow"],,pft.list[10]], colour = "middeciduous"))+
+  geom_line(aes(x = as.numeric(dimnames(Fcomp)$time), y = Fcomp[datain[i,"latrow"],datain[i,"lonrow"],,pft.list[11]], colour = "latedeciduous")) + ylab("Fcomp") + xlab("time")+ggtitle("title")+
+  scale_colour_manual("PFTs",
+                      values= c('Earlypine' = "red", 'lateconifer'="orange", 'earlydeciduous'="blue",
+                                'middeciduous' ="grey", 'latedeciduous'='forestgreen'))
+
+  }
+# note this only works for point lat= 33.25 lon = -99.75
+#------------------ plot density of each pft at each site--------------------------
+
+ggplot()+ geom_line(aes(x = as.numeric(dimnames(dens)$time), y = dens[1,1,,pft.list[6]],colour = "Earlypine" ))+theme_bw()+
+  geom_line(aes(x = as.numeric(dimnames(dens)$time), y = dens[1,1,,pft.list[8]], colour = "lateconifer"))+
+  geom_line(aes(x = as.numeric(dimnames(dens)$time), y = dens[1,1,,pft.list[9]], colour = "earlydeciduous"))+
+  geom_line(aes(x = as.numeric(dimnames(dens)$time), y = dens[1,1,,pft.list[10]], colour = "middeciduous"))+
+  geom_line(aes(x = as.numeric(dimnames(dens)$time), y = dens[1,1,,pft.list[11]], colour = "latedeciduous")) + ylab("Density (1/ha)") + xlab("time")+ggtitle("title")+
+  scale_colour_manual("PFTs",
+                      values= c('Earlypine' = "red", 'lateconifer'="orange", 'earlydeciduous'="blue",
+                                'middeciduous' ="grey", 'latedeciduous'='forestgreen'))
+
+
+# note: density values seem very high--are these values really stems per hectare?
 
 # preliminary crappy plots
 plot( CO2[,2], IWUE[,2] )

@@ -17,18 +17,48 @@ lai <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_lai.RDS"))
 dens <- readRDS("Data/ED_monthly_Dens_nona.RDS")
 Fcomp <- readRDS("Data/ED_monthly_Fcomp_nona.RDS")
 
+
+
+# try unlist ot convert Fcomp to a df
+#df <- data.frame(matrix(unlist(Fcomp), nrow=13932, byrow=T),stringsAsFactors=FALSE)
+#test <- do.call(rbind, lapply(Fcomp, data.frame, stringsAsFactors=FALSE))
+
 #convert list to array
 Fcomp <- Fcomp$Fcomp
 dens <- dens$Dens
 
+# because the data was in an array, we have alot of lat longs with no values--can we get rid of these?
+Fcomp[,,,]
+Fcomp[,,"850",pfts]
+
 # plot pfts that occurred in ED runs:
 pft.list <- dimnames(Fcomp)$pft
 
-pdf("test.fcomp.pdf")
-for(i in 1:length(pft.list)){
-plot(as.numeric(dimnames(Fcomp)$time), Fcomp[1,1,,pft.list[i]], main = pft.list[i]) # c3 temp grass 
-}
-dev.off()
+# reduce to the actual pfts present:
+pfts <- c("pine.north" ,"conifer.late","temp.decid.early", "temp.decid.mid",   "temp.decid.late", "grass.c3.temp" )
+Fcomp.r <- Fcomp[,,,pfts]
+
+# extract only the lats
+Fcompnona <- which(!is.na(Fcomp.r))
+# as.data.frame.table converts array s really quickly
+df0 <- as.data.frame.table(Fcomp.r)
+Fcomp.df <- df0[!is.na(df0$Freq),]
+colnames(Fcomp.df) <- c("lat", 'lon', 'time', 'pft', 'Fcomp')
+
+# get rid of the factores
+Fcomp.df$lat <- as.numeric(as.character(Fcomp.df$lat))
+Fcomp.df$lon <- as.numeric(as.character(Fcomp.df$lon))
+Fcomp.df$time <- as.numeric(as.character(Fcomp.df$time))
+Fcomp.df$pft <- as.character(Fcomp.df$pft)
+
+saveRDS(Fcomp.df, paste0(getwd(), "/Data/extracted/Ed2_fcomp.df")) # save
+
+# create a column IDentifier
+datain <- read.csv("Data/ED_site_list_lat_lon.csv")
+Fcomp.df <- merge(Fcomp.df, datain[,c('lat','lon','ID','site.name')], by = c('lat', 'lon'))
+
+############################### 
+
 linecolor <- c('Earlypine' = "red", 'lateconifer'="orange", 'earlydeciduous'="blue",
                'middeciduous' ="grey", 'latedeciduous'='forestgreen')
 
@@ -36,8 +66,14 @@ datain <- read.csv( paste0(getwd(), "/Data/ED_site_list_lat_lon.csv") )
 
 
 #---------------------- make a plot of fcomp at each site-------------------
+sites <- unique(Fcomp.df$site.name)
 
-ggplot()+ geom_line(aes(x = as.numeric(dimnames(Fcomp)$time), y = Fcomp[datain[i,"latrow"],datain[i,"lonrow"],,pft.list[6]],colour = "Earlypine" ))+theme_bw()+
+
+  ggplot(Fcomp.df[Fcomp.df$site.name %in% sites[i],], aes(x = time, y = Fcomp, colour = pft)) + geom_line()+theme_bw()+
+
+
+
+ggplot()+ geom_line(aes(x = as.numeric(Fcomp.df$time), y = Fcomp[datain[i,"latrow"],datain[i,"lonrow"],,pft.list[6]],colour = "Earlypine" ))+theme_bw()+
   geom_line(aes(x = as.numeric(dimnames(Fcomp)$time), y = Fcomp[datain[i,"latrow"],datain[i,"lonrow"],,pft.list[8]], colour = "lateconifer"))+
   geom_line(aes(x = as.numeric(dimnames(Fcomp)$time), y = Fcomp[datain[i,"latrow"],datain[i,"lonrow"],,pft.list[9]], colour = "earlydeciduous"))+
   geom_line(aes(x = as.numeric(dimnames(Fcomp)$time), y =Fcomp[datain[i,"latrow"],datain[i,"lonrow"],,pft.list[10]], colour = "middeciduous"))+

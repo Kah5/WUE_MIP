@@ -2,6 +2,7 @@
 # Author: Kelly Heilman
 library(reshape2)
 library(ggplot2)
+library(tidyr)
 
 # load the necessary data:
 IWUE <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_IWUE.RDS"))
@@ -37,6 +38,7 @@ pft.list <- dimnames(Fcomp)$pft
 # reduce to the actual pfts present:
 pfts <- c("pine.north" ,"conifer.late","temp.decid.early", "temp.decid.mid",   "temp.decid.late", "grass.c3.temp" )
 Fcomp.r <- Fcomp[,,,pfts]
+Dens.r <- dens[,,,pfts]
 
 # extract only the lats
 Fcompnona <- which(!is.na(Fcomp.r))
@@ -53,52 +55,60 @@ Fcomp.df$pft <- as.character(Fcomp.df$pft)
 
 saveRDS(Fcomp.df, paste0(getwd(), "/Data/extracted/Ed2_fcomp.df")) # save
 
+#-------------------- do the same conversion for density:
+df1 <- as.data.frame.table(Dens.r, fun = sum) # since there should only be 1 dens value this should be okay
+#df1 <- array2df(Dens.r)
+#df2 <- adply(Dens.r)
+Dens.df <- df1[!is.na(df1$Freq),]
+colnames(Dens.df) <- c("lat", 'lon', 'time', 'pft', 'Dens')
+
+# get rid of the factores
+Dens.df$lat <- as.numeric(as.character(Dens.df$lat))
+Dens.df$lon <- as.numeric(as.character(Dens.df$lon))
+Dens.df$time <- as.numeric(as.character(Dens.df$time))
+Dens.df$pft <- as.character(Dens.df$pft)
+
+saveRDS(Dens.df, paste0(getwd(), "/Data/extracted/Ed2_dens.df")) # save
+
+
+
 # create a column IDentifier
 datain <- read.csv("Data/ED_site_list_lat_lon.csv")
 Fcomp.df <- merge(Fcomp.df, datain[,c('lat','lon','ID','site.name')], by = c('lat', 'lon'))
+Dens.df <- merge(Dens.df, datain[,c('lat','lon','ID','site.name')], by = c('lat', 'lon'))
 
-############################### 
 
-linecolor <- c('Earlypine' = "red", 'lateconifer'="orange", 'earlydeciduous'="blue",
-               'middeciduous' ="grey", 'latedeciduous'='forestgreen')
 
-datain <- read.csv( paste0(getwd(), "/Data/ED_site_list_lat_lon.csv") )
+#linecolor <- c('Earlypine' = "red", 'lateconifer'="orange", 'earlydeciduous'="blue",
+ #              'middeciduous' ="grey", 'latedeciduous'='forestgreen')
+
 
 
 #---------------------- make a plot of fcomp at each site-------------------
 sites <- unique(Fcomp.df$site.name)
+Fcomp.df$site.name <- as.character(Fcomp.df$site.name) # make site name a character
+Fcomp.df <- Fcomp.df[order(Fcomp.df$ID),]
 
 
-  ggplot(Fcomp.df[Fcomp.df$site.name %in% sites[i],], aes(x = time, y = Fcomp, colour = pft)) + geom_line()+theme_bw()+
+png(height = 13, width = 13, units = 'in', res= 100, "outputs/preliminaryplots/ED_Fcomp_yearly_timeseries.png")
+ggplot(Fcomp.df, aes(x = time, y = Fcomp, colour = pft)) + geom_line()+theme_bw()+facet_wrap(~site.name, ncol=5)
+dev.off()
 
-
-
-ggplot()+ geom_line(aes(x = as.numeric(Fcomp.df$time), y = Fcomp[datain[i,"latrow"],datain[i,"lonrow"],,pft.list[6]],colour = "Earlypine" ))+theme_bw()+
-  geom_line(aes(x = as.numeric(dimnames(Fcomp)$time), y = Fcomp[datain[i,"latrow"],datain[i,"lonrow"],,pft.list[8]], colour = "lateconifer"))+
-  geom_line(aes(x = as.numeric(dimnames(Fcomp)$time), y = Fcomp[datain[i,"latrow"],datain[i,"lonrow"],,pft.list[9]], colour = "earlydeciduous"))+
-  geom_line(aes(x = as.numeric(dimnames(Fcomp)$time), y =Fcomp[datain[i,"latrow"],datain[i,"lonrow"],,pft.list[10]], colour = "middeciduous"))+
-  geom_line(aes(x = as.numeric(dimnames(Fcomp)$time), y = Fcomp[datain[i,"latrow"],datain[i,"lonrow"],,pft.list[11]], colour = "latedeciduous")) + ylab("Fcomp") + xlab("time")+ggtitle("title")+
-  scale_colour_manual("PFTs",
-                      values= c('Earlypine' = "red", 'lateconifer'="orange", 'earlydeciduous'="blue",
-                                'middeciduous' ="grey", 'latedeciduous'='forestgreen'))
-
-  }
-# note this only works for point lat= 33.25 lon = -99.75
 #------------------ plot density of each pft at each site--------------------------
 
-ggplot()+ geom_line(aes(x = as.numeric(dimnames(dens)$time), y = dens[1,1,,pft.list[6]],colour = "Earlypine" ))+theme_bw()+
-  geom_line(aes(x = as.numeric(dimnames(dens)$time), y = dens[1,1,,pft.list[8]], colour = "lateconifer"))+
-  geom_line(aes(x = as.numeric(dimnames(dens)$time), y = dens[1,1,,pft.list[9]], colour = "earlydeciduous"))+
-  geom_line(aes(x = as.numeric(dimnames(dens)$time), y = dens[1,1,,pft.list[10]], colour = "middeciduous"))+
-  geom_line(aes(x = as.numeric(dimnames(dens)$time), y = dens[1,1,,pft.list[11]], colour = "latedeciduous")) + ylab("Density (1/ha)") + xlab("time")+ggtitle("title")+
-  scale_colour_manual("PFTs",
-                      values= c('Earlypine' = "red", 'lateconifer'="orange", 'earlydeciduous'="blue",
-                                'middeciduous' ="grey", 'latedeciduous'='forestgreen'))
 
+Dens.df$site.name <- as.character(Dens.df$site.name) # make site name a character
+Dens.df <- Dens.df[order(Dens.df$ID),]
+
+png(height = 13, width = 13, units = 'in', res= 200, "outputs/preliminaryplots/ED_Dens_yearly_timeseries.png")
+ggplot(Dens.df, aes(x = time, y = Dens, colour = pft)) + geom_line()+theme_bw()+facet_wrap(~site.name, ncol=5)
+dev.off()
 
 # note: density values seem very high--are these values really stems per hectare?
 
-# preliminary crappy plots
+
+#---------------Plotting non-pft variables:
+# preliminary crappy plots for 1 site
 plot( CO2[,2], IWUE[,2] )
 plot( precip[,2], IWUE[,2] )
 plot( tair[,2], IWUE[,2] )
@@ -180,6 +190,74 @@ plot.sens(all.y, "GWBI", "Tair")
 plot.sens(all.y, "GWBI", "precip")
 plot.sens(all.y, "GWBI", "LAI")
 
+#------------------Plot sensitivty of WUE against pft-specific variables----------------
+fcomp.pft<- ddply(Fcomp.df, .variables = c("lat", 'lon', 'time','ID', 'pft', 'site.name'), FUN = sum, value.var = "Fcomp")
+
+fcomp.wide <- spread(Fcomp.df, pft, Fcomp) # uses tidyr
+colnames(fcomp.wide) <- c("lat" , "lon", "Year", "ID","Site" ,"conifer.late",  "grass.c3.temp","pine.north","temp.decid.early","temp.decid.late","temp.decid.mid") 
+
+  
+dens.wide <- spread(Dens.df, pft, Dens) # uses tidyr
+dens.wide$total <- rowSums(dens.wide[,6:11], na.rm=TRUE)
+colnames(dens.wide) <- c("lat" , "lon", "Year", "ID","Site" ,"conifer.late",  "grass.c3.temp","pine.north","temp.decid.early","temp.decid.late","temp.decid.mid","total.density") 
+
+
+dens.all <- merge(dens.wide, all.y, by=c("Year", "Site"))
+fcomp.all <- merge(fcomp.wide, all.y, by = c("Year", "Site"))
+
+saveRDS(fcomp.all, paste0(getwd(), "/Data/extracted/ED2_full_fcomp.RDS"))
+saveRDS(dens.all, paste0(getwd(), "/Data/extracted/ED2_full_dens.RDS"))
+
+#-------------------density histograms-----------------------------------
+
+hist(dens.all$pine.north, breaks = 50)
+hist(dens.all$conifer.late, breaks = 50)
+hist(dens.all$temp.decid.early, breaks = 50)
+hist(dens.all$temp.decid.late, breaks = 50)
+hist(dens.all$temp.decid.mid, breaks = 50)
+hist(dens.all$total.density, breaks = 50)
+
+#-------------------make preliminary plots of density vs WUE-----------------------
+
+plot(dens.all$WUEi, dens.all$total.density)
+plot(dens.all$WUEt, dens.all$total.density)
+plot(dens.all$IWUE, dens.all$total.density)
+
+plot.sens(dens.all, "total.density", "WUEi")
+plot.sens(dens.all, "total.density", "WUEt")
+plot.sens(dens.all, "total.density", "IWUE")
+plot.sens(dens.all, "CO2", "total.density")
+plot.sens(dens.all, "precip", "total.density")
+plot.sens(dens.all, "total.density", "GWBI")
+
+plot.sens(dens.all, "temp.decid.early", "WUEi")
+plot.sens(dens.all, "temp.decid.mid", "WUEi")
+plot.sens(dens.all, "temp.decid.late", "WUEi")
+plot.sens(dens.all, "pine.north", "WUEi")
+plot.sens(dens.all, "conifer.late", "WUEi")
+plot.sens(dens.all, "precip", "total.density")
+plot.sens(dens.all, "total.density", "GWBI")
+plot.sens(dens.all, "total.density", "LAI")
+plot.sens(dens.all, "total.density", "Tair")
+
+# Look at BA in ED
+# how is fire related to density in the models?
+# fire-density relationship through time?
+
+# ----------------------Fcomp vs WUE and other params---------------
+# need to fix this! this will name over the density plots!!
+plot.sens(fcomp.all, "temp.decid.early", "WUEi")
+plot.sens(fcomp.all, "temp.decid.mid", "WUEi")
+plot.sens(fcomp.all, "temp.decid.late", "WUEi")
+plot.sens(fcomp.all, "pine.north", "WUEi")
+plot.sens(fcomp.all, "conifer.late", "WUEi")
+
+
+plot.sens(fcomp.all, "temp.decid.early", "WUEi")
+plot.sens(fcomp.all, "temp.decid.mid", "WUEi")
+plot.sens(fcomp.all, "temp.decid.late", "WUEi")
+plot.sens(densfcomp.all, "pine.north", "WUEi")
+plot.sens(fcomp.all, "conifer.late", "WUEi")
 
 
 #-----------------Model Sensitivity of WUE-----------------

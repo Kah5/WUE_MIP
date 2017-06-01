@@ -59,23 +59,23 @@ ED2.precipf <- readRDS(file = "Data/ED2/ED2.precipf.rds")
 
 
 #colnames(tab) <- c("lat", "lon", "CO2")
-ggplot(tab, aes(x = lon, y = lat, fill = value))+geom_raster()+theme_bw()+coord_equal()
+ggplot(paleon, aes(x = lon, y = lat, fill = notes))+geom_raster()+theme_bw()+coord_equal()
 
 
 # create a dataframe with lat and lon values for lookup later
-lats <- data.frame(lat = as.numeric(dimnames(ed.co2)$lat),
-                   latrow = 1:30)
+#lats <- data.frame(lat = as.numeric(dimnames(ed.co2)$lat),
+ #                  latrow = 1:30)
 
-lons <- data.frame(lon = as.numeric(dimnames(ed.co2)$lon),
-                   lonrow = 1:80)
+#lons <- data.frame(lon = as.numeric(dimnames(ed.co2)$lon),
+ #                  lonrow = 1:80)
 
 # only get the grid cells that the model has been run at
-datain <- tab[!is.na(tab$value),]
+#datain <- tab[!is.na(tab$value),]
 
-datain<- merge(datain, lats, by = "lat")
-datain <- merge(datain, lons, by = "lon")
-datain$ID <- 1:40 
-datain$site.name <- paste0("site", datain$ID)
+#datain<- merge(datain, lats, by = "lat")
+#datain <- merge(datain, lons, by = "lon")
+#datain$ID <- 1:40 
+#datain$site.name <- paste0("site", datain$ID)
 
 
 # make a simple reference map of where whe have grid cells and their names:

@@ -4,50 +4,59 @@ library(ggplot2)
 library(reshape2)
 library(tidyr)
 library(zoo)
+
+load("Data/PalEON_siteInfo_all.RData")
 # read in model outputs that were extracted
 
-ED2.CO2 <- readRDS(file = paste0(getwd(),"/Data/ED_montly_CO2.RDS"))
-ED2.GPP <- readRDS(file = "Data/ED_montly_gpp.RDS")
-ED2.gwbi <- readRDS(file = "Data/ED_montly_gwbi.RDS")
-ED2.tair <- readRDS(file = "Data/ED_montly_tair.RDS")
-ED2.qair <- readRDS(file = "Data/ED_montly_qair.RDS")
-ED2.transp <- readRDS(file = "Data/ED_montly_transp.RDS")
-ED2.Fire <- readRDS(file = "Data/ED_montly_Fire.RDS")
-ED2.LAI <- readRDS(file = "Data/ED_montly_LAI.RDS")
-ED2.evap <- readRDS(file = "Data/ED_montly_evap.RDS")
-ED2.npp <- readRDS(file = "Data/ED_monthly_npp.RDS")
-ED2.bai <- readRDS(file = "Data/ED_monthly_BAI.RDS")
-ED2.precipf <- readRDS(file = "Data/ED_montly_precip.RDS")
+files <- list.files("Data/ED2/")
+
+for(i in 1:length(files)){
+assign(x = unlist(strsplit(files[i],split = '.rds')), value = readRDS(paste0("Data/ED2/",files[i])))
+}
+
+ED2.CO2 <- readRDS(file ="Data/ED2/ED2.CO2.rds")
+ED2.GPP <- readRDS(file = "Data/ED2/ED2.GPP.rds")
+ED2.gwbi <- readRDS(file = "Data/ED2/ED2.gwbi.RDS")
+#ED2.tair <- readRDS(file = "Data/ED2/ED2")
+ED2.qair <- readRDS(file = "Data/ED2/ED2.qair.rds")
+ED2.transp <- readRDS(file = "Data/ED2/ED2.transp.rds")
+ED2.Fire <- readRDS(file = "Data/ED2/ED2.Fire.rds")
+ED2.LAI <- readRDS(file = "Data/ED2/ED2.LAI.rds")
+#ED2.evap <- readRDS(file = "Data/ED2/ED2.evap.rds")
+#ED2.npp <- readRDS(file = "Data/ED2/ED2.npp.rds")
+#ED2.bai <- readRDS(file = "Data/ED2/ED2.BA.rds")
+ED2.precipf <- readRDS(file = "Data/ED2/ED2.precipf.rds")
 
 # laod pft specific variables:
-ED2.BA <- readRDS(file = "Data/ED_monthly_BA_nona.RDS")
-ED2.dens <- readRDS(file = "Data/ED_monthly_Dens_nona.RDS")
-ED2.Fcomp <- readRDS(file = "Data/ED_monthly_Fcomp_nona.RDS")
+#ED2.BA <- readRDS(file = "Data/ED_monthly_BA_nona.RDS")
+#ED2.dens <- readRDS(file = "Data/ED_monthly_Dens_nona.RDS")
+#ED2.Fcomp <- readRDS(file = "Data/ED_monthly_Fcomp_nona.RDS")
 
 # this converts them into arrays, there is likely an easier way, but using array(unlist(L), dim = c(nrow(L[[1]]), ncol(L[[1]]), length(L))) takes too long
-ed.co2 <- ED2.CO2$CO2
-ed.gpp <- ED2.GPP$GPP
-ed.gwbi <- ED2.gwbi$GWBI
-ed.tair <- ED2.tair$tair
-ed.transp <- ED2.transp$Transp
-ed.fire <- ED2.Fire$Fire
-ed.LAI <- ED2.LAI$LAI
-ed.evap <- ED2.evap$Evap
-ed.qair <- ED2.qair$qair
-ed.precip <- ED2.precipf$precipf
-ed.bai <- ED2.bai$BAI
+#ed.co2 <- ED2.CO2$CO2
+#ed.gpp <- ED2.GPP$GPP
+#ed.gwbi <- ED2.gwbi$GWBI
+#ed.tair <- ED2.tair$tair
+#ed.transp <- ED2.transp$Transp
+#ed.fire <- ED2.Fire$Fire
+#ed.LAI <- ED2.LAI$LAI
+#ed.evap <- ED2.evap$Evap
+#ed.qair <- ED2.qair$qair
+#ed.precip <- ED2.precipf$precipf
+#ed.bai <- ED2.bai$BAI
 
 
-ed.Fcomp <- ED2.Fcomp$Fcomp
-ed.Dens <- ED2.dens$Dens
+#ed.Fcomp <- ED2.Fcomp$Fcomp
+#ed.Dens <- ED2.dens$Dens
 #ed.BA <- ED2.BA$BA
 
 # ----------------get lats and long dimensions----------------------
-yr <- "850"
-co2850 <- ed.co2[,,yr]
-tab <- melt(co2850)
+#yr <- "850"
+#co2850 <- ed.co2[,,yr]
+#tab <- melt(co2850)
 
 #find the indices for lat lons where we have data:
+
 
 #colnames(tab) <- c("lat", "lon", "CO2")
 ggplot(tab, aes(x = lon, y = lat, fill = value))+geom_raster()+theme_bw()+coord_equal()

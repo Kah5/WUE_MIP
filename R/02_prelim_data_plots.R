@@ -88,11 +88,11 @@ states <- spTransform(states,CRSobj = '+init=epsg:4326')
 mapdata <- data.frame(states)
 
 png(height = 8, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/ED_grid_map.png"))
-ggplot(datain, aes(x = lon, y = lat))+geom_raster()+geom_text(aes(label=site.name),hjust=0, vjust=0)+
+ggplot(paleon, aes(x = lon, y = lat))+geom_raster()+
   geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60))
 dev.off()
 
-write.csv(datain, paste0(getwd(), "/Data/ED_site_list_lat_lon.csv"))
+#write.csv(datain, paste0(getwd(), "/Data/ED_site_list_lat_lon.csv"))
 # function to extract data from grid cells that have data (there is likely a way to do this better):
 
 extractnonna <-function(datain, x){

@@ -5,14 +5,14 @@ library(ggplot2)
 library(tidyr)
 
 # load the necessary data:
-IWUE <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_IWUE.RDS"))
-WUEi <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_WUEi.RDS"))
-WUEt <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_WUEt.RDS"))
-CO2 <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_CO2.RDS"))
-precip <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_precip.RDS"))
-tair <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_tair.RDS"))
-gwbi <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_GWBI.RDS"))
-lai <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_lai.RDS"))
+#IWUE <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_IWUE.RDS"))
+#WUEi <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_WUEi.RDS"))
+#WUEt <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_WUEt.RDS"))
+#CO2 <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_CO2.RDS"))
+#precip <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_precip.RDS"))
+#tair <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_tair.RDS"))
+#gwbi <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_GWBI.RDS"))
+#lai <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_lai.RDS"))
 
 # load the pft specific data:
 dens <- readRDS("Data/ED_monthly_Dens_nona.RDS")
@@ -25,20 +25,26 @@ Fcomp <- readRDS("Data/ED_monthly_Fcomp_nona.RDS")
 #test <- do.call(rbind, lapply(Fcomp, data.frame, stringsAsFactors=FALSE))
 
 #convert list to array
-Fcomp <- Fcomp$Fcomp
-dens <- dens$Dens
+pft.lab=c("grass.c4", "tropic.early", "tropic.mid", "tropic.late", "grass.c3.temp", "pine.north", "pine.south", "conifer.late", "temp.decid.early", "temp.decid.mid", "temp.decid.late","ag1", "ag2", "ag3", "ag4","grass.c3.subtrop","Araucaria")
 
-# because the data was in an array, we have alot of lat longs with no values--can we get rid of these?
-Fcomp[,,,]
-Fcomp[,,"850",pfts]
+Fcomp<- ED2.Fcomp
+Dens <- ED2.Dens
+
+
+dimnames(Fcomp) <- list(timevec, paleon$num, pft.lab)
+dimnames(Dens) <- list(timevec, paleon$num, pft.lab)
+#grass <- ED2.Fcomp[,,"grass.c4"]
+#dens <- dens$Dens
+
+
 
 # plot pfts that occurred in ED runs:
-pft.list <- dimnames(Fcomp)$pft
+
 
 # reduce to the actual pfts present:
 pfts <- c("pine.north" ,"conifer.late","temp.decid.early", "temp.decid.mid",   "temp.decid.late", "grass.c3.temp" )
-Fcomp.r <- Fcomp[,,,pfts]
-Dens.r <- dens[,,,pfts]
+Fcomp.r <- Fcomp[,,pfts]
+Dens.r <- Dens[,,pfts]
 
 # extract only the lats
 Fcompnona <- which(!is.na(Fcomp.r))

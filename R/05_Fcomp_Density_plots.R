@@ -10,7 +10,7 @@ library(tidyr)
 # load the pft specific data:
 ED2.Dens <- readRDS("D:/Kelly/WUE_MIP/Data/ED2/ED2.Dens.rds")
 ED2.Fcomp <- readRDS("D:/Kelly/WUE_MIP/Data/ED2/ED2.Fcomp.RDS")
-
+ED2.CO2 <- readRDS('D:/Kelly/WUE_MIP/Data/ED2/ED2.CO2.rds')
 load("D:/Kelly/WUE_MIP/Data/PalEON_siteInfo_all.RData")
 
 timevec <- 1:13932
@@ -26,6 +26,7 @@ pft.lab=c("grass.c4", "tropic.early", "tropic.mid", "tropic.late", "grass.c3.tem
 
 Fcomp<- ED2.Fcomp
 Dens <- ED2.Dens
+CO2 <- ED2.CO2
 
 
 dimnames(Fcomp) <- list(timevec, paleon$num, pft.lab)
@@ -188,3 +189,63 @@ ggplot(fire.tots, aes(x = Fire.tots, y = sd, color = bimodal))+geom_point()+them
 ggplot(fire.tots, aes(x = countfires, y = mean, color = bimodal))+geom_point()+theme_bw()+xlab("Mean total density")+ylab("Number of fires 850-2011")
 ggplot(fire.tots, aes(x = countfires, y = sd, color = bimodal))+geom_point()+theme_bw()+xlab("SD total density")+ylab("Number of fires 850-2011")
 
+#----------- What is the sensitivity of total density to CO2 in ED2?-------------
+atm.co2<- CO2[,1]
+
+sens.mean <- data.frame(num = paleon$num, 
+                        lon = paleon$lon, 
+                        lat = paleon$lat, 
+                        latlon = paleon$latlon,
+                        corCO2 = NA, 
+                        mean=NA,
+                        sd = NA
+                        )
+
+for(i in 1:length(paleon$num)){
+  dens.site <- data.frame(Dens.r[,i,])
+  dens.site$Totaldens <- rowSums(dens.site, na.rm=TRUE)
+  sens.mean[i,]$corCO2 <- cor(dens.site$Totaldens, atm.co2)
+  sens.mean[i,]$mean <- mean(dens.site$Totaldens, na.rm= TRUE)
+  sens.mean[i,]$sd <- sd(dens.site$Totaldens, na.rm=TRUE)
+}
+
+# it looks like in ED, the west is more highly positively corrllated with CO2:
+png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_dens_co2_cor_map.png"))
+ggplot(sens.mean, aes(x = lon, y = lat, fill = corCO2))+geom_raster()+
+  scale_fill_gradientn(colours = rev(rbpalette), limits = c(-1,1), name ="correlation coefficient", na.value = 'darkgrey')+
+  geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Correlation of Total Density with CO2')
+dev.off()
+
+#------------- Are WUE increases higher in the West then?-------------------
+WUEt <- readRDS(paste0(getwd(), "/Data/ED2/ED2.WUEt.rds"))
+WUEi <- readRDS(paste0(getwd(), "/Data/ED2/ED2.WUEi.rds"))
+IWUE <- readRDS(paste0(getwd(), "/Data/ED2/ED2.IWUE.rds"))
+
+
+WUE.cor.mean <- data.frame(num = paleon$num, 
+                        lon = paleon$lon, 
+                        lat = paleon$lat, 
+                        latlon = paleon$latlon,
+                        corIWUE = NA, 
+                        corWUEi = NA,
+                        corWUEt = NA,
+                        mean=NA,
+                        sd = NA
+)
+
+for(i in 1:length(paleon$num)){
+  dens.site <- data.frame(Dens.r[,i,])
+  dens.site$Totaldens <- rowSums(dens.site, na.rm=TRUE)
+  WUE.cor.mean[i,]$corIWUE <- cor(dens.site$Totaldens, IWUE[,i])
+  WUE.cor.mean[i,]$corWUEi <- cor(dens.site$Totaldens, WUEi[,i])
+  WUE.cor.mean[i,]$corWUEt <- cor(dens.site$Totaldens, WUEt[,i])
+  WUE.cor.mean[i,]$mean <- mean(dens.site$Totaldens, na.rm= TRUE)
+  WUE.cor.mean[i,]$sd <- sd(dens.site$Totaldens, na.rm=TRUE)
+}
+
+# map out the correlations with WUE
+png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_dens_WUE_cor_map.png"))
+ggplot(WUE.cor.mean, aes(x = lon, y = lat, fill = corIWUE))+geom_raster()+
+  scale_fill_gradientn(colours = rev(rbpalette), limits = c(-1,1), name ="correlation coefficient", na.value = 'darkgrey')+
+  geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Correlation of Total Density with WUE')
+dev.off()

@@ -121,7 +121,7 @@ dev.off()
 # plot the seasonal cycle for each variable at each site and save in outputs/preliminaryplots
 plot.seasonal <- function(df, name){
   df <- data.frame(df)
-  colnames(df) <- paleon$latlon
+  colnames(df) <- paleon$site
   df$year <- year
   df$month <- month
   #df <- df[!is.na(df),]
@@ -129,7 +129,7 @@ plot.seasonal <- function(df, name){
   png(height = 12, width = 12, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/ED2_", name, "_seasonal_site.png"))
   m <- melt(df, id.vars=c("year", "month"))
   m<- m[complete.cases(m),]
-  print(ggplot(data = na.omit(m), aes(x = month, y = value, color = variable))+geom_point())
+  print(ggplot(data = m[1:100000,], aes(x = month, y = value, color = variable))+geom_point())
   dev.off()
 }
 
@@ -153,49 +153,53 @@ plot.yrmean.ts <- function(df, name){
   df$year <- year
   df$month <- month
   m <- melt(df, id.vars=c("year", "month"))
-  yrmeans<-dcast(m, Year ~ variable, mean)
-  m2 <- melt(yrmeans, id.vars= "Year")
-  m2$Year <- as.numeric(m2$Year)
+  yrmeans<-dcast(m, year ~ variable, mean)
+  m2 <- melt(yrmeans, id.vars= "year")
+  m2$Year <- as.numeric(m2$year)
   png(height = 7, width = 18, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/ED2_", name, "_mean_timeseries_site.png"))
-  print(ggplot(data = m2, aes(x = Year, y = value, color = variable))+geom_line())
+  print(ggplot(data = m2, aes(x = year, y = value, color = variable))+geom_line()+ theme(legend.position="none"))
   dev.off()
 }
 
-plot.yrmean.ts(GPP, "GPP")
-plot.yrmean.ts(GWBI, "GWBI")
-plot.yrmean.ts(tair, "Tair")
-plot.yrmean.ts(qair, "Qair")
-plot.yrmean.ts(transp, "Transp")
-plot.yrmean.ts(fire, "Fire")
-plot.yrmean.ts(lai, "LAI")
-plot.yrmean.ts(evap, "Evap")
-plot.yrmean.ts(CO2, "CO2")
-plot.yrmean.ts(precip, "Precip")
+plot.yrmean.ts(ED2.GPP, "GPP")
+plot.yrmean.ts(ED2.GWBI, "GWBI")
+plot.yrmean.ts(ED2.tair, "Tair")
+plot.yrmean.ts(ED2.qair, "Qair")
+plot.yrmean.ts(ED2.transp, "Transp")
+plot.yrmean.ts(ED2.fire, "Fire")
+plot.yrmean.ts(ED2.lai, "LAI")
+plot.yrmean.ts(ED2.evap, "Evap")
+plot.yrmean.ts(ED2.CO2, "CO2")
+plot.yrmean.ts(ED2.precip, "Precip")
 #plot.yrmean.ts(soilmoist, "SoilMoist")
 
 # plot and calulate only summer JJA yearly values:
 
 plot.JJA.ts <- function(df, name){
-  m <- melt(df, id.vars=c("Year", "Month", "mo"))
-  yrmeans<-dcast(m[m$Month %in% c(6,7,8),], Year ~ variable, mean)
-  m2 <- melt(yrmeans, id.vars= "Year")
-  m2$Year <- as.numeric(m2$Year)
+  df <- data.frame(df)
+  colnames(df) <- paleon$latlon
+  df$year <- year
+  df$month <- month
+  m <- melt(df, id.vars=c("year", "month"))
+  yrmeans<-dcast(m[m$month %in% c(6,7,8),], year ~ variable, mean)
+  m2 <- melt(yrmeans, id.vars= "year")
+  m2$year <- as.numeric(m2$year)
   png(height = 7, width = 18, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/ED2_", name, "_JJA_mean_timeseries_site.png"))
-  print(ggplot(data = m2, aes(x = Year, y = value, color = variable))+geom_line())
+  print(ggplot(data = m2, aes(x = year, y = value, color = variable))+geom_line()+ theme(legend.position="none"))
   dev.off()
 }
 
 
-plot.JJA.ts (GPP, "GPP")
-plot.JJA.ts (GWBI, "GWBI")
-plot.JJA.ts (tair, "Tair")
-plot.JJA.ts (qair, "Qair")
-plot.JJA.ts (transp, "Transp")
-plot.JJA.ts (fire, "Fire")
-plot.JJA.ts (lai, "LAI")
-plot.JJA.ts (evap, "Evap")
-plot.JJA.ts (CO2, "CO2")
-plot.JJA.ts(precip, "Precip")
+plot.JJA.ts (ED2.GPP, "GPP")
+plot.JJA.ts (ED2.GWBI, "GWBI")
+plot.JJA.ts (ED2.tair, "Tair")
+plot.JJA.ts (ED2.qair, "Qair")
+plot.JJA.ts (ED2.Transp, "Transp")
+plot.JJA.ts (ED2.Fire, "Fire")
+plot.JJA.ts (ED2.LAI, "LAI")
+plot.JJA.ts (ED2.Evap, "Evap")
+plot.JJA.ts (ED2.CO2, "CO2")
+plot.JJA.ts(ED2.precipf, "Precip")
 #plot.JJA.ts(soilmoist, "SoilMoist")
 # plot moving averages in ggplot:
 #rollmean(, 50, fill=0)

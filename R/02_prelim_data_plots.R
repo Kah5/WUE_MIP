@@ -10,22 +10,23 @@ load("Data/PalEON_siteInfo_all.RData")
 
 files <- list.files("Data/ED2/")
 
+# read in all the ED2 files
 for(i in 1:length(files)){
 assign(x = unlist(strsplit(files[i],split = '.rds')), value = readRDS(paste0("Data/ED2/",files[i])))
 }
 
-ED2.CO2 <- readRDS(file ="Data/ED2/ED2.CO2.rds")
-ED2.GPP <- readRDS(file = "Data/ED2/ED2.GPP.rds")
-ED2.gwbi <- readRDS(file = "Data/ED2/ED2.gwbi.RDS")
+#ED2.CO2 <- readRDS(file ="Data/ED2/ED2.CO2.rds")
+#ED2.GPP <- readRDS(file = "Data/ED2/ED2.GPP.rds")
+#ED2.gwbi <- readRDS(file = "Data/ED2/ED2.gwbi.RDS")
 #ED2.tair <- readRDS(file = "Data/ED2/ED2")
-ED2.qair <- readRDS(file = "Data/ED2/ED2.qair.rds")
-ED2.transp <- readRDS(file = "Data/ED2/ED2.transp.rds")
-ED2.Fire <- readRDS(file = "Data/ED2/ED2.Fire.rds")
-ED2.LAI <- readRDS(file = "Data/ED2/ED2.LAI.rds")
+#ED2.qair <- readRDS(file = "Data/ED2/ED2.qair.rds")
+#ED2.transp <- readRDS(file = "Data/ED2/ED2.transp.rds")
+#ED2.Fire <- readRDS(file = "Data/ED2/ED2.Fire.rds")
+#ED2.LAI <- readRDS(file = "Data/ED2/ED2.LAI.rds")
 #ED2.evap <- readRDS(file = "Data/ED2/ED2.evap.rds")
 #ED2.npp <- readRDS(file = "Data/ED2/ED2.npp.rds")
 #ED2.bai <- readRDS(file = "Data/ED2/ED2.BA.rds")
-ED2.precipf <- readRDS(file = "Data/ED2/ED2.precipf.rds")
+#ED2.precipf <- readRDS(file = "Data/ED2/ED2.precipf.rds")
 
 # laod pft specific variables:
 #ED2.BA <- readRDS(file = "Data/ED_monthly_BA_nona.RDS")
@@ -58,7 +59,8 @@ ED2.precipf <- readRDS(file = "Data/ED2/ED2.precipf.rds")
 #find the indices for lat lons where we have data:
 
 
-#colnames(tab) <- c("lat", "lon", "CO2")
+#colnames(tab) <- c
+
 ggplot(paleon, aes(x = lon, y = lat, fill = notes))+geom_raster()+theme_bw()+coord_equal()
 
 
@@ -95,51 +97,42 @@ dev.off()
 #write.csv(datain, paste0(getwd(), "/Data/ED_site_list_lat_lon.csv"))
 # function to extract data from grid cells that have data (there is likely a way to do this better):
 
-extractnonna <-function(datain, x){
-  test <- matrix(0,nrow = 13932, ncol=nrow(datain))
-  test<- data.frame(test)
-  for(i in 1:nrow(datain)){
-    test[,i] <- x[datain[i,]$latrow, datain[i,]$lonrow,]
-    colnames(test[i]) <- datain[i,]$site.name
-  }
+#extractnonna <-function(datain, x){
+ # test <- matrix(0,nrow = 13932, ncol=nrow(datain))
+#  test<- data.frame(test)
+ # for(i in 1:nrow(datain)){
+  #  test[,i] <- x[datain[i,]$latrow, datain[i,]$lonrow,]
+   # colnames(test[i]) <- datain[i,]$site.name
+  #}
   
-  colnames(test) <- datain$site.name
+  #colnames(test) <- datain$site.name
   
   # get the years listed for ED monthly runs
-  timevec <- attributes(ed.co2)$dimnames$time
-  test$Yearmo <- timevec
-  test  <- separate(data = test, col = Yearmo, into = c("Year", "mo"), sep = "\\.") # separate the year and month
-  test[is.na(test$mo),]$mo <- 0
+#13932 data points = 1161 years
+  timevec <- 1:13932
+  month <- rep(1:12, 1161)
+  yearsince  <- rep(0:1160, each =12)
+  year <- yearsince + 850
   
-  # now convert the decimals into  months 1:12:
-  time.match <- data.frame(mo = unique(test$mo), Month = 1:12)
-  test <- merge(test, time.match, by = "mo")
-  test
-}
 
-
-CO2 <- extractnonna(datain = datain, x = ed.co2)
-GPP <- extractnonna(datain = datain, x = ed.gpp)
-GWBI <- extractnonna(datain = datain, x = ed.gwbi)
-tair <- extractnonna(datain = datain, x = ed.tair)
-qair <- extractnonna(datain = datain, x = ed.qair)
-transp <- extractnonna(datain = datain, x = ed.transp)
-fire <- extractnonna(datain = datain, x = ed.fire)
-lai <- extractnonna(datain = datain, x = ed.LAI)
-evap <- extractnonna(datain = datain, x = ed.evap)
-precip <- extractnonna(datain = datain, x = ed.precip)
-bai <- extractnona(datain = datain, x = ed.bai)
-#soilmoist <- extractnonna(datain = datain, x = ed.soilmoist)
-
+ 
 #------------------------------------------------ preliminary plots:--------------------------------------------
 
 # plot the seasonal cycle for each variable at each site and save in outputs/preliminaryplots
 plot.seasonal <- function(df, name){
+  df <- data.frame(df)
+  colnames(df) <- paleon$latlon
+  df$year <- year
+  df$month <- month
+  #df <- df[!is.na(df),]
+  
   png(height = 12, width = 12, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/ED2_", name, "_seasonal_site.png"))
-  m <- melt(df, id.vars=c("Year", "Month", "mo"))
-  print(ggplot(data = m, aes(x = Month, y = value))+geom_point()+facet_wrap(~variable,  ncol = 5))
+  m <- melt(df, id.vars=c("year", "month"))
+  m<- m[complete.cases(m),]
+  print(ggplot(data = na.omit(m), aes(x = month, y = value, color = variable))+geom_point())
   dev.off()
 }
+
 
 
 plot.seasonal(GPP, "GPP")
@@ -155,7 +148,11 @@ plot.seasonal(precip, "Precipf")
 # calculate the means for the years:
 
 plot.yrmean.ts <- function(df, name){
-  m <- melt(df, id.vars=c("Year", "Month", "mo"))
+  df <- data.frame(df)
+  colnames(df) <- paleon$latlon
+  df$year <- year
+  df$month <- month
+  m <- melt(df, id.vars=c("year", "month"))
   yrmeans<-dcast(m, Year ~ variable, mean)
   m2 <- melt(yrmeans, id.vars= "Year")
   m2$Year <- as.numeric(m2$Year)

@@ -445,6 +445,8 @@ plot.sens.site(all, "CO2", "Density", pct100, "100th_percentile")
 saveRDS(all, paste0(getwd(), "/Data/extracted/ED_yearly_all_with_density.RDS"))
 
 
+
+
 #------------------Plot sensitivty of WUE against pft-specific variables----------------
 fcomp.pft<- ddply(Fcomp.df, .variables = c("lat", 'lon', 'time','ID', 'pft', 'site.name'), FUN = sum, value.var = "Fcomp")
 

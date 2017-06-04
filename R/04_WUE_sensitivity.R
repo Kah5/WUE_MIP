@@ -256,14 +256,14 @@ plot.sens.site <- function(df, xname, yname, pct, percentile){
   df <- df[df$Site %in% pct, ]
   colnames(df) <- c("Year", "Site", "x", "y")
   lim <- quantile(df$x, .99, na.rm=T) # so we dont plot the outliers
-  
+  limlo <- min(df$x, na.rm=T)
   png(height = 12, width = 12, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/sensitivity/by_precip/",xname,"/ED2_", xname,"_", yname,"_",percentile,"_yr_sens.png"))
-  print(ggplot(data = df, aes(x = x, y = y, color = Site))+geom_point()+xlim(0,lim)+
+  print(ggplot(data = df, aes(x = x, y = y, color = Site))+geom_point()+xlim(limlo,lim)+
           ylab(yname)+ xlab(xname)+stat_smooth(color = "black")+theme_bw()+ theme(legend.position="none") + ggtitle(paste0(percentile,"precip") ))
   dev.off()
   
   png(height = 12, width = 12, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/sensitivity/by_precip/",xname,"/ED2_", xname,"_", yname,"_",percentile,"_yr_sens_site.png"))
-  print(ggplot(data = df, aes(x = x, y = y, color = Site))+geom_point()+xlim(0,lim)+
+  print(ggplot(data = df, aes(x = x, y = y, color = Site))+geom_point()+xlim(limlo,lim)+
           ylab(yname)+ xlab(xname)+stat_smooth(color = "black")+facet_wrap(~Site)+theme_bw()+ theme(legend.position="none") + ggtitle(paste0(percentile,"precip") ))
   dev.off()
 }
@@ -347,7 +347,102 @@ plot.sens.site(all.y, "WUEt", "LAI", pct75, "75th_percentile")
 plot.sens.site(all.y, "WUEt", "LAI", pct100, "100th_percentile")
 
 
+# lets plot the sensitivity of total density (or BA to CO2 and other params)
+ED2.Dens <- readRDS("D:/Kelly/WUE_MIP/Data/ED2/ED2.Dens.rds")
+ED2.Fcomp <- readRDS("D:/Kelly/WUE_MIP/Data/ED2/ED2.Fcomp.RDS")
+ED2.CO2 <- readRDS('D:/Kelly/WUE_MIP/Data/ED2/ED2.CO2.rds')
+load("D:/Kelly/WUE_MIP/Data/PalEON_siteInfo_all.RData")
 
+timevec <- 1:13932
+month <- rep(1:12, 1161)
+yearsince  <- rep(0:1160, each =12)
+year <- yearsince + 850
+
+pft.lab=c("grass.c4", "tropic.early", "tropic.mid", "tropic.late", "grass.c3.temp", "pine.north", "pine.south", "conifer.late", "temp.decid.early", "temp.decid.mid", "temp.decid.late","ag1", "ag2", "ag3", "ag4","grass.c3.subtrop","Araucaria")
+
+Fcomp<- ED2.Fcomp
+Dens <- ED2.Dens
+CO2 <- ED2.CO2
+
+
+dimnames(Fcomp) <- list(timevec, paleon$num, pft.lab)
+dimnames(Dens) <- list(timevec, paleon$num, pft.lab)
+#grass <- ED2.Fcomp[,,"grass.c4"]
+#dens <- dens$Dens
+
+
+
+# plot pfts that occurred in ED runs:
+
+
+# reduce to the actual pfts present:
+pfts <- c("pine.north" ,"conifer.late","temp.decid.early", "temp.decid.mid",   
+          "temp.decid.late", "grass.c3.temp" )
+Fcomp.r <- Fcomp[,,pfts]
+Dens.r <- Dens[,,pfts]
+
+# create a matrix with total density 
+total.dens <- matrix(0, nrow= 13932, 254) # make a matrix
+for(i in 1:length(paleon$num)){
+  dens.site <- data.frame(Dens.r[,i,])
+  total.dens[,i] <- rowSums(dens.site, na.rm=TRUE)
+}
+
+# lets just take the total tree density:
+total.dens <- data.frame(total.dens)
+total.dens$Year <- year
+total.dens$Month <- month
+dens.m <- melt(total.dens, id.vars = c("Year", "Month"))
+colnames(dens.m) <- c("Year", "Month", "Site", "Density")
+
+yrmeans <- dcast(dens.m, Year ~ Site, mean, na.rm=TRUE)
+yrs<- melt(yrmeans, id.vars = c("Year"))
+colnames(yrs) <- c("Year", "Site", "Density")
+all <- merge(yrs, all.y, by = c("Year", "Site")) # merge with the all.y
+
+# plot sensitivity of density to WUE, precip, etc:
+plot.sens.site(all, "WUEi", "Density", pct25, "25th_percentile")
+plot.sens.site(all, "WUEi", "Density", pct50, "50th_percentile")
+plot.sens.site(all, "WUEi", "Density", pct75, "75th_percentile")
+plot.sens.site(all, "WUEi", "Density", pct100, "100th_percentile")
+
+plot.sens.site(all, "WUEt", "Density", pct25, "25th_percentile")
+plot.sens.site(all, "WUEt", "Density", pct50, "50th_percentile")
+plot.sens.site(all, "WUEt", "Density", pct75, "75th_percentile")
+plot.sens.site(all, "WUEt", "Density", pct100, "100th_percentile")
+
+plot.sens.site(all, "IWUE", "Density", pct25, "25th_percentile")
+plot.sens.site(all, "IWUE", "Density", pct50, "50th_percentile")
+plot.sens.site(all, "IWUE", "Density", pct75, "75th_percentile")
+plot.sens.site(all, "IWUE", "Density", pct100, "100th_percentile")
+
+# What are the relationships between density and other parameters?
+plot.sens.site(all, "precip", "Density", pct25, "25th_percentile")
+plot.sens.site(all, "precip", "Density", pct50, "50th_percentile")
+plot.sens.site(all, "precip", "Density", pct75, "75th_percentile")
+plot.sens.site(all, "precip", "Density", pct100, "100th_percentile")
+
+plot.sens.site(all, "GWBI", "Density", pct25, "25th_percentile")
+plot.sens.site(all, "GWBI", "Density", pct50, "50th_percentile")
+plot.sens.site(all, "GWBI", "Density", pct75, "75th_percentile")
+plot.sens.site(all, "GWBI", "Density", pct100, "100th_percentile")
+
+plot.sens.site(all, "LAI", "Density", pct25, "25th_percentile")
+plot.sens.site(all, "LAI", "Density", pct50, "50th_percentile")
+plot.sens.site(all, "LAI", "Density", pct75, "75th_percentile")
+plot.sens.site(all, "LAI", "Density", pct100, "100th_percentile")
+
+plot.sens.site(all, "Tair" ,"Density", pct25, "25th_percentile")
+plot.sens.site(all, "Tair", "Density", pct50, "50th_percentile")
+plot.sens.site(all, "Tair", "Density", pct75, "75th_percentile")
+plot.sens.site(all, "Tair", "Density", pct100, "100th_percentile")
+
+plot.sens.site(all, "CO2" ,"Density", pct25, "25th_percentile")
+plot.sens.site(all, "CO2", "Density", pct50, "50th_percentile")
+plot.sens.site(all, "CO2", "Density", pct75, "75th_percentile")
+plot.sens.site(all, "CO2", "Density", pct100, "100th_percentile")
+
+saveRDS(all, paste0(getwd(), "/Data/extracted/ED_yearly_all_with_density.RDS"))
 
 
 #------------------Plot sensitivty of WUE against pft-specific variables----------------

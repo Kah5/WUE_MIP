@@ -127,43 +127,22 @@ Dens.df <- merge(Dens.df, datain[,c('lat','lon','ID','site.name')], by = c('lat'
 
 
 
-#---------------------- make a plot of fcomp at each site-------------------
-sites <- unique(Fcomp.df$site.name)
-Fcomp.df$site.name <- as.character(Fcomp.df$site.name) # make site name a character
-Fcomp.df <- Fcomp.df[order(Fcomp.df$ID),]
-
-
-png(height = 13, width = 13, units = 'in', res= 100, "outputs/preliminaryplots/ED_Fcomp_yearly_timeseries.png")
-ggplot(Fcomp.df, aes(x = time, y = Fcomp, colour = pft)) + geom_line()+theme_bw()+facet_wrap(~site.name, ncol=5)
-dev.off()
-
-#------------------ plot density of each pft at each site--------------------------
-
-
-Dens.df$site.name <- as.character(Dens.df$site.name) # make site name a character
-Dens.df <- Dens.df[order(Dens.df$ID),]
-
-png(height = 13, width = 13, units = 'in', res= 200, "outputs/preliminaryplots/ED_Dens_yearly_timeseries.png")
-ggplot(Dens.df, aes(x = time, y = Dens, colour = pft)) + geom_line()+theme_bw()+facet_wrap(~site.name, ncol=5)
-dev.off()
-
 # note: density values seem very high--are these values really stems per hectare?
 
 
-#---------------Plotting non-pft variables:
-# preliminary crappy plots for 1 site
-plot( CO2[,2], IWUE[,2] )
-plot( precip[,2], IWUE[,2] )
-plot( tair[,2], IWUE[,2] )
-plot( gwbi[,2], IWUE[,2] )
-plot( lai[,2], IWUE[,2] )
-
 
 #-------------------get dataframes aggregated to yearly timestep---------
+WUEt <- readRDS(paste0(getwd(), "/Data/ED2/ED2.WUEt.rds"))
+WUEi <- readRDS(paste0(getwd(), "/Data/ED2/ED2.WUEi.rds"))
+IWUE <- readRDS(paste0(getwd(), "/Data/ED2/ED2.IWUE.rds"))
+
 
 # we may need to rethink this function, but it is a start
 get.yrmeans <- function(df, var){
-  m <- melt(df, id.vars=c("Year", "Month", "mo"))
+  df <- data.frame(df)
+  df$Year <- year
+  df$Month <- month
+  m <- melt(df, id.vars=c("Year", "Month"))
   yrmeans<-dcast(m, Year ~ variable, mean, na.rm=TRUE)
   m2 <- melt(yrmeans, id.vars= "Year")
   m2$Year <- as.numeric(m2$Year)
@@ -177,11 +156,11 @@ get.yrmeans <- function(df, var){
 IWUE.y <- get.yrmeans(IWUE, "IWUE")
 WUEi.y <- get.yrmeans(WUEi, "WUEi")
 WUEt.y <- get.yrmeans(WUEt, "WUEt")
-precip.y <- get.yrmeans(precip, "precip")
-CO2.y <- get.yrmeans(CO2, "CO2")
-lai.y <- get.yrmeans(lai, "LAI")
-gwbi.y <- get.yrmeans(gwbi, "GWBI")
-tair.y <- get.yrmeans(tair, "Tair")
+precip.y <- get.yrmeans(ED2.precipf, "precip")
+CO2.y <- get.yrmeans(ED2.CO2, "CO2")
+lai.y <- get.yrmeans(ED2.LAI, "LAI")
+gwbi.y <- get.yrmeans(ED2.GWBI, "GWBI")
+tair.y <- get.yrmeans(ED2.tair, "Tair")
 
 # use reduce to merge all these into one dataframe
 all.y <- Reduce(function(x, y) merge(x, y, by = ,all=TRUE), list(IWUE.y, WUEi.y, WUEt.y, CO2.y,
@@ -193,15 +172,16 @@ saveRDS(all.y, paste0(getwd(), "/Data/extracted/ED_yearly_allnonpft.RDS"))
 
 
 # make plots of variables by sites
+all.y <- readRDS(paste0(getwd(), "/Data/extracted/ED_yearly_allnonpft.RDS"))
 
 plot.sens <- function(df, xname, yname){
   df <- df[,c("Year", "Site", xname, yname)]
   colnames(df) <- c("Year", "Site", "x", "y")
-  lim <- quantile(df$x, .99) # so we dont plot the outliers
+  lim <- quantile(df$x, .99, na.rm=T) # so we dont plot the outliers
   
   png(height = 12, width = 12, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/sensitivity/ED2_", xname,"_", yname,"_yr_sens_site.png"))
   print(ggplot(data = df, aes(x = x, y = y, color = Site))+geom_point()+xlim(0,lim)+
-       ylab(yname)+ xlab(xname)+stat_smooth(color = "black")+facet_wrap(~Site, ncol = 5)+theme_bw())
+       ylab(yname)+ xlab(xname)+stat_smooth(color = "black")+theme_bw()+ theme(legend.position="none") )
   dev.off()
 }
 
@@ -232,6 +212,143 @@ plot.sens(all.y, "GWBI", "IWUE")
 plot.sens(all.y, "GWBI", "Tair")
 plot.sens(all.y, "GWBI", "precip")
 plot.sens(all.y, "GWBI", "LAI")
+
+
+#---------------Since there are many grid cells, lets classifiy them by mean annual precip--------
+# then we can look at sensitivity of the variables within different moisture classes:
+
+# find the mean annual precip rate for each grid cell:
+ED2.precip <- readRDS(paste0(getwd(), "/Data/ED2/ED2.precipf.rds"))
+pr <- data.frame(ED2.precip)
+pr$Year <- year
+pr$Month <- month
+m <- melt(pr, id.vars=c("Year", "Month"))
+yrsums <- dcast(m, Year ~ variable, sum, na.rm=TRUE) # get a precipitaiton rate sum for each year
+means <- colSums(yrsums[,2:255])
+colnames(means)<- paleon$latlon
+paleon$meanprecipf <-means
+
+#X11(width = 12)
+ggplot(paleon, aes(x=lon, y=lat, fill=meanprecipf))+geom_raster()
+
+summary(means)
+summary(means[!means == 0])
+#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#0.1751  0.3016  0.3745  0.3744  0.4519  0.5788 
+
+# get the gridcells where the mean precipitation rate is less than 25th percentile:
+
+pct25 <- paleon[paleon$meanprecipf <= quantile(means[!means == 0], .25),]$num
+pct50 <- paleon[paleon$meanprecipf >= quantile(means[!means == 0], .25) & paleon$meanprecipf <= quantile(means[!means == 0], .50),]$num
+pct75 <- paleon[paleon$meanprecipf >= quantile(means[!means == 0], .50) & paleon$meanprecipf <= quantile(means[!means == 0], .75),]$num
+pct100 <- paleon[paleon$meanprecipf >= quantile(means[!means == 0], .75)& paleon$meanprecipf <= quantile(means[!means == 0], 1),]$num
+
+# add the X before the number to match all.y
+pct25<- paste0("X", pct25)
+pct50<- paste0("X", pct50)
+pct75<- paste0("X", pct75)
+pct100<- paste0("X", pct100)
+
+# make plots for only the low precipitation sites and save in preliminaryplots/sensitivity/by_precip:
+
+plot.sens.site <- function(df, xname, yname, pct, percentile){
+  df <- df[,c("Year", "Site", xname, yname)]
+  df <- df[df$Site %in% pct, ]
+  colnames(df) <- c("Year", "Site", "x", "y")
+  lim <- quantile(df$x, .99, na.rm=T) # so we dont plot the outliers
+  
+  png(height = 12, width = 12, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/sensitivity/by_precip/",xname,"/ED2_", xname,"_", yname,"_",percentile,"_yr_sens.png"))
+  print(ggplot(data = df, aes(x = x, y = y, color = Site))+geom_point()+xlim(0,lim)+
+          ylab(yname)+ xlab(xname)+stat_smooth(color = "black")+theme_bw()+ theme(legend.position="none") + ggtitle(paste0(percentile,"precip") ))
+  dev.off()
+  
+  png(height = 12, width = 12, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/sensitivity/by_precip/",xname,"/ED2_", xname,"_", yname,"_",percentile,"_yr_sens_site.png"))
+  print(ggplot(data = df, aes(x = x, y = y, color = Site))+geom_point()+xlim(0,lim)+
+          ylab(yname)+ xlab(xname)+stat_smooth(color = "black")+facet_wrap(~Site)+theme_bw()+ theme(legend.position="none") + ggtitle(paste0(percentile,"precip") ))
+  dev.off()
+}
+
+# for WUEi:
+plot.sens.site(all.y, "WUEi", "CO2", pct25, "25th_percentile")
+plot.sens.site(all.y, "WUEi", "CO2", pct50, "50th_percentile")
+plot.sens.site(all.y, "WUEi", "CO2", pct75, "75th_percentile")
+plot.sens.site(all.y, "WUEi", "CO2", pct100, "100th_percentile")
+
+plot.sens.site(all.y, "WUEi", "GWBI", pct25, "25th_percentile")
+plot.sens.site(all.y, "WUEi", "GWBI", pct50, "50th_percentile")
+plot.sens.site(all.y, "WUEi", "GWBI", pct75, "75th_percentile")
+plot.sens.site(all.y, "WUEi", "GWBI", pct100, "100th_percentile")
+
+plot.sens.site(all.y, "WUEi", "Tair", pct25, "25th_percentile")
+plot.sens.site(all.y, "WUEi", "Tair", pct50, "50th_percentile")
+plot.sens.site(all.y, "WUEi", "Tair", pct75, "75th_percentile")
+plot.sens.site(all.y, "WUEi", "Tair", pct100, "100th_percentile")
+
+plot.sens.site(all.y, "WUEi", "precip", pct25, "25th_percentile")
+plot.sens.site(all.y, "WUEi", "precip", pct50, "50th_percentile")
+plot.sens.site(all.y, "WUEi", "precip", pct25, "75th_percentile")
+plot.sens.site(all.y, "WUEi", "precip", pct100, "100th_percentile")
+
+plot.sens.site(all.y, "WUEi", "LAI", pct25, "25th_percentile")
+plot.sens.site(all.y, "WUEi", "LAI", pct50, "50th_percentile")
+plot.sens.site(all.y, "WUEi", "LAI", pct75, "75th_percentile")
+plot.sens.site(all.y, "WUEi", "LAI", pct100, "100th_percentile")
+
+# for WUEi:
+plot.sens.site(all.y, "IWUE", "CO2", pct25, "25th_percentile")
+plot.sens.site(all.y, "IWUE", "CO2", pct50, "50th_percentile")
+plot.sens.site(all.y, "IWUE", "CO2", pct75, "75th_percentile")
+plot.sens.site(all.y, "IWUE", "CO2", pct100, "100th_percentile")
+
+plot.sens.site(all.y, "IWUE", "GWBI", pct25, "25th_percentile")
+plot.sens.site(all.y, "IWUE", "GWBI", pct50, "50th_percentile")
+plot.sens.site(all.y, "IWUE", "GWBI", pct75, "75th_percentile")
+plot.sens.site(all.y, "IWUE", "GWBI", pct100, "100th_percentile")
+
+plot.sens.site(all.y, "IWUE", "Tair", pct25, "25th_percentile")
+plot.sens.site(all.y, "IWUE", "Tair", pct50, "50th_percentile")
+plot.sens.site(all.y, "IWUE", "Tair", pct75, "75th_percentile")
+plot.sens.site(all.y, "IWUE", "Tair", pct100, "100th_percentile")
+
+plot.sens.site(all.y, "IWUE", "precip", pct25, "25th_percentile")
+plot.sens.site(all.y, "IWUE", "precip", pct50, "50th_percentile")
+plot.sens.site(all.y, "IWUE", "precip", pct25, "75th_percentile")
+plot.sens.site(all.y, "IWUE", "precip", pct100, "100th_percentile")
+
+plot.sens.site(all.y, "IWUE", "LAI", pct25, "25th_percentile")
+plot.sens.site(all.y, "IWUE", "LAI", pct50, "50th_percentile")
+plot.sens.site(all.y, "IWUE", "LAI", pct75, "75th_percentile")
+plot.sens.site(all.y, "IWUE", "LAI", pct100, "100th_percentile")
+
+# for WUEt:
+plot.sens.site(all.y, "WUEt", "CO2", pct25, "25th_percentile")
+plot.sens.site(all.y, "WUEt", "CO2", pct50, "50th_percentile")
+plot.sens.site(all.y, "WUEt", "CO2", pct75, "75th_percentile")
+plot.sens.site(all.y, "WUEt", "CO2", pct100, "100th_percentile")
+
+plot.sens.site(all.y, "WUEt", "GWBI", pct25, "25th_percentile")
+plot.sens.site(all.y, "WUEt", "GWBI", pct50, "50th_percentile")
+plot.sens.site(all.y, "WUEt", "GWBI", pct75, "75th_percentile")
+plot.sens.site(all.y, "WUEt", "GWBI", pct100, "100th_percentile")
+
+plot.sens.site(all.y, "WUEt", "Tair", pct25, "25th_percentile")
+plot.sens.site(all.y, "WUEt", "Tair", pct50, "50th_percentile")
+plot.sens.site(all.y, "WUEt", "Tair", pct75, "75th_percentile")
+plot.sens.site(all.y, "WUEt", "Tair", pct100, "100th_percentile")
+
+plot.sens.site(all.y, "WUEt", "precip", pct25, "25th_percentile")
+plot.sens.site(all.y, "WUEt", "precip", pct50, "50th_percentile")
+plot.sens.site(all.y, "WUEt", "precip", pct25, "75th_percentile")
+plot.sens.site(all.y, "WUEt", "precip", pct100, "100th_percentile")
+
+plot.sens.site(all.y, "WUEt", "LAI", pct25, "25th_percentile")
+plot.sens.site(all.y, "WUEt", "LAI", pct50, "50th_percentile")
+plot.sens.site(all.y, "WUEt", "LAI", pct75, "75th_percentile")
+plot.sens.site(all.y, "WUEt", "LAI", pct100, "100th_percentile")
+
+
+
+
 
 #------------------Plot sensitivty of WUE against pft-specific variables----------------
 fcomp.pft<- ddply(Fcomp.df, .variables = c("lat", 'lon', 'time','ID', 'pft', 'site.name'), FUN = sum, value.var = "Fcomp")

@@ -6,7 +6,7 @@ library(tidyr)
 library(zoo)
 
 load("Data/PalEON_siteInfo_all.RData")
-# read in model outputs that were extracted
+# read in model outputs that were extracted for ED2
 
 files <- list.files("Data/ED2/")
 
@@ -15,69 +15,11 @@ for(i in 1:length(files)){
 assign(x = unlist(strsplit(files[i],split = '.rds')), value = readRDS(paste0("Data/ED2/",files[i])))
 }
 
-#ED2.CO2 <- readRDS(file ="Data/ED2/ED2.CO2.rds")
-#ED2.GPP <- readRDS(file = "Data/ED2/ED2.GPP.rds")
-#ED2.gwbi <- readRDS(file = "Data/ED2/ED2.gwbi.RDS")
-#ED2.tair <- readRDS(file = "Data/ED2/ED2")
-#ED2.qair <- readRDS(file = "Data/ED2/ED2.qair.rds")
-#ED2.transp <- readRDS(file = "Data/ED2/ED2.transp.rds")
-#ED2.Fire <- readRDS(file = "Data/ED2/ED2.Fire.rds")
-#ED2.LAI <- readRDS(file = "Data/ED2/ED2.LAI.rds")
-#ED2.evap <- readRDS(file = "Data/ED2/ED2.evap.rds")
-#ED2.npp <- readRDS(file = "Data/ED2/ED2.npp.rds")
-#ED2.bai <- readRDS(file = "Data/ED2/ED2.BA.rds")
-#ED2.precipf <- readRDS(file = "Data/ED2/ED2.precipf.rds")
 
-# laod pft specific variables:
-#ED2.BA <- readRDS(file = "Data/ED_monthly_BA_nona.RDS")
-#ED2.dens <- readRDS(file = "Data/ED_monthly_Dens_nona.RDS")
-#ED2.Fcomp <- readRDS(file = "Data/ED_monthly_Fcomp_nona.RDS")
-
-# this converts them into arrays, there is likely an easier way, but using array(unlist(L), dim = c(nrow(L[[1]]), ncol(L[[1]]), length(L))) takes too long
-#ed.co2 <- ED2.CO2$CO2
-#ed.gpp <- ED2.GPP$GPP
-#ed.gwbi <- ED2.gwbi$GWBI
-#ed.tair <- ED2.tair$tair
-#ed.transp <- ED2.transp$Transp
-#ed.fire <- ED2.Fire$Fire
-#ed.LAI <- ED2.LAI$LAI
-#ed.evap <- ED2.evap$Evap
-#ed.qair <- ED2.qair$qair
-#ed.precip <- ED2.precipf$precipf
-#ed.bai <- ED2.bai$BAI
-
-
-#ed.Fcomp <- ED2.Fcomp$Fcomp
-#ed.Dens <- ED2.dens$Dens
-#ed.BA <- ED2.BA$BA
 
 # ----------------get lats and long dimensions----------------------
-#yr <- "850"
-#co2850 <- ed.co2[,,yr]
-#tab <- melt(co2850)
-
-#find the indices for lat lons where we have data:
-
-
-#colnames(tab) <- c
 
 ggplot(paleon, aes(x = lon, y = lat, fill = notes))+geom_raster()+theme_bw()+coord_equal()
-
-
-# create a dataframe with lat and lon values for lookup later
-#lats <- data.frame(lat = as.numeric(dimnames(ed.co2)$lat),
- #                  latrow = 1:30)
-
-#lons <- data.frame(lon = as.numeric(dimnames(ed.co2)$lon),
- #                  lonrow = 1:80)
-
-# only get the grid cells that the model has been run at
-#datain <- tab[!is.na(tab$value),]
-
-#datain<- merge(datain, lats, by = "lat")
-#datain <- merge(datain, lons, by = "lon")
-#datain$ID <- 1:40 
-#datain$site.name <- paste0("site", datain$ID)
 
 
 # make a simple reference map of where whe have grid cells and their names:
@@ -94,19 +36,6 @@ ggplot(paleon, aes(x = lon, y = lat))+geom_raster()+
   geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60))
 dev.off()
 
-#write.csv(datain, paste0(getwd(), "/Data/ED_site_list_lat_lon.csv"))
-# function to extract data from grid cells that have data (there is likely a way to do this better):
-
-#extractnonna <-function(datain, x){
- # test <- matrix(0,nrow = 13932, ncol=nrow(datain))
-#  test<- data.frame(test)
- # for(i in 1:nrow(datain)){
-  #  test[,i] <- x[datain[i,]$latrow, datain[i,]$lonrow,]
-   # colnames(test[i]) <- datain[i,]$site.name
-  #}
-  
-  #colnames(test) <- datain$site.name
-  
   # get the years listed for ED monthly runs
 #13932 data points = 1161 years
   timevec <- 1:13932
@@ -116,7 +45,7 @@ dev.off()
   
 
  
-#------------------------------------------------ preliminary plots:--------------------------------------------
+#-------------------------------------------ED2 preliminary plots:--------------------------------------------
 
 # plot the seasonal cycle for each variable at each site and save in outputs/preliminaryplots
 plot.seasonal <- function(df, name){
@@ -134,17 +63,17 @@ plot.seasonal <- function(df, name){
 }
 
 
-
-plot.seasonal(GPP, "GPP")
-plot.seasonal(GWBI, "GWBI")
-plot.seasonal(tair, "Tair")
-plot.seasonal(transp, "Transp")
-plot.seasonal(fire, "Fire")
-plot.seasonal(lai, "LAI")
-plot.seasonal(evap, "Evap")
-plot.seasonal(qair, "Qair")
+# not run
+#plot.seasonal(ED2.GPP, "GPP")
+#plot.seasonal(ED2.GWBI, "GWBI")
+#plot.seasonal(ED2.tair, "Tair")
+#plot.seasonal(ED2.transp, "Transp")
+#plot.seasonal(ED2.fire, "Fire")
+#plot.seasonal(ED2.lai, "LAI")
+#plot.seasonal(ED2.evap, "Evap")
+#plot.seasonal(ED2.qair, "Qair")
 #plot.seasonal(soilmoist, "SoilMoist")
-plot.seasonal(precip, "Precipf")
+#plot.seasonal(ED2.precip, "Precipf")
 # calculate the means for the years:
 
 plot.yrmean.ts <- function(df, name){
@@ -156,21 +85,21 @@ plot.yrmean.ts <- function(df, name){
   yrmeans<-dcast(m, year ~ variable, mean)
   m2 <- melt(yrmeans, id.vars= "year")
   m2$Year <- as.numeric(m2$year)
-  png(height = 7, width = 18, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/ED2_", name, "_mean_timeseries_site.png"))
+  png(height = 7, width = 18, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/", name, "_mean_timeseries_site.png"))
   print(ggplot(data = m2, aes(x = year, y = value, color = variable))+geom_line()+ theme(legend.position="none"))
   dev.off()
 }
 
-plot.yrmean.ts(ED2.GPP, "GPP")
-plot.yrmean.ts(ED2.GWBI, "GWBI")
-plot.yrmean.ts(ED2.tair, "Tair")
-plot.yrmean.ts(ED2.qair, "Qair")
-plot.yrmean.ts(ED2.transp, "Transp")
-plot.yrmean.ts(ED2.fire, "Fire")
-plot.yrmean.ts(ED2.lai, "LAI")
-plot.yrmean.ts(ED2.evap, "Evap")
-plot.yrmean.ts(ED2.CO2, "CO2")
-plot.yrmean.ts(ED2.precip, "Precip")
+plot.yrmean.ts(ED2.GPP, "ED2.GPP")
+plot.yrmean.ts(ED2.GWBI, "ED2.GWBI")
+plot.yrmean.ts(ED2.tair, "ED2.Tair")
+plot.yrmean.ts(ED2.qair, "ED2.Qair")
+plot.yrmean.ts(ED2.Transp, "ED2.Transp")
+plot.yrmean.ts(ED2.Fire, "ED2.Fire")
+plot.yrmean.ts(ED2.LAI, "ED2.LAI")
+plot.yrmean.ts(ED2.Evap, "ED2.Evap")
+plot.yrmean.ts(ED2.CO2, "ED2.CO2")
+plot.yrmean.ts(ED2.precipf, "ED2.Precip")
 #plot.yrmean.ts(soilmoist, "SoilMoist")
 
 # plot and calulate only summer JJA yearly values:
@@ -184,22 +113,22 @@ plot.JJA.ts <- function(df, name){
   yrmeans<-dcast(m[m$month %in% c(6,7,8),], year ~ variable, mean)
   m2 <- melt(yrmeans, id.vars= "year")
   m2$year <- as.numeric(m2$year)
-  png(height = 7, width = 18, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/ED2_", name, "_JJA_mean_timeseries_site.png"))
+  png(height = 7, width = 18, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/", name, "_JJA_mean_timeseries_site.png"))
   print(ggplot(data = m2, aes(x = year, y = value, color = variable))+geom_line()+ theme(legend.position="none"))
   dev.off()
 }
 
 
-plot.JJA.ts (ED2.GPP, "GPP")
-plot.JJA.ts (ED2.GWBI, "GWBI")
-plot.JJA.ts (ED2.tair, "Tair")
-plot.JJA.ts (ED2.qair, "Qair")
-plot.JJA.ts (ED2.Transp, "Transp")
-plot.JJA.ts (ED2.Fire, "Fire")
-plot.JJA.ts (ED2.LAI, "LAI")
-plot.JJA.ts (ED2.Evap, "Evap")
-plot.JJA.ts (ED2.CO2, "CO2")
-plot.JJA.ts(ED2.precipf, "Precip")
+plot.JJA.ts (ED2.GPP, "ED2.GPP")
+plot.JJA.ts (ED2.GWBI, "ED2.GWBI")
+plot.JJA.ts (ED2.tair, "ED2.Tair")
+plot.JJA.ts (ED2.qair, "ED2.Qair")
+plot.JJA.ts (ED2.Transp, "ED2.Transp")
+plot.JJA.ts (ED2.Fire, "ED2.Fire")
+plot.JJA.ts (ED2.LAI, "ED2.LAI")
+plot.JJA.ts (ED2.Evap, "ED2.Evap")
+plot.JJA.ts (ED2.CO2, "ED2.CO2")
+plot.JJA.ts(ED2.precipf, "ED2.Precip")
 #plot.JJA.ts(soilmoist, "SoilMoist")
 # plot moving averages in ggplot:
 #rollmean(, 50, fill=0)
@@ -222,3 +151,77 @@ saveRDS(transp, "Data/extracted/ED_monthly_Transp.RDS")
 saveRDS(evap, "Data/extracted/ED_monthly_evap.RDS")
 saveRDS(lai, "Data/extracted/ED_monthly_lai.RDS")
 saveRDS(fire, "Data/extracted/ED_monthly_fire.RDS")
+
+
+#-------------------------LPJ-GUESS preliminary plots--------------------
+# remove the ED2 variables:
+rm(list = ls())
+
+load("Data/PalEON_siteInfo_all.RData")
+# read in model outputs that were extracted for ED2
+
+files <- list.files("Data/LPJ-GUESS/")
+
+# read in all the LPJ-GUESS files
+for(i in 1:length(files)){
+  assign(x = unlist(strsplit(unlist(strsplit(files[i],split = '.rds')),split = 'LPJ-'))[2], value = readRDS(paste0("Data/LPJ-GUESS/",files[i])))
+}
+
+timevec <- 1:13932
+month <- rep(1:12, 1161)
+yearsince  <- rep(0:1160, each =12)
+year <- yearsince + 850
+
+# reload function
+plot.yrmean.ts <- function(df, name){
+  df <- data.frame(df)
+  colnames(df) <- paleon$latlon
+  df$year <- year
+  df$month <- month
+  m <- melt(df, id.vars=c("year", "month"))
+  yrmeans<-dcast(m, year ~ variable, mean)
+  m2 <- melt(yrmeans, id.vars= "year")
+  m2$Year <- as.numeric(m2$year)
+  png(height = 7, width = 18, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/", name, "_mean_timeseries_site.png"))
+  print(ggplot(data = m2, aes(x = year, y = value, color = variable))+geom_line()+ theme(legend.position="none"))
+  dev.off()
+}
+
+plot.yrmean.ts(GUESS.GPP, "GUESS.GPP")
+plot.yrmean.ts(GUESS.GWBI, "GUESS.GWBI")
+plot.yrmean.ts(GUESS.tair, "GUESS.Tair")
+plot.yrmean.ts(GUESS.qair, "GUESS.Qair")
+plot.yrmean.ts(GUESS.Transp, "GUESS.Transp")
+plot.yrmean.ts(GUESS.Fire, "GUESS.Fire")
+plot.yrmean.ts(GUESS.LAI, "GUESS.LAI")
+plot.yrmean.ts(GUESS.Evap, "GUESS.Evap")
+plot.yrmean.ts(GUESS.CO2, "GUESS.CO2")
+plot.yrmean.ts(GUESS.precipf, "GUESS.Precip")
+
+
+# plot jja meanas as a timesearies
+plot.JJA.ts <- function(df, name){
+  df <- data.frame(df)
+  colnames(df) <- paleon$latlon
+  df$year <- year
+  df$month <- month
+  m <- melt(df, id.vars=c("year", "month"))
+  yrmeans<-dcast(m[m$month %in% c(6,7,8),], year ~ variable, mean)
+  m2 <- melt(yrmeans, id.vars= "year")
+  m2$year <- as.numeric(m2$year)
+  png(height = 7, width = 18, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/", name, "_JJA_mean_timeseries_site.png"))
+  print(ggplot(data = m2, aes(x = year, y = value, color = variable))+geom_line()+ theme(legend.position="none"))
+  dev.off()
+}
+
+
+plot.JJA.ts (ED2.GPP, "Guess.GPP")
+plot.JJA.ts (ED2.GWBI, "GWBI")
+plot.JJA.ts (ED2.tair, "Tair")
+plot.JJA.ts (ED2.qair, "Qair")
+plot.JJA.ts (ED2.Transp, "Transp")
+plot.JJA.ts (ED2.Fire, "Fire")
+plot.JJA.ts (ED2.LAI, "LAI")
+plot.JJA.ts (ED2.Evap, "Evap")
+plot.JJA.ts (ED2.CO2, "CO2")
+plot.JJA.ts(ED2.precipf, "Precip")

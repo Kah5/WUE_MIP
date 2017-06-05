@@ -188,9 +188,8 @@ plot.yrmean.ts <- function(df, name){
 }
 
 plot.yrmean.ts(GUESS.GPP, "GUESS.GPP")
-plot.yrmean.ts(GUESS.GWBI, "GUESS.GWBI")
+#plot.yrmean.ts(GUESS.GWBI, "GUESS.GWBI") # GWBI is pft specifi in LPJ
 plot.yrmean.ts(GUESS.tair, "GUESS.Tair")
-plot.yrmean.ts(GUESS.qair, "GUESS.Qair")
 plot.yrmean.ts(GUESS.Transp, "GUESS.Transp")
 plot.yrmean.ts(GUESS.Fire, "GUESS.Fire")
 plot.yrmean.ts(GUESS.LAI, "GUESS.LAI")
@@ -215,13 +214,12 @@ plot.JJA.ts <- function(df, name){
 }
 
 
-plot.JJA.ts (ED2.GPP, "Guess.GPP")
-plot.JJA.ts (ED2.GWBI, "GWBI")
-plot.JJA.ts (ED2.tair, "Tair")
-plot.JJA.ts (ED2.qair, "Qair")
-plot.JJA.ts (ED2.Transp, "Transp")
-plot.JJA.ts (ED2.Fire, "Fire")
-plot.JJA.ts (ED2.LAI, "LAI")
-plot.JJA.ts (ED2.Evap, "Evap")
-plot.JJA.ts (ED2.CO2, "CO2")
-plot.JJA.ts(ED2.precipf, "Precip")
+plot.JJA.ts (GUESS.GPP, "Guess.GPP")
+#plot.JJA.ts (GUESS.GWBI, "GWBI") # GWBI is pft specific in LPJ
+plot.JJA.ts (GUESS.tair, "Tair")
+plot.JJA.ts (GUESS.Transp, "Transp")
+plot.JJA.ts (GUESS.Fire, "Fire")
+plot.JJA.ts (GUESS.LAI, "LAI")
+plot.JJA.ts (GUESS.Evap, "Evap")
+plot.JJA.ts (GUESS.CO2, "CO2")
+plot.JJA.ts(GUESS.precipf, "Precip")

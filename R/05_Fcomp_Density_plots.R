@@ -5,14 +5,15 @@ library(ggplot2)
 library(tidyr)
 
 # load the necessary data:
-
+rm(list=ls()) # clear envt
 
 # load the pft specific data:
-ED2.Dens <- readRDS("D:/Kelly/WUE_MIP/Data/ED2/ED2.Dens.rds")
-ED2.Fcomp <- readRDS("D:/Kelly/WUE_MIP/Data/ED2/ED2.Fcomp.RDS")
-ED2.CO2 <- readRDS('D:/Kelly/WUE_MIP/Data/ED2/ED2.CO2.rds')
-load("D:/Kelly/WUE_MIP/Data/PalEON_siteInfo_all.RData")
+ED2.Dens <- readRDS("Data/ED2/ED2.Dens.rds")
+ED2.Fcomp <- readRDS("Data/ED2/ED2.Fcomp.RDS")
+ED2.CO2 <- readRDS('Data/ED2/ED2.CO2.rds')
+load("Data/PalEON_siteInfo_all.RData")
 
+# make plots for ED2:
 timevec <- 1:13932
 month <- rep(1:12, 1161)
 yearsince  <- rep(0:1160, each =12)
@@ -23,6 +24,7 @@ year <- yearsince + 850
 
 #convert list to array
 pft.lab=c("grass.c4", "tropic.early", "tropic.mid", "tropic.late", "grass.c3.temp", "pine.north", "pine.south", "conifer.late", "temp.decid.early", "temp.decid.mid", "temp.decid.late","ag1", "ag2", "ag3", "ag4","grass.c3.subtrop","Araucaria")
+
 
 Fcomp<- ED2.Fcomp
 Dens <- ED2.Dens
@@ -77,23 +79,89 @@ for(i in 1:length(paleon$num)){
   dev.off()
 }
 
-# Histograms of total density by site:
-for(i in 1:length(paleon$num)){
-  png(height=7, width = 7, units = 'in', res=300, paste0(getwd(), "/outputs/preliminaryplots/Dens/hists/ED2_Dens_",paleon[i,]$latlon, ".png"))
-  dens.site <- data.frame(Dens.r[,i,])
-  dens.site$Totaldens <- rowSums(dens.site, na.rm=TRUE)
-  print(ggplot(dens.site, aes(Totaldens))+geom_histogram()+theme_bw())
-  dev.off()
+
+#save Dens.r and Fcomp.r
+saveRDS(Dens.r, "Data/ED2.Dens.pftonly.rds")
+saveRDS(Fcomp.r, "Data/ED2.Fcomp.pftonly.rds")
+
+#----------------------Are there sites where density is bimodal?----------------
+
+# make histograms of density by site and model
+# plot histograms for each grid cell based on the model:
+make.hists<- function(model){
+if(model == "ED2"){
+  Dens <- readRDS("Data/ED2/ED2.Dens.rds")
+  CO2 <- ED2.CO2
+  dimnames(Dens) <- list(timevec, paleon$num, pft.lab)
+  pfts <- c("pine.north" ,"conifer.late","temp.decid.early", "temp.decid.mid",   
+          "temp.decid.late", "grass.c3.temp" )
+  Dens.r <- Dens[,,pfts]
   
-  site.m <- melt(dens.site, id.vars = c("Totaldens"))
-  png(height = 4, width= 7, units = 'in', res=300, paste0(getwd(), "/outputs/preliminaryplots/Dens/hists/ED2_Dens_byPFT", paleon[i,]$latlon, '.png'))
-  print(ggplot(site.m, aes(value, fill= variable))+geom_histogram()+facet_wrap(~variable)+theme_bw())
-  dev.off()
+  # loop to calculate the total density and output histograms
+  for(i in 1:length(paleon$num)){
+    png(height=7, width = 7, units = 'in', res=300, paste0(getwd(), "/outputs/preliminaryplots/Dens/hists/",model,"_Dens_",paleon[i,]$latlon, ".png"))
+    dens.site <- data.frame(Dens.r[,i,])
+    dens.site$Totaldens <- rowSums(dens.site, na.rm=TRUE)
+    print(ggplot(dens.site, aes(Totaldens))+geom_histogram()+theme_bw())
+    dev.off()
+    
+    site.m <- melt(dens.site, id.vars = c("Totaldens"))
+    png(height = 4, width= 7, units = 'in', res=300, paste0(getwd(), "/outputs/preliminaryplots/Dens/hists/",model,"_Dens_byPFT", paleon[i,]$latlon, '.png'))
+    print(ggplot(site.m, aes(value, fill= variable))+geom_histogram()+facet_wrap(~variable)+theme_bw())
+    dev.off()
+  }
+  
+}else{
+  Dens <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.Dens.rds")
+  CO2 <- ED2.CO2
+  yr <- 850:2010 # guess density is yearly
+  pft.guess=c("BNE", "BINE", "BNS", "BIBS", "TeBS", "BeIBS", "TeBE", "TrBE", "TrIBE", "TrBR", "C3G", "C4G", "Total")
+  dimnames(Dens) <- list(yr, paleon$num, pft.guess)
+  
+  pfts <- c("BNE" ,"BINE","BNS", "BIBS",   
+            "TeBS","BeIBS","TeBE", "C3G", "Total" )
+  Dens.r <- Dens[,,pfts]
+  # loop that takes total 
+  for(i in 1:length(paleon$num)){
+    png(height=7, width = 7, units = 'in', res=300, paste0(getwd(), "/outputs/preliminaryplots/Dens/hists/",model,"_Dens_",paleon[i,]$latlon, ".png"))
+    dens.site <- data.frame(Dens.r[,i,])
+    #dens.site$Totaldens <- rowSums(dens.site, na.rm=TRUE)
+    print(ggplot(dens.site, aes(Total))+geom_histogram()+theme_bw())
+    dev.off()
+    
+    site.m <- melt(dens.site, id.vars = c("Total"))
+    png(height = 4, width= 7, units = 'in', res=300, paste0(getwd(), "/outputs/preliminaryplots/Dens/hists/",model,"_Dens_byPFT", paleon[i,]$latlon, '.png'))
+    print(ggplot(site.m, aes(value, fill= variable))+geom_histogram()+facet_wrap(~variable)+theme_bw())
+    dev.off()
+  }
+  
+}
 }
 
+make.hists(model = "ED2")
+make.hists(model = "GUESS")
+
+# there are some sites that have bimodal distn of tree density, but 
+# these may be due to different species distributions
+
+
+# -----------------What grid cells are significantly "bimodal"?--------------
+
+# make one big function that finds the mean density and SD nd maps these out 
 # make a dataframe of total density and density sd to get an idea of how much each grid cell varies:
-library(modes)
-Dens.mean <- data.frame(num = paleon$num, 
+
+
+make.dens.maps <- funciton(model) {
+  if(model = "ED2"){
+  library(modes)
+  Dens <- readRDS("Data/ED2/ED2.Dens.rds")
+  CO2 <- ED2.CO2
+  dimnames(Dens) <- list(timevec, paleon$num, pft.lab)
+  pfts <- c("pine.north" ,"conifer.late","temp.decid.early", "temp.decid.mid",   
+            "temp.decid.late", "grass.c3.temp" )
+  Dens.r <- Dens[,,pfts]
+  
+  Dens.mean <- data.frame(num = paleon$num, 
                         lon = paleon$lon, 
                         lat = paleon$lat, 
                         latlon = paleon$latlon,
@@ -102,62 +170,146 @@ Dens.mean <- data.frame(num = paleon$num,
                         pval= NA, 
                         BC = NA)
 
-for(i in 1:length(paleon$num)){
-  dens.site <- data.frame(Dens.r[,i,])
-  dens.site$Totaldens <- rowSums(dens.site, na.rm=TRUE)
-  Dens.mean[i,]$mean <- mean(dens.site$Totaldens, na.rm=TRUE)
-  Dens.mean[i,]$sd <- sd(dens.site$Totaldens, na.rm=TRUE)
-  Dens.mean[i,]$pval <- diptest::dip.test(na.omit(density(dens.site$Totaldens)$y))$p
-  Dens.mean[i,]$BC <- bimodality_coefficient(na.omit(dens.site$Totaldens)) 
+  for(i in 1:length(paleon$num)){
+    dens.site <- data.frame(Dens.r[,i,])
+    dens.site$Totaldens <- rowSums(dens.site, na.rm=TRUE)
+    Dens.mean[i,]$mean <- mean(dens.site$Totaldens, na.rm=TRUE)
+    Dens.mean[i,]$sd <- sd(dens.site$Totaldens, na.rm=TRUE)
+    Dens.mean[i,]$pval <- diptest::dip.test(na.omit(density(dens.site$Totaldens)$y))$p
+    Dens.mean[i,]$BC <- bimodality_coefficient(na.omit(dens.site$Totaldens)) 
+  }
+
+  # save the file for future use:
+  saveRDS(Dens.mean, paste0(getwd(), "/outputs/data/ED2/ED2.meandens.rds"))
+  
+  # plot the mean density out on a map:
+  states <- map_data("state")
+  states <- subset(states, ! region  %in% c("california", 'nevada','arizona','utah','oregon','washington','new mexico','colorado','montana','wyoming','idaho') )
+  coordinates(states)<-~long+lat
+  class(states)
+  proj4string(states) <-CRS("+proj=longlat +datum=NAD83")
+  states <- spTransform(states,CRSobj = '+init=epsg:4326')
+  mapdata <- data.frame(states)
+  
+  cbpalette <- c("#ffffcc", "#c2e699", "#78c679", "#31a354", "#006837")
+  
+  # map of mean density:
+  png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_mean_dens_map.png"))
+  ggplot(Dens.mean, aes(x = lon, y = lat, fill = mean))+geom_raster()+
+    scale_fill_gradientn(colours = cbpalette, limits = c(0,3000000), name ="Tree \n Density \n (trees/hectare)", na.value = 'darkgrey')+
+    geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw()+ ggtitle('Mean total density')
+  dev.off()
+  
+  rbpalette<- c('#67001f',
+    '#b2182b',
+    '#d6604d',
+    '#f4a582',
+    '#fddbc7',
+    '#d1e5f0',
+    '#92c5de',
+    '#4393c3',
+    '#2166ac',
+    '#053061')
+  # map of sd of density:
+  png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_sd_dens_map.png"))
+  ggplot(Dens.mean, aes(x = lon, y = lat, fill = sd))+geom_raster()+
+    scale_fill_gradientn(colours = rev(rbpalette), limits = c(0,500000), name ="Tree \n Density \n (trees/hectare)", na.value = 'darkgrey')+
+    geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('SD of total density')
+  dev.off()
+  
+  # map of places with significantly bimodal distribution in tree density over time:
+  
+  bimodal <- ifelse(Dens.mean$BC > 0.55 & Dens.mean$pval <= 0.05, "Bimodal", 'Unimodal')
+  Dens.mean$bimodal <- bimodal
+  
+  png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_bimodal_time_map.png"))
+  ggplot(Dens.mean, aes(x = lon, y = lat, fill = bimodal))+geom_raster()+
+      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Places where density has bimodal distn.')
+  dev.off()
+  
+  }else{ # if the model is LPJ-GUESS, then...
+    # read in LPJ density again
+    Dens <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.Dens.rds")
+    CO2 <- ED2.CO2
+    yr <- 850:2010 # guess density is yearly
+    pft.guess=c("BNE", "BINE", "BNS", "BIBS", "TeBS", "BeIBS", "TeBE", "TrBE", "TrIBE", "TrBR", "C3G", "C4G", "Total")
+    dimnames(Dens) <- list(yr, paleon$num, pft.guess)
+    
+    pfts <- c("BNE" ,"BINE","BNS", "BIBS",   
+              "TeBS","BeIBS","TeBE", "C3G", "Total" )
+    Dens.r <- Dens[,,pfts]
+    
+    
+    library(modes)
+    Dens.mean <- data.frame(num = paleon$num, 
+                            lon = paleon$lon, 
+                            lat = paleon$lat, 
+                            latlon = paleon$latlon,
+                            mean = NA, 
+                            sd = NA, 
+                            pval= NA, 
+                            BC = NA)
+    
+    for(i in 1:length(paleon$num)){
+      dens.site <- data.frame(Dens.r[,i,])
+      Dens.mean[i,]$mean <- mean(dens.site$Total, na.rm=TRUE)
+      Dens.mean[i,]$sd <- sd(dens.site$Total, na.rm=TRUE)
+      Dens.mean[i,]$pval <- diptest::dip.test(na.omit(density(dens.site$Total)$y))$p
+      Dens.mean[i,]$BC <- bimodality_coefficient(na.omit(dens.site$Total)) 
+    }
+    
+    # save the file for future use:
+    saveRDS(Dens.mean, paste0(getwd(), "/outputs/data/LPJ-GUESS/LPJ-GUESS.meandens.rds"))
+    
+    # plot the mean density out on a map:
+    states <- map_data("state")
+    states <- subset(states, ! region  %in% c("california", 'nevada','arizona','utah','oregon','washington','new mexico','colorado','montana','wyoming','idaho') )
+    coordinates(states)<-~long+lat
+    class(states)
+    proj4string(states) <-CRS("+proj=longlat +datum=NAD83")
+    states <- spTransform(states,CRSobj = '+init=epsg:4326')
+    mapdata <- data.frame(states)
+    
+    cbpalette <- c("#ffffcc", "#c2e699", "#78c679", "#31a354", "#006837")
+    
+    # map of mean density:
+    png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/GUESS_mean_dens_map.png"))
+    ggplot(Dens.mean, aes(x = lon, y = lat, fill = mean))+geom_raster()+
+      scale_fill_gradientn(colours = cbpalette, limits = c(0,3000000), name ="Tree \n Density \n (trees/hectare)", na.value = 'darkgrey')+
+      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw()+ ggtitle('Mean total density')
+    dev.off()
+    
+    rbpalette<- c('#67001f',
+                  '#b2182b',
+                  '#d6604d',
+                  '#f4a582',
+                  '#fddbc7',
+                  '#d1e5f0',
+                  '#92c5de',
+                  '#4393c3',
+                  '#2166ac',
+                  '#053061')
+    # map of sd of density:
+    png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/GUESS_sd_dens_map.png"))
+    ggplot(Dens.mean, aes(x = lon, y = lat, fill = sd))+geom_raster()+
+      scale_fill_gradientn(colours = rev(rbpalette), limits = c(0,500000), name ="Tree \n Density \n (trees/hectare)", na.value = 'darkgrey')+
+      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('SD of total density')
+    dev.off()
+    
+    # map of places with significantly bimodal distribution in tree density over time:
+    
+    bimodal <- ifelse(Dens.mean$BC > 0.55 & Dens.mean$pval <= 0.05, "Bimodal", 'Unimodal')
+    Dens.mean$bimodal <- bimodal
+    
+    png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/GUESS_bimodal_time_map.png"))
+    ggplot(Dens.mean, aes(x = lon, y = lat, fill = bimodal))+geom_raster()+
+      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Places where density has bimodal distn.')
+    dev.off()
+  }
 }
 
-# save the file for future use:
-saveRDS(Dens.mean, paste0(getwd(), "/outputs/data/ED2/ED2.meandens.rds"))
 
-# plot the mean density out on a map:
-states <- map_data("state")
-states <- subset(states, ! region  %in% c("california", 'nevada','arizona','utah','oregon','washington','new mexico','colorado','montana','wyoming','idaho') )
-coordinates(states)<-~long+lat
-class(states)
-proj4string(states) <-CRS("+proj=longlat +datum=NAD83")
-states <- spTransform(states,CRSobj = '+init=epsg:4326')
-mapdata <- data.frame(states)
-
-cbpalette <- c("#ffffcc", "#c2e699", "#78c679", "#31a354", "#006837")
-
-# map of mean density:
-png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_mean_dens_map.png"))
-ggplot(Dens.mean, aes(x = lon, y = lat, fill = mean))+geom_raster()+
-  scale_fill_gradientn(colours = cbpalette, limits = c(0,3000000), name ="Tree \n Density \n (trees/hectare)", na.value = 'darkgrey')+
-  geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw()+ ggtitle('Mean total density')
-dev.off()
-
-rbpalette<- c('#67001f',
-  '#b2182b',
-  '#d6604d',
-  '#f4a582',
-  '#fddbc7',
-  '#d1e5f0',
-  '#92c5de',
-  '#4393c3',
-  '#2166ac',
-  '#053061')
-# map of sd of density:
-png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_sd_dens_map.png"))
-ggplot(Dens.mean, aes(x = lon, y = lat, fill = sd))+geom_raster()+
-  scale_fill_gradientn(colours = rev(rbpalette), limits = c(0,500000), name ="Tree \n Density \n (trees/hectare)", na.value = 'darkgrey')+
-  geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('SD of total density')
-dev.off()
-
-# map of places with significantly bimodal distribution in tree density over time:
-
-bimodal <- ifelse(Dens.mean$BC > 0.55 & Dens.mean$pval <= 0.05, "Bimodal", 'Unimodal')
-Dens.mean$bimodal <- bimodal
-
-png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_bimodal_time_map.png"))
-ggplot(Dens.mean, aes(x = lon, y = lat, fill = bimodal))+geom_raster()+
-    geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Places where density has bimodal distn.')
-dev.off()
+# ---------------------How does fire frequency vary across space?-----------------
 
 
 # compare this to a map of fire frequency:

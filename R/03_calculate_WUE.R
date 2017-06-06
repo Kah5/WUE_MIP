@@ -142,6 +142,8 @@ calc.WUE ("LPJ-GUESS")
 
 #---------------------Do yearly + montly aggregation plots------------------
 # read in the WUE files:
+load("Data/PalEON_siteInfo_all.RData")
+
 ED2.WUEi <- readRDS("Data/ED2/ED2.WUEi.rds")
 ED2.WUEt <- readRDS("Data/ED2/ED2.WUEt.rds")
 ED2.IWUE <- readRDS("Data/ED2/ED2.IWUE.rds")
@@ -224,9 +226,9 @@ yearsince  <- rep(0:1160, each =12)
 year <- yearsince + 850
 paleon$site <- paste0("X", paleon$num)
 
-data = ED2.WUEi
+data = ED2.IWUE
 model = "ED2"
-wue = "WUEi"
+wue = "IWUE"
 
 
 
@@ -283,7 +285,7 @@ slope.WUE.inc <- function(data ,model, wue){
   dev.off()
 }
 
-# run this funciton:
+# run this function to plot the maps of WUE chnage throught time:
 
 slope.WUE.inc(ED2.IWUE, "ED2", "IWUE")
 slope.WUE.inc(ED2.WUEi, "ED2", "WUEi")

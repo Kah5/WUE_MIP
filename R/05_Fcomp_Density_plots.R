@@ -151,8 +151,8 @@ make.hists(model = "GUESS")
 # make a dataframe of total density and density sd to get an idea of how much each grid cell varies:
 # this function also outputs the df of mean density and sd that is used in the map.fires function below
 
-make.dens.maps <- funciton(model) {
-  if(model = "ED2"){
+make.dens.maps <- function(model) {
+  if(model == "ED2"){
   library(modes)
   Dens <- readRDS("Data/ED2/ED2.Dens.rds")
   CO2 <- ED2.CO2
@@ -195,9 +195,9 @@ make.dens.maps <- funciton(model) {
   
   # map of mean density:
   png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_mean_dens_map.png"))
-  ggplot(Dens.mean, aes(x = lon, y = lat, fill = mean))+geom_raster()+
+  print(ggplot(Dens.mean, aes(x = lon, y = lat, fill = mean))+geom_raster()+
     scale_fill_gradientn(colours = cbpalette, limits = c(0,3000000), name ="Tree \n Density \n (trees/hectare)", na.value = 'darkgrey')+
-    geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw()+ ggtitle('Mean total density')
+    geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw()+ ggtitle('Mean total density'))
   dev.off()
   
   rbpalette<- c('#67001f',
@@ -212,9 +212,9 @@ make.dens.maps <- funciton(model) {
     '#053061')
   # map of sd of density:
   png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_sd_dens_map.png"))
-  ggplot(Dens.mean, aes(x = lon, y = lat, fill = sd))+geom_raster()+
+  print(ggplot(Dens.mean, aes(x = lon, y = lat, fill = sd))+geom_raster()+
     scale_fill_gradientn(colours = rev(rbpalette), limits = c(0,500000), name ="Tree \n Density \n (trees/hectare)", na.value = 'darkgrey')+
-    geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('SD of total density')
+    geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('SD of total density'))
   dev.off()
   
   # map of places with significantly bimodal distribution in tree density over time:
@@ -223,11 +223,13 @@ make.dens.maps <- funciton(model) {
   Dens.mean$bimodal <- bimodal
   
   png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_bimodal_time_map.png"))
-  ggplot(Dens.mean, aes(x = lon, y = lat, fill = bimodal))+geom_raster()+
-      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Places where density has bimodal distn.')
+  print(ggplot(Dens.mean, aes(x = lon, y = lat, fill = bimodal))+geom_raster()+
+      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Places where density has bimodal distn.'))
   dev.off()
   
-  }else{ # if the model is LPJ-GUESS, then...
+  }else{ 
+    
+    ## if the model is LPJ-GUESS, then...
     # read in LPJ density again
     Dens <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.Dens.rds")
     CO2 <- ED2.CO2
@@ -259,7 +261,7 @@ make.dens.maps <- funciton(model) {
     }
     
     # save the file for future use:
-    saveRDS(Dens.mean, paste0(getwd(), "/outputs/data/LPJ-GUESS/LPJ-GUESS.meandens.rds"))
+    saveRDS(Dens.mean, paste0(getwd(), "/outputs/data/GUESS/GUESS.meandens.rds"))
     
     # plot the mean density out on a map:
     states <- map_data("state")
@@ -274,9 +276,9 @@ make.dens.maps <- funciton(model) {
     
     # map of mean density:
     png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/GUESS_mean_dens_map.png"))
-    ggplot(Dens.mean, aes(x = lon, y = lat, fill = mean))+geom_raster()+
-      scale_fill_gradientn(colours = cbpalette, limits = c(0,3000000), name ="Tree \n Density \n (trees/hectare)", na.value = 'darkgrey')+
-      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw()+ ggtitle('Mean total density')
+    print( ggplot(Dens.mean, aes(x = lon, y = lat, fill = mean))+geom_raster()+
+      scale_fill_gradientn(colours = cbpalette, limits = c(700,3000), name ="Tree \n Density \n (trees/hectare)", na.value = 'darkgrey')+
+      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw()+ ggtitle('Mean total density'))
     dev.off()
     
     rbpalette<- c('#67001f',
@@ -291,9 +293,9 @@ make.dens.maps <- funciton(model) {
                   '#053061')
     # map of sd of density:
     png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/GUESS_sd_dens_map.png"))
-    ggplot(Dens.mean, aes(x = lon, y = lat, fill = sd))+geom_raster()+
-      scale_fill_gradientn(colours = rev(rbpalette), limits = c(0,500000), name ="Tree \n Density \n (trees/hectare)", na.value = 'darkgrey')+
-      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('SD of total density')
+    print( ggplot(Dens.mean, aes(x = lon, y = lat, fill = sd))+geom_raster()+
+      scale_fill_gradientn(colours = rev(rbpalette), limits = c(100,900), name ="Tree \n Density \n (trees/hectare)", na.value = 'darkgrey')+
+      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('SD of total density'))
     dev.off()
     
     # map of places with significantly bimodal distribution in tree density over time:
@@ -302,52 +304,70 @@ make.dens.maps <- funciton(model) {
     Dens.mean$bimodal <- bimodal
     
     png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/GUESS_bimodal_time_map.png"))
-    ggplot(Dens.mean, aes(x = lon, y = lat, fill = bimodal))+geom_raster()+
-      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Places where density has bimodal distn.')
+    print(ggplot(Dens.mean, aes(x = lon, y = lat, fill = bimodal))+geom_raster()+
+      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Places where density has bimodal distn.'))
     dev.off()
   }
 }
 
+# saves maps in preliminaryplots/Dens/maps
+# note the color scale differences in tree density between models
 make.dens.maps(model = "ED2")
 make.dens.maps(model = "GUESS")
+
 # ---------------------How does fire frequency vary across space?-----------------
 # also how does it relate to mean density?
+
+# need to fix this function:
+#Error in eval(expr, envir, enclos) : object 'bimodal' not found 
 
 map.fires <- function(model){
   
   ## for ED2:
-  if(model = "ED2"){
+  if(model == "ED2"){
     
     # compare this to a map of fire frequency:
     fire <- readRDS(paste0(getwd(),'/Data/ED2/ED2.Fire.rds'))
     dimnames(fire) <- list(timevec, paleon$num)
     df.fire <- data.frame(fire)
-    fire.tots <- readRDS(paste0(getwd(), "/Data/ED2/ED2.meandens.rds"))
+    fire.tots <- readRDS(paste0(getwd(), "/outputs/data/ED2/ED2.meandens.rds"))
     fire.tots$Fire.tots <- colSums(fire, na.rm=TRUE) # find the total number of fires at each grid cell
     fire.tots$countfires <- colSums(fire != 0, na.rm=TRUE)
     
+    # plot the mean density out on a map:
+    states <- map_data("state")
+    states <- subset(states, ! region  %in% c("california", 'nevada','arizona','utah','oregon','washington','new mexico','colorado','montana','wyoming','idaho') )
+    coordinates(states)<-~long+lat
+    class(states)
+    proj4string(states) <-CRS("+proj=longlat +datum=NAD83")
+    states <- spTransform(states,CRSobj = '+init=epsg:4326')
+    mapdata <- data.frame(states)
+    
+    cbpalette <- c("#ffffcc", "#c2e699", "#78c679", "#31a354", "#006837")
+    
+    
     # plot a map of total fire emmissions across space:
     png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_Fire_emmissions_map.png"))
-    ggplot(fire.tots, aes(x = lon, y = lat, fill = Fire.tots))+geom_raster()+
+      print(ggplot(fire.tots, aes(x = lon, y = lat, fill = Fire.tots))+geom_raster()+
       scale_fill_gradient(low = "#fee090", high = '#99000d',name ="Total Fire Emmissions kgC/m2/s", na.value = 'darkgrey')+
-      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Total Fire emmissions 850-2011')
+      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Total Fire emmissions 850-2011'))
     dev.off()
     
     # plot a map of the total instances of fire across space
     png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_fire_counts_map.png"))
-    ggplot(fire.tots, aes(x = lon, y = lat, fill = countfires))+geom_raster()+
+      print(ggplot(fire.tots, aes(x = lon, y = lat, fill = countfires))+geom_raster()+
       scale_fill_gradient(low = "#fee090", high = '#99000d',name ="Total number of Fires", na.value = 'darkgrey')+
-      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Total number of fires 850-2011')
+      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Total number of fires 850-2011'))
     dev.off()
     
     # basic plots of fire emmissions vs mean tree density and sd throught time:
     pdf(paste0("outputs/preliminaryplots/Dens/", model,"_density_vs_fire.pdf"))
-    ggplot(fire.tots, aes(x = Fire.tots, y = mean, color = bimodal))+geom_point()+theme_bw()+xlab("Mean total density")+ylab("Total fire emmissions 850-2011")
-    ggplot(fire.tots, aes(x = Fire.tots, y = sd, color = bimodal))+geom_point()+theme_bw()+xlab("SD total density")+ylab("Total fire emmissions 850-2011")
-    
-    # plots of fire counts vs. mean density and sd through time:
-    ggplot(fire.tots, aes(x = countfires, y = mean, color = bimodal))+geom_point()+theme_bw()+xlab("Mean total density")+ylab("Number of fires 850-2011")
-    ggplot(fire.tots, aes(x = countfires, y = sd, color = bimodal))+geom_point()+theme_bw()+xlab("SD total density")+ylab("Number of fires 850-2011")
+      print(ggplot(fire.tots, aes(x = Fire.tots, y = mean, color = bimodal))+geom_point()+theme_bw()+xlab("Mean total density")+ylab("Total fire emmissions 850-2011"))
+      print(ggplot(fire.tots, aes(x = Fire.tots, y = sd, color = bimodal))+geom_point()+theme_bw()+xlab("SD total density")+ylab("Total fire emmissions 850-2011"))
+      
+      # plots of fire counts vs. mean density and sd through time:
+      print(ggplot(fire.tots, aes(x = countfires, y = mean, color = bimodal))+geom_point()+theme_bw()+xlab("Mean total density")+ylab("Number of fires 850-2011"))
+      print(ggplot(fire.tots, aes(x = countfires, y = sd, color = bimodal))+geom_point()+theme_bw()+xlab("SD total density")+ylab("Number of fires 850-2011"))
     dev.off()
     
   }else{
@@ -357,32 +377,44 @@ map.fires <- function(model){
     fire <- readRDS(paste0(getwd(),'/Data/LPJ-GUESS/LPJ-GUESS.Fire.rds'))
     dimnames(fire) <- list(timevec, paleon$num)
     df.fire <- data.frame(fire)
-    fire.tots <- readRDS(paste0(getwd(), "/Data/LPJ-GUESS/LPJ-GUESS.meandens.rds"))
+    fire.tots <- readRDS(paste0(getwd(), "/outputs/data/GUESS/GUESS.meandens.rds"))
     fire.tots$Fire.tots <- colSums(fire, na.rm=TRUE) # find the total number of fires at each grid cell
     fire.tots$countfires <- colSums(fire != 0, na.rm=TRUE)
     
+    # plot the mean density out on a map:
+    states <- map_data("state")
+    states <- subset(states, ! region  %in% c("california", 'nevada','arizona','utah','oregon','washington','new mexico','colorado','montana','wyoming','idaho') )
+    coordinates(states)<-~long+lat
+    class(states)
+    proj4string(states) <-CRS("+proj=longlat +datum=NAD83")
+    states <- spTransform(states,CRSobj = '+init=epsg:4326')
+    mapdata <- data.frame(states)
+    
+    cbpalette <- c("#ffffcc", "#c2e699", "#78c679", "#31a354", "#006837")
+    
+    
     # plot a map of total fire emmissions across space:
     png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/", model,"_Fire_emmissions_map.png"))
-    ggplot(fire.tots, aes(x = lon, y = lat, fill = Fire.tots))+geom_raster()+
+    print(ggplot(fire.tots, aes(x = lon, y = lat, fill = Fire.tots))+geom_raster()+
       scale_fill_gradient(low = "#fee090", high = '#99000d',name ="Total Fire Emmissions kgC/m2/s", na.value = 'darkgrey')+
-      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Total Fire emmissions 850-2011')
+      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Total Fire emmissions 850-2011'))
     dev.off()
     
     # plot a map of the total instances of fire across space
     png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/",model,"_fire_counts_map.png"))
-    ggplot(fire.tots, aes(x = lon, y = lat, fill = countfires))+geom_raster()+
+    print(ggplot(fire.tots, aes(x = lon, y = lat, fill = countfires))+geom_raster()+
       scale_fill_gradient(low = "#fee090", high = '#99000d',name ="Total number of Fires", na.value = 'darkgrey')+
-      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Total number of fires 850-2011')
+      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Total number of fires 850-2011'))
     dev.off()
     
     # basic plots of fire emmissions vs mean tree density and sd throught time:
     pdf(paste0("outputs/preliminaryplots/Dens/", model,"_density_vs_fire.pdf"))
-    ggplot(fire.tots, aes(x = Fire.tots, y = mean, color = bimodal))+geom_point()+theme_bw()+xlab("Mean total density")+ylab("Total fire emmissions 850-2011")
-    ggplot(fire.tots, aes(x = Fire.tots, y = sd, color = bimodal))+geom_point()+theme_bw()+xlab("SD total density")+ylab("Total fire emmissions 850-2011")
+    print(ggplot(fire.tots, aes(x = Fire.tots, y = mean, color = bimodal))+geom_point()+theme_bw()+xlab("Mean total density")+ylab("Total fire emmissions 850-2011"))
+    print(ggplot(fire.tots, aes(x = Fire.tots, y = sd, color = bimodal))+geom_point()+theme_bw()+xlab("SD total density")+ylab("Total fire emmissions 850-2011"))
     
     # plots of fire counts vs. mean density and sd through time:
-    ggplot(fire.tots, aes(x = countfires, y = mean, color = bimodal))+geom_point()+theme_bw()+xlab("Mean total density")+ylab("Number of fires 850-2011")
-    ggplot(fire.tots, aes(x = countfires, y = sd, color = bimodal))+geom_point()+theme_bw()+xlab("SD total density")+ylab("Number of fires 850-2011")
+    print(ggplot(fire.tots, aes(x = countfires, y = mean, color = bimodal))+geom_point()+theme_bw()+xlab("Mean total density")+ylab("Number of fires 850-2011"))
+    print(ggplot(fire.tots, aes(x = countfires, y = sd, color = bimodal))+geom_point()+theme_bw()+xlab("SD total density")+ylab("Number of fires 850-2011"))
     dev.off()
   }
 }

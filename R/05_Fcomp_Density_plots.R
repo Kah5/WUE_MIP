@@ -149,7 +149,7 @@ make.hists(model = "GUESS")
 
 # make one big function that finds the mean density and SD nd maps these out 
 # make a dataframe of total density and density sd to get an idea of how much each grid cell varies:
-
+# this function also outputs the df of mean density and sd that is used in the map.fires function below
 
 make.dens.maps <- funciton(model) {
   if(model = "ED2"){
@@ -308,43 +308,95 @@ make.dens.maps <- funciton(model) {
   }
 }
 
-
+make.dens.maps(model = "ED2")
+make.dens.maps(model = "GUESS")
 # ---------------------How does fire frequency vary across space?-----------------
+# also how does it relate to mean density?
 
+map.fires <- function(model){
+  
+  ## for ED2:
+  if(model = "ED2"){
+    
+    # compare this to a map of fire frequency:
+    fire <- readRDS(paste0(getwd(),'/Data/ED2/ED2.Fire.rds'))
+    dimnames(fire) <- list(timevec, paleon$num)
+    df.fire <- data.frame(fire)
+    fire.tots <- readRDS(paste0(getwd(), "/Data/ED2/ED2.meandens.rds"))
+    fire.tots$Fire.tots <- colSums(fire, na.rm=TRUE) # find the total number of fires at each grid cell
+    fire.tots$countfires <- colSums(fire != 0, na.rm=TRUE)
+    
+    # plot a map of total fire emmissions across space:
+    png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_Fire_emmissions_map.png"))
+    ggplot(fire.tots, aes(x = lon, y = lat, fill = Fire.tots))+geom_raster()+
+      scale_fill_gradient(low = "#fee090", high = '#99000d',name ="Total Fire Emmissions kgC/m2/s", na.value = 'darkgrey')+
+      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Total Fire emmissions 850-2011')
+    dev.off()
+    
+    # plot a map of the total instances of fire across space
+    png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_fire_counts_map.png"))
+    ggplot(fire.tots, aes(x = lon, y = lat, fill = countfires))+geom_raster()+
+      scale_fill_gradient(low = "#fee090", high = '#99000d',name ="Total number of Fires", na.value = 'darkgrey')+
+      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Total number of fires 850-2011')
+    dev.off()
+    
+    # basic plots of fire emmissions vs mean tree density and sd throught time:
+    pdf(paste0("outputs/preliminaryplots/Dens/", model,"_density_vs_fire.pdf"))
+    ggplot(fire.tots, aes(x = Fire.tots, y = mean, color = bimodal))+geom_point()+theme_bw()+xlab("Mean total density")+ylab("Total fire emmissions 850-2011")
+    ggplot(fire.tots, aes(x = Fire.tots, y = sd, color = bimodal))+geom_point()+theme_bw()+xlab("SD total density")+ylab("Total fire emmissions 850-2011")
+    
+    # plots of fire counts vs. mean density and sd through time:
+    ggplot(fire.tots, aes(x = countfires, y = mean, color = bimodal))+geom_point()+theme_bw()+xlab("Mean total density")+ylab("Number of fires 850-2011")
+    ggplot(fire.tots, aes(x = countfires, y = sd, color = bimodal))+geom_point()+theme_bw()+xlab("SD total density")+ylab("Number of fires 850-2011")
+    dev.off()
+    
+  }else{
+    ## For LPJ-GUESS:
+    
+    # compare this to a map of fire frequency:
+    fire <- readRDS(paste0(getwd(),'/Data/LPJ-GUESS/LPJ-GUESS.Fire.rds'))
+    dimnames(fire) <- list(timevec, paleon$num)
+    df.fire <- data.frame(fire)
+    fire.tots <- readRDS(paste0(getwd(), "/Data/LPJ-GUESS/LPJ-GUESS.meandens.rds"))
+    fire.tots$Fire.tots <- colSums(fire, na.rm=TRUE) # find the total number of fires at each grid cell
+    fire.tots$countfires <- colSums(fire != 0, na.rm=TRUE)
+    
+    # plot a map of total fire emmissions across space:
+    png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/", model,"_Fire_emmissions_map.png"))
+    ggplot(fire.tots, aes(x = lon, y = lat, fill = Fire.tots))+geom_raster()+
+      scale_fill_gradient(low = "#fee090", high = '#99000d',name ="Total Fire Emmissions kgC/m2/s", na.value = 'darkgrey')+
+      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Total Fire emmissions 850-2011')
+    dev.off()
+    
+    # plot a map of the total instances of fire across space
+    png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/",model,"_fire_counts_map.png"))
+    ggplot(fire.tots, aes(x = lon, y = lat, fill = countfires))+geom_raster()+
+      scale_fill_gradient(low = "#fee090", high = '#99000d',name ="Total number of Fires", na.value = 'darkgrey')+
+      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Total number of fires 850-2011')
+    dev.off()
+    
+    # basic plots of fire emmissions vs mean tree density and sd throught time:
+    pdf(paste0("outputs/preliminaryplots/Dens/", model,"_density_vs_fire.pdf"))
+    ggplot(fire.tots, aes(x = Fire.tots, y = mean, color = bimodal))+geom_point()+theme_bw()+xlab("Mean total density")+ylab("Total fire emmissions 850-2011")
+    ggplot(fire.tots, aes(x = Fire.tots, y = sd, color = bimodal))+geom_point()+theme_bw()+xlab("SD total density")+ylab("Total fire emmissions 850-2011")
+    
+    # plots of fire counts vs. mean density and sd through time:
+    ggplot(fire.tots, aes(x = countfires, y = mean, color = bimodal))+geom_point()+theme_bw()+xlab("Mean total density")+ylab("Number of fires 850-2011")
+    ggplot(fire.tots, aes(x = countfires, y = sd, color = bimodal))+geom_point()+theme_bw()+xlab("SD total density")+ylab("Number of fires 850-2011")
+    dev.off()
+  }
+}
 
-# compare this to a map of fire frequency:
-fire <- readRDS(paste0(getwd(),'/Data/ED2/ED2.Fire.rds'))
-dimnames(fire) <- list(timevec, paleon$num)
-df.fire <- data.frame(fire)
-fire.tots <- Dens.mean
-fire.tots$Fire.tots <- colSums(fire, na.rm=TRUE) # find the total number of fires at each grid cell
-fire.tots$countfires <- colSums(fire != 0, na.rm=TRUE)
+map.fires(model = "ED2")
+map.fires(model = "GUESS")
 
-png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_Fire_emmissions_map.png"))
-ggplot(fire.tots, aes(x = lon, y = lat, fill = Fire.tots))+geom_raster()+
-  scale_fill_gradient(low = "#fee090", high = '#99000d',name ="Total Fire Emmissions kgC/m2/s", na.value = 'darkgrey')+
-  geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Total Fire emmissions 850-2011')
-dev.off()
-
-
-png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_fire_counts_map.png"))
-ggplot(fire.tots, aes(x = lon, y = lat, fill = countfires))+geom_raster()+
-  scale_fill_gradient(low = "#fee090", high = '#99000d',name ="Total number of Fires", na.value = 'darkgrey')+
-  geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Total number of fires 850-2011')
-dev.off()
-
-# basic plots of fire emmissions vs mean density and sd:
-ggplot(fire.tots, aes(x = Fire.tots, y = mean, color = bimodal))+geom_point()+theme_bw()+xlab("Mean total density")+ylab("Total fire emmissions 850-2011")
-ggplot(fire.tots, aes(x = Fire.tots, y = sd, color = bimodal))+geom_point()+theme_bw()+xlab("SD total density")+ylab("Total fire emmissions 850-2011")
-
-# plots of fire counts vs. mean density and sd:
-ggplot(fire.tots, aes(x = countfires, y = mean, color = bimodal))+geom_point()+theme_bw()+xlab("Mean total density")+ylab("Number of fires 850-2011")
-ggplot(fire.tots, aes(x = countfires, y = sd, color = bimodal))+geom_point()+theme_bw()+xlab("SD total density")+ylab("Number of fires 850-2011")
 
 #----------- What is the sensitivity of total density to CO2 in ED2?-------------
-atm.co2<- CO2[,1]
+# use ED2 CO2 for CO2 (can't find the output for LPJ-GUESS)
 
-sens.mean <- data.frame(num = paleon$num, 
+atm.co2 <- CO2[,1]
+  # df for saving sensitiviey
+  sens.mean <- data.frame(num = paleon$num, 
                         lon = paleon$lon, 
                         lat = paleon$lat, 
                         latlon = paleon$latlon,
@@ -362,18 +414,18 @@ for(i in 1:length(paleon$num)){
 }
 
 # it looks like in ED, the west is more highly positively corrllated with CO2:
-png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_dens_co2_cor_map.png"))
-ggplot(sens.mean, aes(x = lon, y = lat, fill = corCO2))+geom_raster()+
-  scale_fill_gradientn(colours = rev(rbpalette), limits = c(-1,1), name ="correlation coefficient", na.value = 'darkgrey')+
-  geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Correlation of Total Density with CO2')
-dev.off()
+  png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_dens_co2_cor_map.png"))
+  ggplot(sens.mean, aes(x = lon, y = lat, fill = corCO2))+geom_raster()+
+    scale_fill_gradientn(colours = rev(rbpalette), limits = c(-1,1), name ="correlation coefficient", na.value = 'darkgrey')+
+    geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Correlation of Total Density with CO2')
+  dev.off()
 
 #------------- Are WUE increases higher in the West then?-------------------
 WUEt <- readRDS(paste0(getwd(), "/Data/ED2/ED2.WUEt.rds"))
 WUEi <- readRDS(paste0(getwd(), "/Data/ED2/ED2.WUEi.rds"))
 IWUE <- readRDS(paste0(getwd(), "/Data/ED2/ED2.IWUE.rds"))
 
-
+# this function doesnt work b/c of null values in WUE
 WUE.cor.mean <- data.frame(num = paleon$num, 
                         lon = paleon$lon, 
                         lat = paleon$lat, 

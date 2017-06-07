@@ -179,6 +179,8 @@ make.dens.maps <- function(model) {
     Dens.mean[i,]$BC <- bimodality_coefficient(na.omit(dens.site$Totaldens)) 
   }
 
+  bimodal <- ifelse(Dens.mean$BC > 0.55 & Dens.mean$pval <= 0.05, "Bimodal", 'Unimodal')
+  Dens.mean$bimodal <- bimodal
   # save the file for future use:
   saveRDS(Dens.mean, paste0(getwd(), "/outputs/data/ED2/ED2.meandens.rds"))
   
@@ -219,8 +221,7 @@ make.dens.maps <- function(model) {
   
   # map of places with significantly bimodal distribution in tree density over time:
   
-  bimodal <- ifelse(Dens.mean$BC > 0.55 & Dens.mean$pval <= 0.05, "Bimodal", 'Unimodal')
-  Dens.mean$bimodal <- bimodal
+  
   
   png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_bimodal_time_map.png"))
   print(ggplot(Dens.mean, aes(x = lon, y = lat, fill = bimodal))+geom_raster()+
@@ -259,6 +260,9 @@ make.dens.maps <- function(model) {
       Dens.mean[i,]$pval <- diptest::dip.test(na.omit(density(dens.site$Total)$y))$p
       Dens.mean[i,]$BC <- bimodality_coefficient(na.omit(dens.site$Total)) 
     }
+    
+    bimodal <- ifelse(Dens.mean$BC > 0.55 & Dens.mean$pval <= 0.05, "Bimodal", 'Unimodal')
+    Dens.mean$bimodal <- bimodal
     
     # save the file for future use:
     saveRDS(Dens.mean, paste0(getwd(), "/outputs/data/GUESS/GUESS.meandens.rds"))
@@ -375,7 +379,7 @@ map.fires <- function(model){
     
     # compare this to a map of fire frequency:
     fire <- readRDS(paste0(getwd(),'/Data/LPJ-GUESS/LPJ-GUESS.Fire.rds'))
-    dimnames(fire) <- list(timevec, paleon$num)
+    dimnames(fire) <- list(yr, paleon$num)
     df.fire <- data.frame(fire)
     fire.tots <- readRDS(paste0(getwd(), "/outputs/data/GUESS/GUESS.meandens.rds"))
     fire.tots$Fire.tots <- colSums(fire, na.rm=TRUE) # find the total number of fires at each grid cell
@@ -426,7 +430,9 @@ map.fires(model = "GUESS")
 #----------- What is the sensitivity of total density to CO2 in ED2?-------------
 # use ED2 CO2 for CO2 (can't find the output for LPJ-GUESS)
 
-atm.co2 <- CO2[,1]
+WUE.cor.co2 <- function(model){
+  if(model == "ED2"){
+  atm.co2 <- CO2[,1]
   # df for saving sensitiviey
   sens.mean <- data.frame(num = paleon$num, 
                         lon = paleon$lon, 
@@ -437,20 +443,62 @@ atm.co2 <- CO2[,1]
                         sd = NA
                         )
 
-for(i in 1:length(paleon$num)){
-  dens.site <- data.frame(Dens.r[,i,])
-  dens.site$Totaldens <- rowSums(dens.site, na.rm=TRUE)
-  sens.mean[i,]$corCO2 <- cor(dens.site$Totaldens, atm.co2)
-  sens.mean[i,]$mean <- mean(dens.site$Totaldens, na.rm= TRUE)
-  sens.mean[i,]$sd <- sd(dens.site$Totaldens, na.rm=TRUE)
-}
+  for(i in 1:length(paleon$num)){
+    Dens.r <- readRDS(paste0(getwd(), "/Data/ED2/ED2.Dens.rds"))
+    dens.site <- data.frame(Dens.r[,i,])
+    dens.site$Totaldens <- rowSums(dens.site, na.rm=TRUE)
+    sens.mean[i,]$corCO2 <- cor(dens.site$Totaldens, atm.co2)
+    sens.mean[i,]$mean <- mean(dens.site$Totaldens, na.rm= TRUE)
+    sens.mean[i,]$sd <- sd(dens.site$Totaldens, na.rm=TRUE)
+  }
 
+  rbpalette<- c('#67001f','#b2182b','#d6604d','#f4a582','#fddbc7','#d1e5f0',
+                '#92c5de','#4393c3','#2166ac','#053061')
+  
 # it looks like in ED, the west is more highly positively corrllated with CO2:
   png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_dens_co2_cor_map.png"))
   ggplot(sens.mean, aes(x = lon, y = lat, fill = corCO2))+geom_raster()+
     scale_fill_gradientn(colours = rev(rbpalette), limits = c(-1,1), name ="correlation coefficient", na.value = 'darkgrey')+
     geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Correlation of Total Density with CO2')
   dev.off()
+
+  }else{
+    
+    # for GUESS
+    atm.co2 <- CO2[,1]
+    # df for saving sensitiviey
+    sens.mean <- data.frame(num = paleon$num, 
+                            lon = paleon$lon, 
+                            lat = paleon$lat, 
+                            latlon = paleon$latlon,
+                            corCO2 = NA, 
+                            mean=NA,
+                            sd = NA
+    )
+    
+    for(i in 1:length(paleon$num)){
+      Dens.r <- readRDS(paste0(getwd(), "/Data/LPJ-GUESS/LPJ-GUESS.Dens.rds"))
+      dens.site <- data.frame(Dens.r[,i,])
+      dens.site$Total <- dens.site[,,13] 
+      #dens.site$Totaldens <- rowSums(dens.site, na.rm=TRUE)
+      sens.mean[i,]$corCO2 <- cor(dens.site$Total, atm.co2)
+      sens.mean[i,]$mean <- mean(dens.site$Total, na.rm= TRUE)
+      sens.mean[i,]$sd <- sd(dens.site$Total, na.rm=TRUE)
+    }
+    
+    rbpalette<- c('#67001f','#b2182b','#d6604d','#f4a582','#fddbc7','#d1e5f0',
+                  '#92c5de','#4393c3','#2166ac','#053061')
+    
+    # it looks like in ED, the west is more highly positively corrllated with CO2:
+    png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/",model,"_dens_co2_cor_map.png"))
+    ggplot(sens.mean, aes(x = lon, y = lat, fill = corCO2))+geom_raster()+
+      scale_fill_gradientn(colours = rev(rbpalette), limits = c(-1,1), name ="correlation coefficient", na.value = 'darkgrey')+
+      geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Correlation of Total Density with CO2')
+    dev.off()
+  }
+}
+WUE.cor.co2(model = "ED2")
+WUE.cor.co2(model = "GUESS")
 
 #------------- Are WUE increases higher in the West then?-------------------
 WUEt <- readRDS(paste0(getwd(), "/Data/ED2/ED2.WUEt.rds"))
@@ -485,3 +533,5 @@ ggplot(WUE.cor.mean, aes(x = lon, y = lat, fill = corIWUE))+geom_raster()+
   scale_fill_gradientn(colours = rev(rbpalette), limits = c(-1,1), name ="correlation coefficient", na.value = 'darkgrey')+
   geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Correlation of Total Density with WUE')
 dev.off()
+
+

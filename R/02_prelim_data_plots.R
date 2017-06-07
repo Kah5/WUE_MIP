@@ -205,7 +205,7 @@ plot.JJA.ts <- function(df, name){
   df$year <- year
   df$month <- month
   m <- melt(df, id.vars=c("year", "month"))
-  yrmeans<-dcast(m[m$month %in% c(6,7,8),], year ~ variable, mean)
+  yrmeans <- dcast(m[m$month %in% c(6,7,8),], year ~ variable, mean)
   m2 <- melt(yrmeans, id.vars= "year")
   m2$year <- as.numeric(m2$year)
   png(height = 7, width = 18, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/", name, "_JJA_mean_timeseries_site.png"))

@@ -251,7 +251,7 @@ pct100<- paste0("X", pct100)
 
 # make plots for only the low precipitation sites and save in preliminaryplots/sensitivity/by_precip:
 
-plot.sens.site <- function(df, xname, yname, pct, percentile){
+plot.sens.site.pct <- function(df, xname, yname, pct, percentile){
   df <- df[,c("Year", "Site", xname, yname)]
   df <- df[df$Site %in% pct, ]
   colnames(df) <- c("Year", "Site", "x", "y")

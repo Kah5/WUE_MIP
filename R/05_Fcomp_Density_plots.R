@@ -26,7 +26,7 @@ year <- yearsince + 850
 pft.lab=c("grass.c4", "tropic.early", "tropic.mid", "tropic.late", "grass.c3.temp", "pine.north", "pine.south", "conifer.late", "temp.decid.early", "temp.decid.mid", "temp.decid.late","ag1", "ag2", "ag3", "ag4","grass.c3.subtrop","Araucaria")
 
 
-Fcomp<- ED2.Fcomp
+Fcomp <- ED2.Fcomp
 Dens <- ED2.Dens
 CO2 <- ED2.CO2
 
@@ -500,38 +500,269 @@ WUE.cor.co2 <- function(model){
 WUE.cor.co2(model = "ED2")
 WUE.cor.co2(model = "GUESS")
 
-#------------- Are WUE increases higher in the West then?-------------------
-WUEt <- readRDS(paste0(getwd(), "/Data/ED2/ED2.WUEt.rds"))
-WUEi <- readRDS(paste0(getwd(), "/Data/ED2/ED2.WUEi.rds"))
-IWUE <- readRDS(paste0(getwd(), "/Data/ED2/ED2.IWUE.rds"))
 
-# this function doesnt work b/c of null values in WUE
-WUE.cor.mean <- data.frame(num = paleon$num, 
-                        lon = paleon$lon, 
-                        lat = paleon$lat, 
-                        latlon = paleon$latlon,
-                        corIWUE = NA, 
-                        corWUEi = NA,
-                        corWUEt = NA,
-                        mean=NA,
-                        sd = NA
-)
+
+# from here on out, this is test code:
+#------what is the sensitivity of Relativized Density to precip and Tair?--------------
+
+#atm.co2 <- CO2[,1]
+
+# read in the saved mean density file
+mean.dens <- readRDS("outputs/data/ED2/ED2.meandens.rds")
+
+# need to relativize the the density data:
+# making the Relative Density file for ED2:
+TotalDens <- CO2
+RelDens <- CO2 
+Dens.r <- readRDS(paste0(getwd(), "/Data/ED2/ED2.Dens.rds"))
+
+
+for(i in 1:length(paleon$num)){
+  
+  dens.site <- data.frame(Dens.r[,i,])
+  TotalDens[,i] <- rowSums(dens.site, na.rm=TRUE)
+  RelDens[,i] <- TotalDens[,i]/mean(TotalDens[,i], na.rm=TRUE)
+}
+
+saveRDS(RelDens ,"outputs/data/ED2/ED2.RelDens.rds")
+
+# making the Relative Density file for GUESS:
+RelDens <- CO2
+Dens.r <- readRDS(paste0(getwd(), "/Data/LPJ-GUESS/LPJ-GUESS.Dens.rds"))
 
 for(i in 1:length(paleon$num)){
   dens.site <- data.frame(Dens.r[,i,])
-  dens.site$Totaldens <- rowSums(dens.site, na.rm=TRUE)
-  WUE.cor.mean[i,]$corIWUE <- cor(dens.site$Totaldens, IWUE[,i])
-  WUE.cor.mean[i,]$corWUEi <- cor(dens.site$Totaldens, WUEi[,i])
-  WUE.cor.mean[i,]$corWUEt <- cor(dens.site$Totaldens, WUEt[,i])
-  WUE.cor.mean[i,]$mean <- mean(dens.site$Totaldens, na.rm= TRUE)
-  WUE.cor.mean[i,]$sd <- sd(dens.site$Totaldens, na.rm=TRUE)
+  TotalDens[,i] <- dens.site[,13]
+  RelDens[,i] <- TotalDens[,i]/mean(TotalDens[,i], na.rm=TRUE)
 }
 
-# map out the correlations with WUE
-png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_dens_WUE_cor_map.png"))
-ggplot(WUE.cor.mean, aes(x = lon, y = lat, fill = corIWUE))+geom_raster()+
-  scale_fill_gradientn(colours = rev(rbpalette), limits = c(-1,1), name ="correlation coefficient", na.value = 'darkgrey')+
-  geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Correlation of Total Density with WUE')
-dev.off()
+saveRDS(RelDens, "outputs/data/GUESS/GUESS.RelDens.rds")
 
+# okay now lets look at sensitivity of "Relative Density" to Tair and Precip and WUE
+
+# for model == "ED2"
+
+ED.reldens <- readRDS("outputs/data/ED2/ED2.RelDens.rds")
+ED.tair <- readRDS("Data/ED2/ED2.tair.rds")
+ED.precip <- readRDS("Data/ED2/ED2.precipf.rds")
+ED.IWUE <- readRDS("Data/ED2/ED2.IWUE.rds")
+ED.WUEi <- readRDS("Data/ED2/ED2.WUEi.rds")
+ED.WUEt <- readRDS("Data/ED2/ED2.WUEt.rds")
+ED.CO2 <- readRDS("Data/ED2/ED2.CO2.rds")
+
+# get the mean relative density (not sure if this is right--double check)
+
+source("R/get.yrmeans.R")
+
+reldens.y <- get.yrmeans(ED.reldens, "Rel.Dens")
+tair.y <- get.yrmeans(ED.tair, "Tair")
+precipf.y <- get.yrmeans(ED.precip, "precip")
+IWUE.y <- get.yrmeans(ED.IWUE, "IWUE")
+WUEi.y <- get.yrmeans(ED.WUEi, "WUEi")
+WUEt.y <- get.yrmeans(ED.WUEt, "WUEt")
+CO2.y <- get.yrmeans(ED.CO2, "CO2")
+
+
+# use reduce to merge these all together
+all.y <- Reduce(function(x, y) merge(x, y, by = ,all=TRUE), list(reldens.y, IWUE.y, WUEi.y, WUEt.y, CO2.y,
+                                                                 tair.y, precipf.y))
+# this function currently takes awhile
+plot.sens.subset <- function(df, xname, yname, yrs){
+  df <- df[,c("Year", "Site", xname, yname)]
+  colnames(df) <- c("Year", "Site", "x", "y")
+  df <- df[df$Year %in% yrs, ]
+  lim <- quantile(df$x, .99, na.rm=T) # so we dont plot the outliers
+  
+  png(height = 12, width = 12, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/sensitivity/ED2_", xname,"_", yname,"_",yrs[1],"_",yrs[length(yrs)],"_sens.png"))
+  print(ggplot(data = df, aes(x = x, y = y, color = Site))+geom_point()+xlim(0,lim)+
+          ylab(yname)+ xlab(xname)+stat_smooth(color = "black") +theme_bw()+ theme(legend.position="none") )
+  dev.off()
+  
+# write site level data to a pdf:
+  pdf(paste0(getwd(),"/outputs/preliminaryplots/sensitivity/ED2_", xname,"_", yname,"_",yrs[1],"_",yrs[length(yrs)],"_sens_site.pdf"), 7, 5)
+  for (i in 1:length(unique(df$Site))) {
+    print(ggplot(df[df$Site %in% df$Site[i:(i+24)], ], 
+                 aes(x, y)) + 
+            geom_point() +
+            facet_wrap(~ Site, ncol = 5, nrow = 5) +
+            xlim(0,lim)+
+            ylab(yname)+ xlab(xname)+stat_smooth(color = "black") +theme_bw())
+  }
+  dev.off()
+}
+
+
+plot.sens(all.y, "CO2", "Rel.Dens")
+plot.sens(all.y, "Rel.Dens", "IWUE")
+plot.sens(all.y, "Rel.Dens", "WUEi")
+plot.sens(all.y, "Rel.Dens", "WUEt")
+plot.sens(all.y, "Rel.Dens", "Tair")
+plot.sens(all.y, "Rel.Dens", "precip")
+
+# making the plots for the CO2 dominated era:
+
+plot.sens.subset(all.y, "Rel.Dens", "CO2", 850:1800)
+plot.sens.subset(all.y, "Rel.Dens", "CO2", 1800:2010)
+plot.sens.subset(all.y, "Rel.Dens", "IWUE", 850:1800)
+plot.sens.subset(all.y, "Rel.Dens", "WUEi", 850:1800)
+plot.sens.subset(all.y, "Rel.Dens", "WUEt", 850:1800)
+plot.sens.subset(all.y, "Rel.Dens", "Tair", 850:1800)
+plot.sens.subset(all.y, "Rel.Dens", "precip", 850:1800)
+
+# The above plots are all interesteing since precip, tair, WUE, density all vary by site. 
+# may be helpful to determine a site specific sensitivity to CO2, precip, WUE
+# OR relativize by mean of all sites at all time periods?
+
+
+
+
+#-----What is sensitivity to climate when we relativize the climate data----
+
+for(i in 1:length(paleon$num)){
+  dens.site <- data.frame(Dens.r[,i,])
+  TotalDens[,i] <- dens.site[,13]
+  RelDens[,i] <- TotalDens[,i]/mean(TotalDens[,i], na.rm=TRUE)
+}
+
+saveRDS(RelDens, "outputs/data/GUESS/GUESS.RelDens.rds")
+
+# for model == "ED2"
+
+ED.reldens <- readRDS("outputs/data/ED2/ED2.RelDens.rds")
+ED.tair <- readRDS("Data/ED2/ED2.tair.rds")
+ED.precip <- readRDS("Data/ED2/ED2.precipf.rds")
+ED.IWUE <- readRDS("Data/ED2/ED2.IWUE.rds")
+ED.WUEi <- readRDS("Data/ED2/ED2.WUEi.rds")
+ED.WUEt <- readRDS("Data/ED2/ED2.WUEt.rds")
+ED.CO2 <- readRDS("Data/ED2/ED2.CO2.rds")
+
+# get the mean relative density (not sure if this is right--double check)
+
+source("R/get.yrmeans.R")
+
+reldens.y <- get.JJAmeans(ED.reldens, "Rel.Dens")
+tair.y <- get.JJAmeans(ED.tair, "Tair")
+precipf.y <- get.JJAmeans(ED.precip, "precip")
+IWUE.y <- get.JJAmeans(ED.IWUE, "IWUE")
+WUEi.y <- get.JJAmeans(ED.WUEi, "WUEi")
+WUEt.y <- get.JJAmeans(ED.WUEt, "WUEt")
+CO2.y <- get.JJAmeans(ED.CO2, "CO2")
+
+relativize <- function(df, var){
+  test <- dcast(df, Year ~ Site)
+  Relvalue <- test
+  
+  for(i in 1:length(paleon$num)){
+    Relvalue[,i+1] <- test[,i+1]/mean(test[,i+1], na.rm=TRUE)
+  }
+  m3 <- melt(Relvalue, id.vars = "Year")
+  colnames(m3) <- c("Year", "Site", var)
+  m3
+}
+
+tair.r <- relativize(tair.y, "tair")
+precipf.r <- relativize(precipf.y, "precipf")
+IWUE.r <- relativize(IWUE.y, "IWUE")
+WUEi.r <- relativize(WUEi.y, "WUEi")
+WUEt.r <- relativize(WUEt.y, "WUEt")
+
+# use reduce to merge these all together
+jja.y <- Reduce(function(x, y) merge(x, y, by = ,all=TRUE), list(reldens.y,  CO2.y, IWUE.r, WUEi.r, WUEt.r,
+                                                                 tair.r, precipf.r))
+
+plot.sens(jja.y, "CO2", "Rel.Dens")
+plot.sens(jja.y,  "IWUE", "Rel.Dens")
+plot.sens(jja.y,  "WUEi","Rel.Dens")
+plot.sens(jja.y,  "WUEt","Rel.Dens")
+plot.sens(jja.y,  "tair","Rel.Dens")
+plot.sens(jja.y,  "precipf","Rel.Dens")
+
+
+
+# sensitivity analyses still need some work:
+
+#------------- Are WUE increases higher in the West then?-------------------
+# look at increases in WUE relative to 850-1800 mean:
+# using the WUEi.y summer growing season averages
+
+relativize.period <- function(df,period, var){
+
+  test <- dcast(df, Year ~ Site)
+  Relvalue <- test
+  
+  for(i in 1:length(paleon$num)){
+    Relvalue[,i+1] <- test[,i+1]/mean(test[test$Year %in% period ,i+1], na.rm=TRUE)
+  }
+  m3 <- melt(Relvalue, id.vars = "Year")
+  colnames(m3) <- c("Year", "Site", var)
+  m3
+}
+
+IWUEinc <- relativize.period(IWUE.y, 850:1800, "IWUE")
+WUEiinc <- relativize.period(WUEi.y, 850:1800, "WUEi")
+WUEtinc <- relativize.period(WUEt.y, 850:1800, "WUEt")
+
+
+# function to map out WUE increase across space:
+map.WUE.inc <- function(WUEtype, var){
+  
+  png(height = 5, width = 8, units = "in", res=300, paste0(getwd(),"/outputs/preliminaryplots/WUE/ED2_",var,"inc_rel_pre1800.png"))
+  print(ggplot(IWUEinc, aes(Year, IWUE, color = Site))+geom_point()+theme(legend.position = "none")+theme_bw())
+  dev.off()
+  
+  a <- dcast(IWUEinc, Year ~ Site)
+  
+  
+  slope.table <- data.frame(site = colnames(a[,2:length(a)]),
+                            pval = NA, 
+                            slope = NA)
+  
+  # find the slopes for WUE for 
+    for(i in 1:length(paleon$num)){
+      if(is.na(a[,i+1])){
+        pval <- NA
+        slope <- NA
+      }else{
+      mod <- summary( lm(a[,i+1] ~ Year,data = a) )
+      pval <- mod$coefficients[2,4]
+      slope <- mod$coefficients[2,1]
+      }
+      slope.table[i,]$pval <- pval
+      slope.table[i,]$slope <- slope
+    }
+  
+  paleon$site <- paste0("X", paleon$num)
+  
+  # merge paleon to site to plot:
+  slope.xy <- merge(paleon, slope.table, by = "site")
+  
+  ggplot(slope.xy, aes(x = lon, y=lat, fill= slope))+geom_raster()
+  
+  
+  states <- map_data("state")
+  states <- subset(states, ! region  %in% c("california", 'nevada','arizona','utah','oregon','washington','new mexico','colorado','montana','wyoming','idaho') )
+  coordinates(states)<-~long+lat
+  class(states)
+  proj4string(states) <-CRS("+proj=longlat +datum=NAD83")
+  states <- spTransform(states,CRSobj = '+init=epsg:4326')
+  mapdata <- data.frame(states)
+  
+  cbpalette <- c("#ffffcc", "#c2e699", "#78c679", "#31a354", "#006837")
+  
+  
+  # map out the correlations with WUE
+  png(height = 4, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/Dens/maps/ED_",var,"_inc_map.png"))
+  print(ggplot(slope.xy, aes(x = lon, y=lat, fill= slope))+geom_raster()+
+    scale_fill_gradient(low = "blue", high = "red", name ="slope (WUE increase/year)", na.value = 'darkgrey')+
+    geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle('Slope of relative WUE increase/year'))
+  dev.off()
+}
+
+map.WUE.inc(IWUEinc, "IWUE")
+map.WUE.inc(WUEiinc, "WUEi")
+map.WUE.inc(WUEtinc, "WUEt")
+
+
+
+# is the increase in WUE related to changes in density?
 

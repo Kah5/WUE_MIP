@@ -763,6 +763,7 @@ map.WUE.inc(WUEiinc, "WUEi")
 map.WUE.inc(WUEtinc, "WUEt")
 
 
-
-# is the increase in WUE related to changes in density?
+#
+#-------------- is the increase in WUE related to changes in density?-----------
+# also are these increases linked to spatial patterns in precip and temperature
 

@@ -503,6 +503,7 @@ WUE.cor.co2(model = "GUESS")
 
 
 # from here on out, this is test code:
+
 #------what is the sensitivity of Relativized Density to precip and Tair?--------------
 
 #atm.co2 <- CO2[,1]
@@ -566,6 +567,11 @@ CO2.y <- get.yrmeans(ED.CO2, "CO2")
 # use reduce to merge these all together
 all.y <- Reduce(function(x, y) merge(x, y, by = ,all=TRUE), list(reldens.y, IWUE.y, WUEi.y, WUEt.y, CO2.y,
                                                                  tair.y, precipf.y))
+
+# save the all.y
+saveRDS(all.y, "outputs/data/ED2/ED2.alldat.yrmeans.rds")
+
+
 # this function currently takes awhile
 plot.sens.subset <- function(df, xname, yname, yrs){
   df <- df[,c("Year", "Site", xname, yname)]
@@ -646,7 +652,16 @@ precipf.y <- get.JJAmeans(ED.precip, "precip")
 IWUE.y <- get.JJAmeans(ED.IWUE, "IWUE")
 WUEi.y <- get.JJAmeans(ED.WUEi, "WUEi")
 WUEt.y <- get.JJAmeans(ED.WUEt, "WUEt")
-CO2.y <- get.JJAmeans(ED.CO2, "CO2")
+CO2.y <- get.JJAmeans(ED.CO2, "CO2")# save the all.y
+
+
+all.jja <- Reduce(function(x, y) merge(x, y, by = ,all=TRUE), list(reldens.y, IWUE.y, WUEi.y, WUEt.y, CO2.y,
+                                                                 tair.y, precipf.y))
+
+saveRDS(all.jja, "outputs/data/ED2/ED2.alldat.jjameans.rds")
+
+
+
 
 relativize <- function(df, var){
   test <- dcast(df, Year ~ Site)
@@ -767,3 +782,66 @@ map.WUE.inc(WUEtinc, "WUEt")
 #-------------- is the increase in WUE related to changes in density?-----------
 # also are these increases linked to spatial patterns in precip and temperature
 
+# Main Question: Is climate or stand structure more important in determining WUE increase?
+
+
+# Steps for analysis:
+
+# 1. Get a value for each growing season/year at each point (above)
+# 2. Take all the points together and model of WUE based on tree density (relative), CO2, temp, precip
+
+
+# for jja mean data:
+jja.y <- readRDS("outputs/data/ED2/ED2.alldat.yrmeans.rds")
+
+
+# get the years from 1800 - 2010:
+jja.subset <- jja.y[jja.y$Year %in% 1800:2010, ]
+
+
+
+# Plot basic Trends through time
+
+ggplot(jja.subset, aes(Year, Tair, color = Site))+geom_point()+theme(legend.position = "none")
+ggplot(jja.subset, aes(Year, precip, color = Site))+geom_point()+theme(legend.position = "none")
+ggplot(jja.subset, aes(Year, CO2, color = Site))+geom_point()+theme(legend.position = "none")
+ggplot(jja.subset, aes(Year, Rel.Dens, color = Site))+geom_point()+theme(legend.position = "none")
+
+# maybe plot these by mean precipf, mean tair, and mean WUE?
+
+
+# Q: What is the effect of WUE, precip, tair on rel. density?
+# basic plots over the whole domain
+ggplot(jja.subset, aes(Rel.Dens, Tair, color = Site))+geom_point()+theme(legend.position = "none")
+ggplot(jja.subset, aes(Rel.Dens, IWUE, color = Site))+geom_point()+theme(legend.position = "none")
+ggplot(jja.subset, aes(Rel.Dens, precip, color = Site))+geom_point()+theme(legend.position = "none")
+
+precip <- jja.subset[,c("Site", "precip", "Year")]
+pr.means <- dcast(precip, formula = Site + Year ~ precip)
+
+
+
+
+
+
+
+
+
+
+
+
+# fit a gam?
+# relative density increases over time
+denst <- gam(Rel.Dens ~ s(Year), data = jja.subset)
+plot(time)
+
+tairt <- gam( Tair ~ s(Year), data = jja.subset )
+plot(tairt)
+
+precipt <- gam(precip ~ s(Year) + random(list(Site)), data = jja.subset)
+plot(precipt)
+
+# using a gam
+g <- gam(Rel.Dens ~ s(Year) + s(WUEt) + s(precip) + s(Tair), data = jja.subset)
+summary(g)
+plot(g)

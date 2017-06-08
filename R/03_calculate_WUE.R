@@ -42,14 +42,13 @@ calc.WUE <- function(model){
     GPP <- readRDS("Data/ED2/ED2.GPP.rds")
     CO2 <- readRDS("Data/ED2/ED2.CO2.rds")
     transp <- readRDS("Data/ED2/ED2.Transp.rds")
+    evap <- readRDS("Data/ED2/ED2.Evap.rds")
     LAI <- readRDS("Data/ED2/ED2.LAI.rds")
     CO2 <- data.frame(CO2)
     colnames(CO2) <- paleon$num
     site.list <- colnames(CO2)# vector of number of sites
     # calculate a VPD list
     RH <- VPD <- VPD2 <- CO2
-    
-    
     
     for(s in 1:length(site.list)){
       RH[,s] <- qair2rh(qair[,s], tair[,s], press = 101.325)
@@ -61,13 +60,11 @@ calc.WUE <- function(model){
     }
     
     
-    
     # -----------------------calculate canopy conductance------------- 
     # need to correct this/make sure it is right
     canconduct <- function(tair, Transp, LAI, VPD){
       ((115.8 + 0.4226*(tair-273.15))*((Transp*1000/LAI)/VPD)*0.0001)
     }
-    
     
     Gc <- CO2
     
@@ -82,37 +79,70 @@ calc.WUE <- function(model){
     # WUEt
     # WUEi
     
-    # calculate WUE using loop
-    IWUE <- WUEt <- WUEi <- CO2
     
-    sec2mo <- 60*60*24*30
+    # calculate WUE using loop
+    IWUE <- WUEi <- WUEt <- IWUEet <- WUEtet <- WUEiet  <- CO2
+    
+    
     for (s in 1:length(site.list)){
       IWUE[,s] <- GPP[,s]*1000/(transp[,s])*(VPD2[,s])
       WUEt[,s] <- GPP[,s]*1000/(transp[,s])
       WUEi[,s] <- GPP[,s]*1000/Gc[,s] # convert to kg/m2/s
+      
+      # using evap too
+      IWUEet[,s] <- GPP[,s]*1000/(transp[,s]+evap[,s])*(VPD2[,s])
+      WUEtet[,s] <- GPP[,s]*1000/(transp[,s]+evap[,s])
+      #WUEiet[,s] <- GPP[,s]*1000/Gc[,s] # convert to kg/m2/s
     }
     
     saveRDS(IWUE, "Data/ED2/ED2.IWUE.rds")
     saveRDS(WUEt, "Data/ED2/ED2.WUEt.rds")
     saveRDS(WUEi, "Data/ED2/ED2.WUEi.rds")
+    saveRDS(IWUEet, "Data/ED2/ED2.IWUEet.rds")
+    saveRDS(WUEtet, "Data/ED2/ED2.IWUEet.rds")
     
   }else{
     #qair <- readRDS("Data/LPJ-GUESS/")
     tair <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.tair.rds")
+    qair <- readRDS("Data/ED2/ED2.qair.rds")
+    #tair <- readRDS("Data/ED2/ED2.tair.rds")
     GPP <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.GPP.rds")
     CO2 <- readRDS("Data/ED2/ED2.CO2.rds")
     CO2 <- data.frame(CO2)
     colnames(CO2) <- paleon$num
     site.list <- colnames(CO2)
     transp <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.Transp.rds")
+    evap <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.Evap.rds")
     LAI <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.LAI.rds")
     
     # calculate a VPD list
     RH <- VPD <- VPD2 <- CO2
     
-    # we dont have qair for LPJ, so can only calculate WUEt and WUEi:
+    # we dont have qair for LPJ, but is should be the same as ED:
 
     
+    for(s in 1:length(site.list)){
+      RH[,s] <- qair2rh(qair[,s], tair[,s], press = 101.325)
+      VPD[,s] <- qair2vpd(qair[,s], tair[,s], press = 101.325)
+    }
+    
+    for(s in 1:length(site.list)){
+      VPD2[,s] <- RHtoVPD(RH[,s], tair[,s]-273.15, Pa = 101)
+    }
+    
+    
+    # -----------------------calculate canopy conductance------------- 
+    # need to correct this/make sure it is right
+    canconduct <- function(tair, Transp, LAI, VPD){
+      ((115.8 + 0.4226*(tair-273.15))*((Transp*1000/LAI)/VPD)*0.0001)
+    }
+    
+    Gc <- CO2
+    
+    
+    for (s in 1:length(site.list)){
+      Gc[,s] <- canconduct(tair[,s], transp[,s], LAI[,s], VPD[,s])
+    }
     #-----------------calculate WUE---------------------------------
     
     # IWUE 
@@ -120,18 +150,26 @@ calc.WUE <- function(model){
     # WUEi
     
     # calculate WUE using loop
-     WUEt <- CO2
+     IWUE <- WUEi <- WUEt <- IWUEet <- WUEtet <- WUEiet  <- CO2
     
     
     for (s in 1:length(site.list)){
-      #IWUE[,s] <- GPP[,s]*1000/transp[,s]*(VPD2[,s])
+      IWUE[,s] <- GPP[,s]*1000/(transp[,s])*(VPD2[,s])
       WUEt[,s] <- GPP[,s]*1000/(transp[,s])
-      #WUEi[,s] <- GPP[,s]*1000/Gc[,s] # convert to kg/m2/s
+      WUEi[,s] <- GPP[,s]*1000/Gc[,s] # convert to kg/m2/s
+      
+      # using evap too
+      IWUEet[,s] <- GPP[,s]*1000/(transp[,s]+evap[,s])*(VPD2[,s])
+      WUEtet[,s] <- GPP[,s]*1000/(transp[,s]+evap[,s])
+      #WUEiet[,s] <- GPP[,s]*1000/Gc[,s] # convert to kg/m2/s
     }
     
-    #saveRDS(IWUE, "Data/ED2/ED2.IWUE.rds")
+    saveRDS(IWUE, "Data/LPJ-GUESS/LPJ-GUESS.IWUE.rds")
     saveRDS(WUEt, "Data/LPJ-GUESS/LPJ-GUESS.WUEt.rds")
-    #saveRDS(WUEi, "Data/ED2/ED2.WUEi.rds")
+    saveRDS(WUEi, "Data/LPJ-GUESS/LPJ-GUESS.WUEi.rds")
+    saveRDS(IWUE, "Data/LPJ-GUESS/LPJ-GUESS.IWUEet.rds")
+    saveRDS(WUEt, "Data/LPJ-GUESS/LPJ-GUESS.WUEtet.rds")
+    
   }
 
 

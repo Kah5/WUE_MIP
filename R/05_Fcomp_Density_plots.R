@@ -707,7 +707,7 @@ WUEtinc <- relativize.period(WUEt.y, 850:1800, "WUEt")
 map.WUE.inc <- function(WUEtype, var){
   
   png(height = 5, width = 8, units = "in", res=300, paste0(getwd(),"/outputs/preliminaryplots/WUE/ED2_",var,"inc_rel_pre1800.png"))
-  print(ggplot(IWUEinc, aes(Year, IWUE, color = Site))+geom_point()+theme(legend.position = "none")+theme_bw())
+  print(ggplot(IWUEinc, aes(Year, IWUE, color = Site))+geom_point()+theme(legend.position = "none")+theme_bw()+theme(legend.position="none"))
   dev.off()
   
   a <- dcast(IWUEinc, Year ~ Site)

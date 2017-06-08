@@ -709,14 +709,21 @@ relativize.period <- function(df,period, var){
     Relvalue[,i+1] <- test[,i+1]/mean(test[test$Year %in% period ,i+1], na.rm=TRUE)
   }
   m3 <- melt(Relvalue, id.vars = "Year")
-  colnames(m3) <- c("Year", "Site", var)
+  colnames(m3) <- c("Year", "Site", paste0("rel_",var))
   m3
 }
 
 IWUEinc <- relativize.period(IWUE.y, 850:1800, "IWUE")
 WUEiinc <- relativize.period(WUEi.y, 850:1800, "WUEi")
 WUEtinc <- relativize.period(WUEt.y, 850:1800, "WUEt")
+# rename variables:
 
+
+# save the jja relative wue, density and overall precipitation to a single df:
+all.jja.rel <-  Reduce(function(x, y) merge(x, y, by =,all=TRUE), list(reldens.y, IWUEinc, WUEiinc, WUEtinc,reldens.y, IWUE.y, WUEi.y, WUEt.y, CO2.y,
+                                                                       tair.y, precipf.y))
+
+saveRDS(all.jja.rel, "outputs/data/ED2/ED2.all.jja.rel.rds")
 
 # function to map out WUE increase across space:
 map.WUE.inc <- function(WUEtype, var){
@@ -793,7 +800,7 @@ map.WUE.inc(WUEtinc, "WUEt")
 
 # for jja mean data:
 jja.y <- readRDS("outputs/data/ED2/ED2.alldat.yrmeans.rds")
-
+jja.y <- readRDS("outputs/data/ED2/ED2.")
 
 # get the years from 1800 - 2010:
 jja.subset <- jja.y[jja.y$Year %in% 1800:2010, ]
@@ -812,12 +819,56 @@ ggplot(jja.subset, aes(Year, Rel.Dens, color = Site))+geom_point()+theme(legend.
 
 # Q: What is the effect of WUE, precip, tair on rel. density?
 # basic plots over the whole domain
+
+
+# print these all to a pdf:
+pdf("outputs/preliminaryplots/post_1800_changes/ED2/post_1800_timeseries.pdf")
+
 ggplot(jja.subset, aes(Rel.Dens, Tair, color = Site))+geom_point()+theme(legend.position = "none")
 ggplot(jja.subset, aes(Rel.Dens, IWUE, color = Site))+geom_point()+theme(legend.position = "none")
 ggplot(jja.subset, aes(Rel.Dens, precip, color = Site))+geom_point()+theme(legend.position = "none")
 
+#dev.off()
+
 precip <- jja.subset[,c("Site", "precip", "Year")]
-pr.means <- dcast(precip, formula = Site + Year ~ precip)
+pr.means <- aggregate(precip ~ Site, data = precip, FUN = mean)
+colnames(pr.means) <- c("Site", "mean.precipf")
+jja.subset <- merge(jja.subset, pr.means, by = "Site")# add site means to the jja.subset df
+
+# now lets make some prelimary plots of 
+
+ggplot(jja.subset, aes(Rel.Dens, Tair, color = mean.precipf ))+geom_point()
+ggplot(jja.subset, aes(Rel.Dens, precip, color = mean.precipf))+geom_point()
+ggplot(jja.subset, aes(Rel.Dens, CO2, color = mean.precipf))+geom_point()
+ggplot(jja.subset, aes(Rel.Dens, IWUE, color = mean.precipf))+geom_point()
+
+# Plot basic Trends through time colored by mean precipf
+pdf("outputs/preliminaryplots/post_1800_changes/ED2/post_1800_timeseries.pdf")
+
+ggplot(jja.subset, aes(Year, Tair, color = mean.precipf))+geom_point()
+ggplot(jja.subset, aes(Year, precip, color = mean.precipf))+geom_point()
+ggplot(jja.subset, aes(Year, CO2, color = mean.precipf))+geom_point()
+ggplot(jja.subset, aes(Year, Rel.Dens, color = mean.precipf))+geom_point()+scale_color_gradient(low = "red", high = "blue")
+
+# based on these plots, it looks like places with lower mean precipf over 1800-2010 show larger inc in density:
+# are these also places with increases in WUE
+# these plots are omitting several outliers:
+
+ggplot(jja.subset, aes(Year, IWUE, color = mean.precipf))+ylim(0,100)+geom_point()+scale_color_gradient(low = "red", high = "blue")
+ggplot(jja.subset, aes(Year, WUEt, color = mean.precipf))+ylim(0,100)+geom_point()+scale_color_gradient(low = "red", high = "blue")
+ggplot(jja.subset, aes(Year, WUEi, color = mean.precipf))+ylim(0,100)+geom_point()+scale_color_gradient(low = "red", high = "blue")
+
+# just merging by had here because it wasn't working above
+jja.subset <- merge(jja.subset, IWUEinc, by = c("Year", "Site"))
+jja.subset <- merge(jja.subset, WUEiinc, by = c("Year", "Site"))
+jja.subset <- merge(jja.subset, WUEtinc, by = c("Year", "Site"))
+
+
+ggplot(jja.subset, aes(Year, rel_IWUE, color = mean.precipf))+geom_point()+scale_color_gradient(low = "red", high = "blue")
+ggplot(jja.subset, aes(Year, rel_WUEt, color = mean.precipf))+geom_point()+scale_color_gradient(low = "red", high = "blue")
+ggplot(jja.subset, aes(Year, rel_WUEi, color = mean.precipf))+geom_point()+scale_color_gradient(low = "red", high = "blue")
+
+dev.off()
 
 
 
@@ -830,6 +881,11 @@ pr.means <- dcast(precip, formula = Site + Year ~ precip)
 
 
 
+
+
+
+
+# now to quantitativily analysize theses
 # fit a gam?
 # relative density increases over time
 denst <- gam(Rel.Dens ~ s(Year), data = jja.subset)

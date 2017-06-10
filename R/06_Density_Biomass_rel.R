@@ -130,29 +130,35 @@ dev.off()
 Fcomp <- readRDS("Data/ED2/ED2.Fcomp.rds")
 pft.lab=c("grass.c4", "tropic.early", "tropic.mid", "tropic.late", "grass.c3.temp", "pine.north", "pine.south", "conifer.late", "temp.decid.early", "temp.decid.mid", "temp.decid.late","ag1", "ag2", "ag3", "ag4","grass.c3.subtrop","Araucaria")
 
-dimnames(Dens) <- list(year, paleon$num, pft.lab)
+dimnames(Fcomp) <- list(year, paleon$num, pft.lab)
 
 pfts <- c("pine.north" ,"conifer.late","temp.decid.early", "temp.decid.mid",   
           "temp.decid.late", "grass.c3.temp" )
 
-Dens.r <- Dens[,,pfts]
+Fcomp.r <- Fcomp[,,pfts]
 
 # get the year means for each fcomp
-pine.north.y <- get.yrmeans(Dens.r[,,"pine.north"], "pine.north")
-conifer.late.y <- get.yrmeans(Dens.r[,,"conifer.late"], "conifer.late")
-temp.decid.early.y <- get.yrmeans(Dens.r[,,"temp.decid.early"], "temp.decid.early")
-temp.decid.mid.y <- get.yrmeans(Dens.r[,,"temp.decid.mid"], "temp.decid.mid")
-temp.decid.late.y <- get.yrmeans(Dens.r[,,"temp.decid.late"], "temp.decid.late")
-grass.c3.temp.y <- get.yrmeans(Dens.r[,,"grass.c3.temp"], "grass.c3.temp")
+pine.north.y <- get.yrmeans(Fcomp.r[,,"pine.north"], "pine.north")
+conifer.late.y <- get.yrmeans(Fcomp.r[,,"conifer.late"], "conifer.late")
+temp.decid.early.y <- get.yrmeans(Fcomp.r[,,"temp.decid.early"], "temp.decid.early")
+temp.decid.mid.y <- get.yrmeans(Fcomp.r[,,"temp.decid.mid"], "temp.decid.mid")
+temp.decid.late.y <- get.yrmeans(Fcomp.r[,,"temp.decid.late"], "temp.decid.late")
+grass.c3.temp.y <- get.yrmeans(Fcomp.r[,,"grass.c3.temp"], "grass.c3.temp")
 
 all.y <- Reduce(function(x, y) merge(x, y, by = ,all=TRUE), 
                 list(AGBdens, pine.north.y,conifer.late.y, temp.decid.early.y,
                      temp.decid.mid.y, temp.decid.late.y, grass.c3.temp.y))
 
 
-ggplot(all.y, aes(AGB, TotalDens, color = pine.north))+geom_point()+theme_bw()+ylab("Total Density (trees/ha)")+xlab("Aboveground biomass (kgC/m2)")+theme(legend.position = "none")
-ggplot(all.y, aes(AGB, TotalDens, color = conifer.late))+geom_point()+theme_bw()+ylab("Total Density (trees/ha)")+xlab("Aboveground biomass (kgC/m2)")+theme(legend.position = "none")
-ggplot(all.y, aes(AGB, TotalDens, color = temp.decid.early))+geom_point()+theme_bw()+ylab("Total Density (trees/ha)")+xlab("Aboveground biomass (kgC/m2)")+theme(legend.position = "none")
-ggplot(all.y, aes(AGB, TotalDens, color = temp.decid.mid))+geom_point()+theme_bw()+ylab("Total Density (trees/ha)")+xlab("Aboveground biomass (kgC/m2)")+theme(legend.position = "none")
-ggplot(all.y, aes(AGB, TotalDens, color = temp.decid.late))+geom_point()+theme_bw()+ylab("Total Density (trees/ha)")+xlab("Aboveground biomass (kgC/m2)")+theme(legend.position = "none")
-ggplot(all.y, aes(AGB, TotalDens, color = grass.c3.temp))+geom_point()+theme_bw()+ylab("Total Density (trees/ha)")+xlab("Aboveground biomass (kgC/m2)")+theme(legend.position = "none")
+a <- ggplot(all.y, aes(AGB, TotalDens, color = pine.north))+geom_point()+theme_bw()+ylab("Total Density (trees/ha)")+xlab("Aboveground biomass (kgC/m2)")+scale_colour_gradientn(colours = rev(terrain.colors(7)), limits = c(0,1))+ggtitle("Pine.North")
+b <- ggplot(all.y, aes(AGB, TotalDens, color = conifer.late))+geom_point()+theme_bw()+ylab("Total Density (trees/ha)")+xlab("Aboveground biomass (kgC/m2)")+scale_colour_gradientn(colours = rev(terrain.colors(7)), limits = c(0,1))+ggtitle("Conifer.Late")
+c <- ggplot(all.y, aes(AGB, TotalDens, color = temp.decid.early))+geom_point()+theme_bw()+ylab("Total Density (trees/ha)")+xlab("Aboveground biomass (kgC/m2)")+scale_colour_gradientn(colours = rev(terrain.colors(7)), limits = c(0,1))+ggtitle("Temp.Decid.early")
+d <- ggplot(all.y, aes(AGB, TotalDens, color = temp.decid.mid))+geom_point()+theme_bw()+ylab("Total Density (trees/ha)")+xlab("Aboveground biomass (kgC/m2)")+scale_colour_gradientn(colours = rev(terrain.colors(7)), limits = c(0,1))+ggtitle("Temp.Decid.mid")
+e <- ggplot(all.y, aes(AGB, TotalDens, color = temp.decid.late))+geom_point()+theme_bw()+ylab("Total Density (trees/ha)")+xlab("Aboveground biomass (kgC/m2)")+scale_colour_gradientn(colours = rev(terrain.colors(7)), limits = c(0,1))+ggtitle("Temp.Decid.late")
+#ggplot(all.y, aes(AGB, TotalDens, color = grass.c3.temp))+geom_point()+theme_bw()+ylab("Total Density (trees/ha)")+xlab("Aboveground biomass (kgC/m2)")+theme(legend.position = "none")
+
+png(height = 12, width = 7, units = "in", res=300,"outputs/preliminaryplots/Dens/ED2_Dens_AGB_by_fcomp.png")
+grid_arrange_shared_legend(a,b,c,d,e, nrow=5,ncol=1)
+dev.off()
+
+

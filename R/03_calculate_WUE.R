@@ -101,7 +101,7 @@ calc.WUE <- function(model){
     saveRDS(IWUEet, "Data/ED2/ED2.IWUEet.rds")
     saveRDS(WUEtet, "Data/ED2/ED2.IWUEet.rds")
     
-  }else{
+  }else{if(model == "GUESS"){
     #qair <- readRDS("Data/LPJ-GUESS/")
     tair <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.tair.rds")
     qair <- readRDS("Data/ED2/ED2.qair.rds")
@@ -172,11 +172,82 @@ calc.WUE <- function(model){
     
   }
 
-
+  }else{
+  
+    # for LPJ-WSL
+    tair <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.tair.rds")
+    qair <- readRDS("Data/ED2/ED2.qair.rds")
+    #tair <- readRDS("Data/ED2/ED2.tair.rds")
+    GPP <- readRDS("Data/LPJ-WSL/LPJ-WSL.v1.GPP.rds")
+    CO2 <- readRDS("Data/ED2/ED2.CO2.rds")
+    CO2 <- data.frame(CO2)
+    colnames(CO2) <- paleon$num
+    site.list <- colnames(CO2)
+    transp <- readRDS("Data/LPJ-WSL/LPJ-WSL.v1.Transp.rds")
+    evap <- readRDS("Data/LPJ-WSL/LPJ-WSL.v1.Evap.rds")
+    #LAI <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.LAI.rds")
+    
+    # calculate a VPD list
+    RH <- VPD <- VPD2 <- CO2
+    
+    # we dont have qair for LPJ, but is should be the same as ED:
+    
+    
+    for(s in 1:length(site.list)){
+      RH[,s] <- qair2rh(qair[,s], tair[,s], press = 101.325)
+      VPD[,s] <- qair2vpd(qair[,s], tair[,s], press = 101.325)
+    }
+    
+    for(s in 1:length(site.list)){
+      VPD2[,s] <- RHtoVPD(RH[,s], tair[,s]-273.15, Pa = 101)
+    }
+    
+    
+    # -----------------------calculate canopy conductance------------- 
+    # need to correct this/make sure it is right
+    #canconduct <- function(tair, Transp, LAI, VPD){
+     # ((115.8 + 0.4226*(tair-273.15))*((Transp*1000/LAI)/VPD)*0.0001)
+    #}
+    
+    #Gc <- CO2
+    
+    
+    #for (s in 1:length(site.list)){
+     # Gc[,s] <- canconduct(tair[,s], transp[,s], LAI[,s], VPD[,s])
+    #}
+    #-----------------calculate WUE---------------------------------
+    
+    # IWUE 
+    # WUEt
+    # WUEi
+    
+    # calculate WUE using loop
+    IWUE <- WUEi <- WUEt <- IWUEet <- WUEtet <- WUEiet  <- CO2
+    
+    
+    for (s in 1:length(site.list)){
+      IWUE[,s] <- GPP[,s]*1000/(transp[,s])*(VPD2[,s])
+      WUEt[,s] <- GPP[,s]*1000/(transp[,s])
+      #WUEi[,s] <- GPP[,s]*1000/Gc[,s] # convert to kg/m2/s
+      
+      # using evap too
+      IWUEet[,s] <- GPP[,s]*1000/(transp[,s]+evap[,s])*(VPD2[,s])
+      WUEtet[,s] <- GPP[,s]*1000/(transp[,s]+evap[,s])
+      #WUEiet[,s] <- GPP[,s]*1000/Gc[,s] # convert to kg/m2/s
+    }
+    
+    saveRDS(IWUE, "Data/LPJ-WSL/LPJ-WSL.IWUE.rds")
+    saveRDS(WUEt, "Data/LPJ-WSL/LPJ-WSL.WUEt.rds")
+    #saveRDS(WUEi, "Data/LPJ-WSL/LPJ-WSL.WUEi.rds")
+    saveRDS(IWUEet, "Data/LPJ-WSL/LPJ-WSL.WUEet.rds")
+    saveRDS(WUEtet, "Data/LPJ-WSL/LPJ-WSL.WUEtet.rds")
+    
+}
 }
 
 calc.WUE ("ED2")
 calc.WUE ("LPJ-GUESS")
+calc.WUE("LPJ-WSL")
 
 #---------------------Do yearly + montly aggregation plots------------------
 # read in the WUE files:
@@ -330,3 +401,5 @@ slope.WUE.inc(ED2.WUEi, "ED2", "WUEi")
 slope.WUE.inc(ED2.WUEt, "ED2", "WUEt")
 
 slope.WUE.inc(GUESS.WUEt, "GUESS", "WUEt")
+slope.WUE.inc(IWUE, "WSL", "IWUE")
+slope.WUE.inc(WUEt, "WSL", "WUEt")

@@ -157,7 +157,7 @@ agbi <- agb.long
 
 # need to calculate the difference in AGB between each year at each site:
 for(i in 1:length(paleon$num)){
-  for(t in 1:length(yrs)){
+  for(t in 1:length(agbi$Year)){
     if(t ==1){
       agbi[t,i+1] <- 0
     }else{
@@ -219,14 +219,14 @@ AGB.all <- Reduce(function(x, y) merge(x, y, by = ,all=TRUE), list(
 AGB.m <- melt(AGB.all, id.vars =c("Year", "Site", "agbi"))
 
 
-# plot NPP vs all climate parameters (all data)
-X11(width = 12)
-ggplot(AGB.m, aes(agbi, value))+geom_point()+facet_wrap(~variable, scales="free")
+# plot AGB vs all climate parameters (all data)
+#X11(width = 12)
+#ggplot(AGB.m, aes(agbi, value))+geom_point()+facet_wrap(~variable, scales="free")
 
 # plot NPP vs all climate parameters (all data, but colored by sites)
-ggplot(AGB.m, aes(agbi, value, color = Site))+geom_point()+facet_wrap(~variable, scales="free")+theme(legend.position = "none")
+#ggplot(AGB.m, aes(agbi, value, color = Site))+geom_point()+facet_wrap(~variable, scales="free")+theme(legend.position = "none")
 
-ggplot(AGB.m, aes(Year, agbi, color = Site))+geom_point()+theme(legend.position = "none")
+#ggplot(AGB.m, aes(Year, agbi, color = Site))+geom_point()+theme(legend.position = "none")
 
 paleon$Site <- paste0("X", paleon$num)
 
@@ -310,9 +310,8 @@ plot.agbi.sens(AGB.m, "tJul", 850:1900)
 plot.agbi.sens(AGB.m, "tAug", 850:1900)
 
 
-# lets just look at the Pearson Climate correlation:
+# lets just look at the Pearson Climate correlation for ED2:
 plot.agbi.cor <- function(df, clim, period){
-  
   a <- df[df$variable %in% clim & df$Year %in% period,]
   slope.table <- data.frame(site = unique(a$Site),
                             pval = NA, 
@@ -352,7 +351,7 @@ plot.agbi.cor <- function(df, clim, period){
   
   png(height=4, width = 7, units="in",res=300 ,paste0("outputs/preliminaryplots/sensitivity/agbi/ED2_agbi_", clim, "_cors_",period[1],"_",period[length(period)],".png"))
   print(ggplot(slope.xy, aes(x = lon, y=lat, fill= sigcor))+geom_raster()+#scale_fill_gradient(low = "blue", high = "red", limits=c(0.00025, 0.0025))+
-          geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle(paste0('Pearson Correlations between ', clim, " and AGBI")))
+          geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle(paste0('Pearson Correlations between ', clim, " and AGBI in ED2")))
   
   dev.off()
   
@@ -381,6 +380,25 @@ plot.agbi.cor(AGB.m, "smJun", 850:1800)
 plot.agbi.cor(AGB.m, "smJul", 850:1800)
 plot.agbi.cor(AGB.m, "smAug", 850:1800)
 
+plot.agbi.cor(AGB.m, "prJun", 1800:1900)
+plot.agbi.cor(AGB.m, "prJul", 1800:1900)
+plot.agbi.cor(AGB.m, "prAug", 1800:1900)
+plot.agbi.cor(AGB.m, "tJun", 1800:1900)
+plot.agbi.cor(AGB.m, "tJul", 1800:1900)
+plot.agbi.cor(AGB.m, "tAug", 1800:1900)
+plot.agbi.cor(AGB.m, "smJun", 1800:1900)
+plot.agbi.cor(AGB.m, "smJul", 1800:1900)
+plot.agbi.cor(AGB.m, "smAug", 1800:1900)
+
+plot.agbi.cor(AGB.m, "prJun", 850:2010)
+plot.agbi.cor(AGB.m, "prJul", 850:2010)
+plot.agbi.cor(AGB.m, "prAug", 850:2010)
+plot.agbi.cor(AGB.m, "tJun", 850:2010)
+plot.agbi.cor(AGB.m, "tJul", 850:2010)
+plot.agbi.cor(AGB.m, "tAug", 850:2010)
+plot.agbi.cor(AGB.m, "smJun", 850:2010)
+plot.agbi.cor(AGB.m, "smJul", 850:2010)
+plot.agbi.cor(AGB.m, "smAug", 850:2010)
 # next step here:
 # what is agbi increment in LPJ-GUESS sensitive to?
 
@@ -613,6 +631,194 @@ plot.agbi.cor(AGB.m, "smJun", 1800:1900)
 plot.agbi.cor(AGB.m, "smJul", 1800:1900)
 plot.agbi.cor(AGB.m, "smAug", 1800:1900)
 
+
+#----Sensitvity of Total Live biomass to climate in WSL------------
+# WSL does not have Aboveground biomass, so we will calculate the timeseries for total live biomass:
+
+# do all the above correlations/processing steps, but for LPJ-WSL:
+load("Data/PalEON_siteInfo_all.RData")
+
+timevec <- 1:13932
+month <- rep(1:12, 1161)
+yearsince  <- rep(0:1160, each =12)
+year <- yearsince + 850
+yrs <- 850:2010
+
+# calculating AGB increment:
+AGB <- readRDS("Data/LPJ-WSL/LPJ-WSL.v1.TotLivBiom.rds")
+
+# using precip for LPJ-GUESS since we dont have LPJ-WSL output:
+precip <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.precipf.rds")
+tair <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.tair.rds")
+
+# assign dimnames
+dimnames(AGB) <- list(yr, paleon$num)
+dimnames(precip) <- list(year, paleon$num)
+dimnames(tair) <- list(year, paleon$num)
+
+# Guess is at yearly agb already, lets just use that
+source("R/get.yrmeans.R")
+AGB.yr <- data.frame(AGB)
+AGB.yr$Year <- yrs
+# put AGB.yr at the beginngin of the df:
+require(dplyr)
+AGB.yr <- AGB.yr %>%
+  dplyr::select(Year, everything())
+
+#agb.long <- dcast(AGB.gs, formula = Year ~ Site)
+agbi <- AGB.yr
+
+
+# need to calculate the difference in AGB between each year at each site:
+for(i in 1:length(paleon$num)){
+  for(t in 1:length(yrs)){
+    if(t ==1){
+      agbi[t,i+1] <- 0
+    }else{
+      agbi[t,i+1] <- AGB.yr[t,i+1] - AGB.yr[t-1,i+1]
+    }
+  }
+}
+
+
+#melt the agbi:
+agbi.m <- melt(agbi, id.vars = "Year")
+colnames(agbi.m) <- c("Year", "Site", "agbi")
+saveRDS(agbi, "outputs/data/WSL/WSL.agbi.rds")
+
+# also look at soil moisture:
+moist <- readRDS("Data/LPJ-WSL/LPJ-WSL.v1.SoilMoist.rds")
+dimnames(moist) <- list(timevec, paleon$num, 1:2)
+
+# for now, lets just sum the total amount of soil moisture:
+totMoist <-  precip
+
+for(i in 1:length(paleon$num)){
+  
+  moist.site <- data.frame(moist[,i,])
+  totMoist[,i] <- rowSums(moist.site, na.rm=TRUE)
+  
+}
+
+saveRDS(totMoist ,"outputs/data/GUESS/GUESS.totMoist.rds")
+
+
+
+pr.jun <- get.mo.means(precip, mo = c("6"),"prJun")
+pr.jul <- get.mo.means(precip, mo = c("7"), "prJul")
+pr.aug <- get.mo.means(precip, mo = c("8"), "prAug")
+pr.jja <- get.mo.means(precip, mo = c("6","7","8"),"prJJA")
+
+
+# rough conversion of precipitaiton rate to mm precip per month
+# precip rate: kgH20/m2/day
+pr.jun[,3] <- pr.jun[,3]*(30*60*60*24)
+pr.jul[,3] <- pr.jul[,3]*(30*60*60*24)
+pr.aug[,3] <- pr.aug[,3]*(30*60*60*24)
+pr.jja[,3] <- pr.jja[,3]*(30*60*60*24)
+
+t.jun <- get.mo.means(tair, mo = c("6"),"tJun")
+t.jul <- get.mo.means(tair,mo = c("7"), "tJul")
+t.aug <- get.mo.means(tair,mo = c("8"), "tAug")
+
+
+sm.jun <- get.mo.means(totMoist, mo = c("6"),"smJun")
+sm.jul <- get.mo.means(totMoist, mo = c("7"),"smJul")
+sm.aug <- get.mo.means(totMoist, mo = c("8"),"smAug")
+
+AGB.all <- Reduce(function(x, y) merge(x, y, by = ,all=TRUE), list(
+  agbi.m, pr.jun, pr.jul, pr.aug, t.jun, t.jul, t.aug,
+  sm.jun, sm.jul, sm.aug))
+
+AGB.m <- melt(AGB.all, id.vars =c("Year", "Site", "agbi"))
+
+paleon$Site <- paste0("X", paleon$num)
+
+plot.agbi.cor <- function(df, clim, period){
+  load("Data/PalEON_siteInfo_all.RData")
+  paleon$site <- paste0("X", paleon$num)
+  a <- df[df$variable %in% clim & df$Year %in% period,]
+  slope.table <- data.frame(site = unique(a$Site),
+                            pval = NA, 
+                            cor = NA)
+  
+  # find the slopes of relationship between NPP and climate variable for each grid cell:
+  for(i in 1:length(paleon$num)){
+    
+    if(is.na(a[i,]$agbi)){
+      pval <- NA
+      cor <- NA
+    }else{
+      df.a <- a[a$Site %in% slope.table[i,]$site,]
+      mod <- cor.test(df.a$agbi, df.a$value)
+      #mod <- summary( lm(agbi ~ value, data = a[a$Site %in% slope.table[i,]$site,]) )
+      pval <- mod$p.value
+      cor <- mod$estimate
+    }
+    slope.table[i,]$pval <- pval
+    slope.table[i,]$cor <- cor
+  }
+  
+  
+  paleon$site <- paste0("X", paleon$num)
+  
+  slope.table$sigcor <- ifelse(slope.table$pval < 0.05, slope.table$cor, NA)
+  
+  #colnames(slope.table) <- c("site", "pval", "cor", paste0(clim, "_sigcor"))
+  # merge paleon to site to plot:
+  slope.xy <- merge(paleon, slope.table, by = "site")
+  
+  states <- map_data("state")
+  states <- subset(states, ! region  %in% c("california", 'nevada','arizona','utah','oregon','washington','new mexico','colorado','montana','wyoming','idaho') )
+  coordinates(states) <- ~long+lat
+  class(states)
+  proj4string(states) <- CRS("+proj=longlat +datum=NAD83")
+  states <- spTransform(states,CRSobj = '+init=epsg:4326')
+  mapdata <- data.frame(states)
+  
+  png(height=4, width = 7, units="in",res=300 ,paste0("outputs/preliminaryplots/sensitivity/agbi/WSL/WSL_agbi_", clim, "_cors_",period[1],"_",period[length(period)],".png"))
+  print(ggplot(slope.xy, aes(x = lon, y=lat, fill= sigcor))+geom_raster()+#scale_fill_gradient(low = "blue", high = "red", limits=c(0.00025, 0.0025))+
+          geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle(paste0('Pearson Correlations between ', clim, " and Tot.Live Biomass Increment")))
+  
+  dev.off()
+  colnames(slope.xy)[13] <- paste0(clim, "_sigcor")
+  saveRDS(slope.xy, paste0("outputs/preliminaryplots/sensitivity/agbi/WSL/cors/WSL_", clim, "_AGB_", period[1], "_", period[length(period)],".rds" ))
+  
+}
+
+plot.agbi.cor(AGB.m, "prJun", 1901:2010)
+plot.agbi.cor(AGB.m, "prJul", 1901:2010)
+plot.agbi.cor(AGB.m, "prAug", 1901:2010)
+plot.agbi.cor(AGB.m, "tJun", 1901:2010)
+plot.agbi.cor(AGB.m, "tJul", 1901:2010)
+plot.agbi.cor(AGB.m, "tAug", 1901:2010)
+plot.agbi.cor(AGB.m, "smJun", 1901:2010)
+plot.agbi.cor(AGB.m, "smJul", 1901:2010)
+plot.agbi.cor(AGB.m, "smAug", 1901:2010)
+
+plot.agbi.cor(AGB.m, "prJun", 850:1800)
+plot.agbi.cor(AGB.m, "prJul", 850:1800)
+plot.agbi.cor(AGB.m, "prAug", 850:1800)
+plot.agbi.cor(AGB.m, "tJun", 850:1800)
+plot.agbi.cor(AGB.m, "tJul", 850:1800)
+plot.agbi.cor(AGB.m, "tAug", 850:1800)
+plot.agbi.cor(AGB.m, "smJun", 850:1800)
+plot.agbi.cor(AGB.m, "smJul", 850:1800)
+plot.agbi.cor(AGB.m, "smAug", 850:1800)
+
+plot.agbi.cor(AGB.m, "prJun", 1800:1900)
+plot.agbi.cor(AGB.m, "prJul", 1800:1900)
+plot.agbi.cor(AGB.m, "prAug", 1800:1900)
+plot.agbi.cor(AGB.m, "tJun", 1800:1900)
+plot.agbi.cor(AGB.m, "tJul", 1800:1900)
+plot.agbi.cor(AGB.m, "tAug", 1800:1900)
+plot.agbi.cor(AGB.m, "smJun", 1800:1900)
+plot.agbi.cor(AGB.m, "smJul", 1800:1900)
+plot.agbi.cor(AGB.m, "smAug", 1800:1900)
+
+
+
+#------------------What is the highest correlation with AGBI in each model?--------------
 # to do: make a map of the highest correlation at each grid cell
 map.highest.cor <- function(model, yr){
   load("Data/PalEON_siteInfo_all.RData")
@@ -643,7 +849,7 @@ map.highest.cor <- function(model, yr){
     states <- spTransform(states,CRSobj = '+init=epsg:4326')
     mapdata <- data.frame(states)
     
-    png(height=4, width = 7, units="in",res=300 ,paste0("outputs/preliminaryplots/sensitivity/agbi/", model,"/",model,"_agbi_highest_cors_",period[1],"_",period[length(period)],".png"))
+    png(height=4, width = 7, units="in",res=300 ,paste0("outputs/preliminaryplots/sensitivity/agbi/", model,"/",model,"_agbi_highest_cors_",yr[1],"_",yr[length(yr)],".png"))
     print(ggplot(paleon2, aes(x = lon, y=lat, fill= highest))+geom_raster()+scale_fill_manual(values=c('#b2182b','#d6604d','#f4a582','#8c510a','#bf812d',
                                                                                                '#dfc27d',
                                                                                                '#80cdc1','#35978f',
@@ -657,6 +863,17 @@ map.highest.cor <- function(model, yr){
 map.highest.cor(model = "GUESS", yr=1901:2010)
 map.highest.cor(model = "GUESS", yr=1800:1900)
 map.highest.cor(model = "GUESS", yr=850:1800)
+
+
+map.highest.cor(model = "ED2", yr=1901:2010)
+map.highest.cor(model = "ED2", yr=1800:1900)
+map.highest.cor(model = "ED2", yr=850:1800)
+
+map.highest.cor(model = "WSL", yr=1901:2010)
+map.highest.cor(model = "WSL", yr=1800:1900)
+map.highest.cor(model = "WSL", yr=850:1800)
+
+
 
 # for ED
 #ggplot(paleon, aes(lon, lat, fill = highest))+geom_raster()

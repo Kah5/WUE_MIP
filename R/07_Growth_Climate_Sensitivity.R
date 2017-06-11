@@ -355,6 +355,10 @@ plot.agbi.cor <- function(df, clim, period){
           geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle(paste0('Pearson Correlations between ', clim, " and AGBI")))
   
   dev.off()
+  
+  colnames(slope.xy)[14] <- paste0(clim, "_sigcor")
+  saveRDS(slope.xy, paste0("outputs/preliminaryplots/sensitivity/agbi/ED2/cors/GUESS_", clim, "_AGB_", period[1], "_", period[length(period)],".rds" ))
+  
 }
 
 plot.agbi.cor(AGB.m, "prJun", 1901:2010)
@@ -478,3 +482,182 @@ AGB.all <- Reduce(function(x, y) merge(x, y, by = ,all=TRUE), list(
 
 AGB.m <- melt(AGB.all, id.vars =c("Year", "Site", "agbi"))
 
+paleon$Site <- paste0("X", paleon$num)
+
+# next we want to generate an overall sensitivity of NPP to each monthly climate driver
+# need to set the colors the same
+
+plot.agbi.sens <- function(df, clim, period){
+  
+  a <- df[df$variable %in% clim & df$Year %in% period,]
+  slope.table <- data.frame(site = unique(a$Site),
+                            pval = NA, 
+                            slope = NA)
+  
+  # find the slopes of relationship between NPP and climate variable for each grid cell:
+  for(i in 1:length(paleon$num)){
+    if(is.na(a[i,]$agbi)){
+      pval <- NA
+      slope <- NA
+    }else{
+      mod <- summary( lm(agbi ~ value, data = a[a$Site %in% slope.table[i,]$site,]) )
+      pval <- mod$coefficients[2,4]
+      slope <- mod$coefficients[2,1]
+    }
+    slope.table[i,]$pval <- pval
+    slope.table[i,]$slope <- slope
+  }
+  
+  paleon$site <- paste0("X", paleon$num)
+  
+  slope.table$sigslope <- ifelse(slope.table$pval < 0.05, slope.table$slope, 0)
+  
+  # merge paleon to site to plot:
+  slope.xy <- merge(paleon, slope.table, by = "site")
+  
+  states <- map_data("state")
+  states <- subset(states, ! region  %in% c("california", 'nevada','arizona','utah','oregon','washington','new mexico','colorado','montana','wyoming','idaho') )
+  coordinates(states) <- ~long+lat
+  class(states)
+  proj4string(states) <- CRS("+proj=longlat +datum=NAD83")
+  states <- spTransform(states,CRSobj = '+init=epsg:4326')
+  mapdata <- data.frame(states)
+  
+  png(height=4, width = 7, units="in",res=300 ,paste0("outputs/preliminaryplots/sensitivity/agbi/ED2_agbi_", clim, "_slopes_",period[1],"_",period[length(period)],".png"))
+  print(ggplot(slope.xy, aes(x = lon, y=lat, fill= sigslope))+geom_raster()+#scale_fill_gradient(low = "blue", high = "red", limits=c(0.00025, 0.0025))+
+          geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle(paste0('Slope of NPP ', clim, " relationship")))
+  
+  dev.off()
+}
+
+
+plot.agbi.cor <- function(df, clim, period){
+  load("Data/PalEON_siteInfo_all.RData")
+  paleon$site <- paste0("X", paleon$num)
+  a <- df[df$variable %in% clim & df$Year %in% period,]
+  slope.table <- data.frame(site = unique(a$Site),
+                            pval = NA, 
+                            cor = NA)
+  
+  # find the slopes of relationship between NPP and climate variable for each grid cell:
+  for(i in 1:length(paleon$num)){
+    
+    if(is.na(a[i,]$agbi)){
+      pval <- NA
+      cor <- NA
+    }else{
+      df.a <- a[a$Site %in% slope.table[i,]$site,]
+      mod <- cor.test(df.a$agbi, df.a$value)
+      #mod <- summary( lm(agbi ~ value, data = a[a$Site %in% slope.table[i,]$site,]) )
+      pval <- mod$p.value
+      cor <- mod$estimate
+    }
+    slope.table[i,]$pval <- pval
+    slope.table[i,]$cor <- cor
+  }
+  
+  
+  paleon$site <- paste0("X", paleon$num)
+  
+  slope.table$sigcor <- ifelse(slope.table$pval < 0.05, slope.table$cor, NA)
+  
+  #colnames(slope.table) <- c("site", "pval", "cor", paste0(clim, "_sigcor"))
+  # merge paleon to site to plot:
+  slope.xy <- merge(paleon, slope.table, by = "site")
+ 
+  states <- map_data("state")
+  states <- subset(states, ! region  %in% c("california", 'nevada','arizona','utah','oregon','washington','new mexico','colorado','montana','wyoming','idaho') )
+  coordinates(states) <- ~long+lat
+  class(states)
+  proj4string(states) <- CRS("+proj=longlat +datum=NAD83")
+  states <- spTransform(states,CRSobj = '+init=epsg:4326')
+  mapdata <- data.frame(states)
+  
+  png(height=4, width = 7, units="in",res=300 ,paste0("outputs/preliminaryplots/sensitivity/agbi/GUESS/GUESS_agbi_", clim, "_cors_",period[1],"_",period[length(period)],".png"))
+  print(ggplot(slope.xy, aes(x = lon, y=lat, fill= sigcor))+geom_raster()+#scale_fill_gradient(low = "blue", high = "red", limits=c(0.00025, 0.0025))+
+          geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle(paste0('Pearson Correlations between ', clim, " and AGBI")))
+  
+  dev.off()
+  colnames(slope.xy)[13] <- paste0(clim, "_sigcor")
+  saveRDS(slope.xy, paste0("outputs/preliminaryplots/sensitivity/agbi/GUESS/cors/GUESS_", clim, "_AGB_", period[1], "_", period[length(period)],".rds" ))
+  
+}
+
+plot.agbi.cor(AGB.m, "prJun", 1901:2010)
+plot.agbi.cor(AGB.m, "prJul", 1901:2010)
+plot.agbi.cor(AGB.m, "prAug", 1901:2010)
+plot.agbi.cor(AGB.m, "tJun", 1901:2010)
+plot.agbi.cor(AGB.m, "tJul", 1901:2010)
+plot.agbi.cor(AGB.m, "tAug", 1901:2010)
+plot.agbi.cor(AGB.m, "smJun", 1901:2010)
+plot.agbi.cor(AGB.m, "smJul", 1901:2010)
+plot.agbi.cor(AGB.m, "smAug", 1901:2010)
+
+plot.agbi.cor(AGB.m, "prJun", 850:1800)
+plot.agbi.cor(AGB.m, "prJul", 850:1800)
+plot.agbi.cor(AGB.m, "prAug", 850:1800)
+plot.agbi.cor(AGB.m, "tJun", 850:1800)
+plot.agbi.cor(AGB.m, "tJul", 850:1800)
+plot.agbi.cor(AGB.m, "tAug", 850:1800)
+plot.agbi.cor(AGB.m, "smJun", 850:1800)
+plot.agbi.cor(AGB.m, "smJul", 850:1800)
+plot.agbi.cor(AGB.m, "smAug", 850:1800)
+
+plot.agbi.cor(AGB.m, "prJun", 1800:1900)
+plot.agbi.cor(AGB.m, "prJul", 1800:1900)
+plot.agbi.cor(AGB.m, "prAug", 1800:1900)
+plot.agbi.cor(AGB.m, "tJun", 1800:1900)
+plot.agbi.cor(AGB.m, "tJul", 1800:1900)
+plot.agbi.cor(AGB.m, "tAug", 1800:1900)
+plot.agbi.cor(AGB.m, "smJun", 1800:1900)
+plot.agbi.cor(AGB.m, "smJul", 1800:1900)
+plot.agbi.cor(AGB.m, "smAug", 1800:1900)
+
+# to do: make a map of the highest correlation at each grid cell
+map.highest.cor <- function(model, yr){
+  load("Data/PalEON_siteInfo_all.RData")
+  paleon$site <- paste0("X",paleon$num)
+  paleon2 <- paleon
+  cor.dir <- paste0("C:/Users/JMac/Documents/Kelly/MIP/WUE_MIP/WUE_MIP/outputs/preliminaryplots/sensitivity/agbi/",model,"/cors/")
+  cor.files <- list.files(path = cor.dir, pattern=paste0({yr[1]}, "_", {yr[length(yr)]}, ".rds"))
+    
+    
+    for (i in 1:length(cor.files)){
+      cor.table <- readRDS(paste0(cor.dir, cor.files[i]))
+      
+      paleon2  <- merge(cor.table[, c(1:4,13)], paleon2, by = c("site", "num", "lon", "lat") )
+    rm(cor.table)
+      }
+    
+    # find the parameter with highest correlation to AGBI:
+    paleon2[is.na(paleon2)]<- 0
+    colnames(paleon2)[5:13] <- c("JunTair", "JulTair", "AugTair", "JunMoist", "JulMoist", "AugMoist", "JunPr","JulPr","AugPr" )
+    paleon2$highest <- colnames(paleon2[,5:13])[max.col(abs(paleon2[,5:13]),ties.method="first")]
+    
+    # map out these in space:
+    states <- map_data("state")
+    states <- subset(states, ! region  %in% c("california", 'nevada','arizona','utah','oregon','washington','new mexico','colorado','montana','wyoming','idaho') )
+    coordinates(states) <- ~long+lat
+    class(states)
+    proj4string(states) <- CRS("+proj=longlat +datum=NAD83")
+    states <- spTransform(states,CRSobj = '+init=epsg:4326')
+    mapdata <- data.frame(states)
+    
+    png(height=4, width = 7, units="in",res=300 ,paste0("outputs/preliminaryplots/sensitivity/agbi/", model,"/",model,"_agbi_highest_cors_",period[1],"_",period[length(period)],".png"))
+    print(ggplot(paleon2, aes(x = lon, y=lat, fill= highest))+geom_raster()+scale_fill_manual(values=c('#b2182b','#d6604d','#f4a582','#8c510a','#bf812d',
+                                                                                               '#dfc27d',
+                                                                                               '#80cdc1','#35978f',
+                                                                                               '#01665e'),
+                                                                                             limits = c("JunTair", "JulTair", "AugTair", "JunMoist", "JulMoist", "AugMoist", "JunPr","JulPr","AugPr"))+
+            geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-100,-60), ylim=c(34,50)) + theme_bw() + ggtitle(paste0('Highest correlation between AGBI and climate',yr[1],"-",yr[length(yr)])))
+    
+    dev.off()
+}
+
+map.highest.cor(model = "GUESS", yr=1901:2010)
+map.highest.cor(model = "GUESS", yr=1800:1900)
+map.highest.cor(model = "GUESS", yr=850:1800)
+
+# for ED
+#ggplot(paleon, aes(lon, lat, fill = highest))+geom_raster()
+# also what is the relationship between denisty and AGBI

@@ -874,7 +874,50 @@ map.highest.cor(model = "WSL", yr=1800:1900)
 map.highest.cor(model = "WSL", yr=850:1800)
 
 
+#-------What is the relationshp between growth increment and density?
+# get AGBI and relative density for ED and LPJ, WSL does not have density outputs.
+# could also look at the relationship between density and sensitivity to climate (would need to aggregate over 100 years or so?)
 
-# for ED
-#ggplot(paleon, aes(lon, lat, fill = highest))+geom_raster()
-# also what is the relationship between denisty and AGBI
+agbi <- readRDS("outputs/data/ED2/ED2.agbi.rds")
+dens <- readRDS("outputs/data/ED2/ED2.RelDens.rds")
+dimnames(dens) <- list(year, paleon$num)
+dens <- data.frame(dens)
+dens$Year <- year
+dens.y <- get.yrmeans(dens, var = 'relDens')
+
+# melt the agbi
+agbi.m <- melt(agbi, id.vars=c('Year'))
+colnames(agbi.m) <- c("Year", "Site", "agbi")
+# merge the agbi
+dens.agbi <- merge(dens.y, agbi.m, by = c("Year", "Site"))
+
+# sample plot the relationship
+ggplot(dens.agbi, aes(relDens, agbi, color=Site))+geom_point()+theme(legend.position = 'none')
+
+# plot the relationship for different time periods:
+# ED doesnt really have a relationship
+ggplot(dens.agbi[dens.agbi$Year %in% 1900:2010,], aes(relDens, agbi, color=Site))+geom_point()+theme(legend.position = 'none')
+ggplot(dens.agbi[dens.agbi$Year %in% 1800:1900,], aes(relDens, agbi, color=Site))+geom_point()+theme(legend.position = 'none')
+ggplot(dens.agbi[dens.agbi$Year %in% 850:1800,], aes(relDens, agbi, color=Site))+geom_point()+theme(legend.position = 'none')
+
+# look at relationship between agbi and overall density:
+agbi <- readRDS("outputs/data/ED2/ED2.agbi.rds")
+dens <- readRDS('outputs/data/ED2/TotalDens.rds')
+dimnames(dens) <- list(year, paleon$num)
+dens <- data.frame(dens)
+dens$Year <- year
+dens.y <- get.yrmeans(dens, var = 'Dens')
+
+# melt the agbi
+agbi.m <- melt(agbi, id.vars=c('Year'))
+colnames(agbi.m) <- c("Year", "Site", "agbi")
+# merge the agbi
+dens.agbi <- merge(dens.y, agbi.m, by = c("Year", "Site"))
+ggplot(dens.agbi, aes(Dens, agbi, color=Site))+geom_point()+theme(legend.position = 'none')
+
+ggplot(dens.agbi[dens.agbi$Year %in% 1900:2010,], aes(Dens, agbi, color=Site))+geom_point()+theme(legend.position = 'none')
+
+ggplot(dens.agbi[dens.agbi$Year %in% 1900:2010,], aes(Dens, agbi, color=Site))+geom_point()+theme(legend.position = 'none')
+
+# smooth using 50 or 10 year loess splines--any relationship between long term variablity ?
+# also could look at the responses of transpiration to growth and density:

@@ -4,6 +4,7 @@ library(ggplot2)
 library(reshape2)
 library(tidyr)
 library(zoo)
+library(maps)
 
 load("Data/PalEON_siteInfo_all.RData")
 # read in model outputs that were extracted for ED2
@@ -28,7 +29,7 @@ states <- subset(states, ! region  %in% c("california", 'nevada','arizona','utah
 coordinates(states)<-~long+lat
 class(states)
 proj4string(states) <-CRS("+proj=longlat +datum=NAD83")
-states <- spTransform(states,CRSobj = '+init=epsg:4326')
+#states <- spTransform(states,CRSobj = '+init=epsg:4326')
 mapdata <- data.frame(states)
 
 png(height = 8, width = 8, units = 'in',res=200,paste0(getwd(),"/outputs/preliminaryplots/ED_grid_map.png"))
@@ -86,7 +87,7 @@ plot.yrmean.ts <- function(df, name){
   m2 <- melt(yrmeans, id.vars= "year")
   m2$Year <- as.numeric(m2$year)
   png(height = 7, width = 18, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/", name, "_mean_timeseries_site.png"))
-  print(ggplot(data = m2, aes(x = year, y = value, color = variable))+geom_line()+ theme(legend.position="none"))
+  print(ggplot(data = m2, aes(x = year, y = value, color = variable))+geom_line()+theme_bw()+ theme(legend.position="none"))
   dev.off()
 }
 
@@ -114,7 +115,7 @@ plot.JJA.ts <- function(df, name){
   m2 <- melt(yrmeans, id.vars= "year")
   m2$year <- as.numeric(m2$year)
   png(height = 7, width = 18, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/", name, "_JJA_mean_timeseries_site.png"))
-  print(ggplot(data = m2, aes(x = year, y = value, color = variable))+geom_line()+ theme(legend.position="none"))
+  print(ggplot(data = m2, aes(x = year, y = value, color = variable))+geom_line()+theme_bw()+ theme(legend.position="none"))
   dev.off()
 }
 
@@ -138,24 +139,23 @@ plot.JJA.ts(ED2.precipf, "ED2.Precip")
 
 
 # ---------------------saving as CSV or RDS files for WUE calculations-----------------
-saveRDS(GPP, "Data/extracted/ED_monthly_GPP.RDS")
-#saveRDS(NPP, "Data/extracted/ED_monthly_NPP.RDS")
-saveRDS(CO2, "Data/extracted/ED_monthly_CO2.RDS")
-saveRDS(GWBI, "Data/extracted/ED_monthly_GWBI.RDS")
-saveRDS(tair, "Data/extracted/ED_monthly_tair.RDS")
-saveRDS(qair, paste0(getwd(),"/Data/extracted/ED_monthly_qair.RDS"))
-saveRDS(precip, paste0(getwd(),"/Data/extracted/ED_monthly_precip.RDS"))
+saveRDS(ED2.GPP, "Data/extracted/ED_monthly_GPP.RDS")
+#saveRDS(ED2.NPP, "Data/extracted/ED_monthly_NPP.RDS")
+saveRDS(ED2.CO2, "Data/extracted/ED_monthly_CO2.RDS")
+saveRDS(ED2.GWBI, "Data/extracted/ED_monthly_GWBI.RDS")
+saveRDS(ED2.tair, "Data/extracted/ED_monthly_tair.RDS")
+saveRDS(ED2.qair, paste0(getwd(),"/Data/extracted/ED_monthly_qair.RDS"))
+saveRDS(ED2.precipf, paste0(getwd(),"/Data/extracted/ED_monthly_precip.RDS"))
 #saveRDS(soilmoist, paste0(getwd(),"/Data/extracted/ED_monthly_soilmoist.RDS"))
 
-saveRDS(transp, "Data/extracted/ED_monthly_Transp.RDS")
-saveRDS(evap, "Data/extracted/ED_monthly_evap.RDS")
-saveRDS(lai, "Data/extracted/ED_monthly_lai.RDS")
-saveRDS(fire, "Data/extracted/ED_monthly_fire.RDS")
+saveRDS(ED2.Transp, "Data/extracted/ED_monthly_Transp.RDS")
+saveRDS(ED2.Evap, "Data/extracted/ED_monthly_evap.RDS")
+saveRDS(ED2.LAI, "Data/extracted/ED_monthly_lai.RDS")
+saveRDS(ED2.Fire, "Data/extracted/ED_monthly_fire.RDS")
 
 
 #-------------------------LPJ-GUESS preliminary plots--------------------
-# remove the ED2 variables:
-rm(list = ls())
+
 
 load("Data/PalEON_siteInfo_all.RData")
 # read in model outputs that were extracted for ED2
@@ -166,6 +166,9 @@ files <- list.files("Data/LPJ-GUESS/")
 for(i in 1:length(files)){
   assign(x = unlist(strsplit(unlist(strsplit(files[i],split = '.rds')),split = 'LPJ-'))[2], value = readRDS(paste0("Data/LPJ-GUESS/",files[i])))
 }
+
+GUESS.CO2 <- ED2.CO2
+
 
 timevec <- 1:13932
 month <- rep(1:12, 1161)
@@ -183,7 +186,7 @@ plot.yrmean.ts <- function(df, name){
   m2 <- melt(yrmeans, id.vars= "year")
   m2$Year <- as.numeric(m2$year)
   png(height = 7, width = 18, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/", name, "_mean_timeseries_site.png"))
-  print(ggplot(data = m2, aes(x = year, y = value, color = variable))+geom_line()+ theme(legend.position="none"))
+  print(ggplot(data = m2, aes(x = year, y = value, color = variable))+geom_line()+theme_bw()+ theme(legend.position="none"))
   dev.off()
 }
 
@@ -191,7 +194,7 @@ plot.yrmean.ts(GUESS.GPP, "GUESS.GPP")
 #plot.yrmean.ts(GUESS.GWBI, "GUESS.GWBI") # GWBI is pft specifi in LPJ
 plot.yrmean.ts(GUESS.tair, "GUESS.Tair")
 plot.yrmean.ts(GUESS.Transp, "GUESS.Transp")
-plot.yrmean.ts(GUESS.Fire, "GUESS.Fire")
+#plot.yrmean.ts(GUESS.Fire, "GUESS.Fire")
 plot.yrmean.ts(GUESS.LAI, "GUESS.LAI")
 plot.yrmean.ts(GUESS.Evap, "GUESS.Evap")
 plot.yrmean.ts(GUESS.CO2, "GUESS.CO2")
@@ -205,11 +208,11 @@ plot.JJA.ts <- function(df, name){
   df$year <- year
   df$month <- month
   m <- melt(df, id.vars=c("year", "month"))
-  yrmeans <- dcast(m[m$month %in% c(6,7,8),], year ~ variable, mean)
+  yrmeans<-dcast(m[m$month %in% c(6,7,8),], year ~ variable, mean)
   m2 <- melt(yrmeans, id.vars= "year")
   m2$year <- as.numeric(m2$year)
   png(height = 7, width = 18, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/", name, "_JJA_mean_timeseries_site.png"))
-  print(ggplot(data = m2, aes(x = year, y = value, color = variable))+geom_line()+ theme(legend.position="none"))
+  print(ggplot(data = m2, aes(x = year, y = value, color = variable))+geom_line()+theme_bw()+ theme(legend.position="none"))
   dev.off()
 }
 
@@ -218,8 +221,24 @@ plot.JJA.ts (GUESS.GPP, "Guess.GPP")
 #plot.JJA.ts (GUESS.GWBI, "GWBI") # GWBI is pft specific in LPJ
 plot.JJA.ts (GUESS.tair, "Tair")
 plot.JJA.ts (GUESS.Transp, "Transp")
-plot.JJA.ts (GUESS.Fire, "Fire")
+#plot.JJA.ts (GUESS.Fire, "Fire")
 plot.JJA.ts (GUESS.LAI, "LAI")
 plot.JJA.ts (GUESS.Evap, "Evap")
 plot.JJA.ts (GUESS.CO2, "CO2")
 plot.JJA.ts(GUESS.precipf, "Precip")
+
+# ---------------------saving as CSV or RDS files for WUE calculations-----------------
+saveRDS(GUESS.GPP, "Data/extracted/GUESS_monthly_GPP.RDS")
+#saveRDS(GUESS.NPP, "Data/extracted/GUESS_monthly_NPP.RDS")
+saveRDS(GUESS.CO2, "Data/extracted/GUESS_monthly_CO2.RDS")
+#saveRDS(GUESS.GWBI, "Data/extracted/GUESS_monthly_GWBI.RDS")
+saveRDS(GUESS.tair, "Data/extracted/GUESS_monthly_tair.RDS")
+#saveRDS(GUESS.qair, paste0(getwd(),"/Data/extracted/GUESS_monthly_qair.RDS"))
+saveRDS(GUESS.precipf, paste0(getwd(),"/Data/extracted/GUESS_monthly_precip.RDS"))
+#saveRDS(soilmoist, paste0(getwd(),"/Data/extracted/ED_monthly_soilmoist.RDS"))
+
+saveRDS(GUESS.Transp, "Data/extracted/GUESS_monthly_Transp.RDS")
+saveRDS(GUESS.Evap, "Data/extracted/GUESS_monthly_evap.RDS")
+saveRDS(GUESS.LAI, "Data/extracted/GUESS_monthly_lai.RDS")
+saveRDS(GUESS.Fire, "Data/extracted/GUESS_monthly_fire.RDS")
+

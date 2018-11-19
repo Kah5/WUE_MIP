@@ -84,6 +84,19 @@ for(i in 1:length(paleon$num)){
 saveRDS(Dens.r, "Data/ED2.Dens.pftonly.rds")
 saveRDS(Fcomp.r, "Data/ED2.Fcomp.pftonly.rds")
 
+# --------------------Identify sites where Fractional composition shifts occur over time----------
+fcomp.m <- melt(Fcomp.r)
+colnames(fcomp.m) <- c("months", "num", "PFT", "fcomp")
+fcomp.long <- left_join(fcomp.m, paleon[,c("num", "lon", "lat")], by = "num")
+ggplot(fcomp.long[fcomp.long$num == 23,], aes(months,fcomp, color = PFT))+geom_line()+theme_bw()
+
+# find the dominant fractional composition for each grid cell at each time point:
+fcomp.wide <- fcomp.long %>% spread(key = PFT, value = fcomp)
+DF <- fcomp.wide[2000:10000,5:ncol(fcomp.wide)]
+
+# find the species with the maximum fractional composition:
+MaxComp <- colnames(DF)[apply(DF,1,which.max)]
+
 #----------------------Are there sites where density is bimodal?----------------
 
 # make histograms of density by site and model
@@ -553,12 +566,15 @@ ED.WUEt <- readRDS("Data/ED2/ED2.WUEt.rds")
 ED.CO2 <- readRDS("Data/ED2/ED2.CO2.rds")
 
 # get the mean relative density (not sure if this is right--double check)
-
+sec2yr <- 1*60*60*24*365.25
 source("R/get.yrmeans.R")
 
 reldens.y <- get.yrmeans(ED.reldens, "Rel.Dens")
 tair.y <- get.yrmeans(ED.tair, "Tair")
+tair.y$Tair.C <- tair.y$Tair - 273.15
 precipf.y <- get.yrmeans(ED.precip, "precip")
+precipf.y$precip.mm <- precipf.y$precip*sec2yr # convert to mm
+
 IWUE.y <- get.yrmeans(ED.IWUE, "IWUE")
 WUEi.y <- get.yrmeans(ED.WUEi, "WUEi")
 WUEt.y <- get.yrmeans(ED.WUEt, "WUEt")
@@ -566,7 +582,7 @@ CO2.y <- get.yrmeans(ED.CO2, "CO2")
 
 
 # use reduce to merge these all together
-all.y <- Reduce(function(x, y) merge(x, y, by = ,all=TRUE), list(reldens.y, IWUE.y, WUEi.y, WUEt.y, CO2.y,
+all.y <- Reduce(function(x, y) merge(x, y, by = c("Year", "Site"),all=TRUE), list(reldens.y, IWUE.y, WUEi.y, WUEt.y, CO2.y,
                                                                  tair.y, precipf.y))
 
 # save the all.y
@@ -620,6 +636,64 @@ plot.sens.subset(all.y, "Rel.Dens", "precip", 850:1800)
 # may be helpful to determine a site specific sensitivity to CO2, precip, WUE
 # OR relativize by mean of all sites at all time periods?
 
+
+
+#-----------------Plot site level sensitivities to climat-------------
+png(height = 20, width = 20, units = "in", res = 200, "outputs/preliminaryplots/sensitivity/ED2_TairC_relDens.png")
+ggplot(all.y, aes(Tair.C, Rel.Dens))+geom_point()+facet_wrap(~Site)
+dev.off()
+
+png(height = 20, width = 20, units = "in", res = 200, "outputs/preliminaryplots/sensitivity/ED2_precipmm_relDens.png")
+ggplot(all.y, aes(precip.mm, Rel.Dens))+geom_point()+facet_wrap(~Site)
+dev.off()
+
+png(height = 20, width = 20, units = "in", res = 200, "outputs/preliminaryplots/sensitivity/ED2_TairC_relDens.png")
+ggplot(all.y, aes(CO2, Rel.Dens))+geom_point()+facet_wrap(~Site)
+dev.off()
+
+# read in the agbi + total dens as well:
+dens.agbi.site <- readRDS( "outputs/data/ED2/ED2.agbi.dens.site.rds")
+#dens.agbi <- readRDS( "outputs/data/ED2/ED2.agbi.rds")
+
+all.df <- left_join(all.y, dens.agbi.site, by = c("Year", "Site"))
+
+# in general, CO2, precip, and Tair all affect agbi at sites:
+ggplot(all.df, aes(CO2, agbi, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+ggplot(all.df, aes(precip.mm, agbi, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+ggplot(all.df, aes(Tair.C, agbi, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+ggplot(all.df, aes(CO2, GS_agb, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+ggplot(all.df, aes( GS_agb, agbi, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+
+ggplot(all.df, aes(Tair.C, GS_gwbi, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+ggplot(all.df, aes(precip.mm, GS_gwbi, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+ggplot(all.df, aes(CO2, GS_gwbi, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+ggplot(all.df, aes( GS_gwbi, Dens, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+ggplot(all.df, aes( GS_gwbi, GS_agb, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+
+
+ggplot(all.df, aes(CO2, Dens))+geom_point()+stat_smooth()+stat_smooth()+theme(legend.position = "none")
+library(mgcv)
+
+agbi.p.gam <- gam(agbi ~ s(precip.mm), data = all.df)
+agbi.p.t.gam <- gam(agbi ~ s(precip.mm) + s(Tair.C), data = all.df)
+agbi.p.t.c.gam <- gam(agbi ~ s(precip.mm) + s(Tair.C) + s(CO2) + s(Year), data = all.df)
+summary(agbi.p.t.c.gam)
+plot(agbi.p.t.c.gam)
+
+dens.p.t.c.gam <- gam(Dens ~ s(precip.mm) + s(Tair.C) + s(CO2) + s(Year), data = all.df)
+summary(dens.p.t.c.gam)
+
+agb.p.t.c.gam <- gam(GS_agb ~ s(precip.mm) + s(Tair.C) + s(CO2) + s(Year) + s(Dens), data = all.df)
+summary(agb.p.t.c.gam)
+plot(agb.p.t.c.gam)
+
+rel.dens.p.t.c.gam <- gam(Rel.Dens ~ s(precip.mm) + s(Tair.C) + s(CO2) + s(agbi), data = all.df)
+summary(rel.dens.p.t.c.gam)
+plot(rel.dens.p.t.c.gam)
+
+agbi.p.t.c.glm <- lm(agbi ~ precip.mm + Tair.C + CO2 + Site, data = all.df)
+summary(agbi.p.t.c.glm )
+saveRDS(all.df, "outputs/data/ED2/dens_agbi_climate_ED2.rds")
 
 
 

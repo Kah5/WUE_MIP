@@ -33,7 +33,21 @@ get.JJAmeans <- function(df, var){
   m2
 }
 
-
+# funciton for getting the growing season 5-10 yearly means
+get.GSmeans <- function(df, var){
+  df <- data.frame(df)
+  df$Year <- year
+  df$Month <- month
+  m <- melt(df, id.vars=c("Year", "Month"))
+  m <- m[m$Month %in% c(5,6,7,8, 9,10),]
+  yrmeans <- dcast(m, Year ~ variable, mean)
+  m2 <- melt(yrmeans, id.vars= "Year")
+  m2$Year <- as.numeric(m2$Year)
+  
+  colnames(m2) <- c("Year", "Site", var)
+  m2$Site <- as.character(m2$Site)
+  m2
+}
 
 # funciton for getting the JJA yearly means
 get.mo.means <- function(df, mo, var){

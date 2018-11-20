@@ -13,6 +13,15 @@ ED2.Fcomp <- readRDS("Data/ED2/ED2.Fcomp.RDS")
 ED2.CO2 <- readRDS('Data/ED2/ED2.CO2.rds')
 load("Data/PalEON_siteInfo_all.RData")
 
+GUESS.Dens <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.Dens.rds")
+GUESS.Fcomp <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.Fcomp.rds")
+
+GUESS.CO2 <- ED2.CO2
+
+
+
+yrlyvar <- (0:1160) + 850
+
 # make plots for ED2:
 timevec <- 1:13932
 month <- rep(1:12, 1161)
@@ -84,18 +93,29 @@ for(i in 1:length(paleon$num)){
 saveRDS(Dens.r, "Data/ED2.Dens.pftonly.rds")
 saveRDS(Fcomp.r, "Data/ED2.Fcomp.pftonly.rds")
 
-# --------------------Identify sites where Fractional composition shifts occur over time----------
-fcomp.m <- melt(Fcomp.r)
-colnames(fcomp.m) <- c("months", "num", "PFT", "fcomp")
-fcomp.long <- left_join(fcomp.m, paleon[,c("num", "lon", "lat")], by = "num")
-ggplot(fcomp.long[fcomp.long$num == 23,], aes(months,fcomp, color = PFT))+geom_line()+theme_bw()
 
-# find the dominant fractional composition for each grid cell at each time point:
-fcomp.wide <- fcomp.long %>% spread(key = PFT, value = fcomp)
-DF <- fcomp.wide[2000:10000,5:ncol(fcomp.wide)]
+# make plots for LPJ-GUESS:
+Dens.lpj <- data.frame(GUESS.Dens)
+dim(GUESS.Fcomp)
+guess.pft.lab <- c("BNE", "BINE", "BNS", "BIBS", "TeBS", "TelBS", "TeBE",
+                   "TrBE", "TrlBE", "TrBR", "C3G", "C4G", "Total")
+                   
+dimnames(GUESS.Fcomp) <- list(yrlyvar, paleon$num, guess.pft.lab)
+dimnames(GUESS.Dens) <- list(yrlyvar, paleon$num, guess.pft.lab)
+guess.fcomp <- melt(GUESS.Fcomp)
+colnames(guess.fcomp) <- c("Year", "Site", "PFT", "Fcomp")
 
-# find the species with the maximum fractional composition:
-MaxComp <- colnames(DF)[apply(DF,1,which.max)]
+guess.dens <- melt(GUESS.Dens)
+colnames(guess.dens) <- c("Year", "Site", "PFT", "Dens")
+
+ggplot(guess.fcomp[guess.fcomp$Var2 == 100,], aes(Var1, value, color = Var3))+geom_point()
+
+
+#save Dens.r and Fcomp.r
+saveRDS(guess.dens, "Data/GUESS.Dens.pft.rds")
+saveRDS(guess.fcomp, "Data/GUESS.Fcomp.pft.rds")
+
+
 
 #----------------------Are there sites where density is bimodal?----------------
 

@@ -285,3 +285,7 @@ model.summary <- data.frame(model = "mixed_effects_reg",
                             MSE = MSE1, 
                             BIAS = BIAS1, 
                             Rsq = pred.obs$r.squared)
+
+
+# from here we want to get sensitivities
+# also plot posteriors by sites:

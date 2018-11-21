@@ -8,7 +8,7 @@ library(reshape2)
 library(dplyr)
 
 
-# read in model agbi, dens summaries:
+# ---------------read in model agbi, dens summaries for ED2
 all.df.yr <- readRDS("outputs/data/ED2/dens_agbi_climate_ED2.rds")
 #dens.agbi <- readRDS( "outputs/data/ED2/ED2.agbi.dens.site.rds")
 
@@ -20,6 +20,63 @@ JJAmeans.ED$precip.mm.jja <- JJAmeans.ED$precip*(sec2yr*3/12)
 colnames(JJAmeans.ED)
 
 ED.all <- left_join(all.df.yr, JJAmeans.ED[,c("Year", "Site", "Tair.C.jja", "precip.mm.jja")], by = c("Year", "Site"))
+
+
+# ------------read in model agbi, dens summaries for LPJ-GUESS
+all.df.yr.GUESS <- readRDS("outputs/data/GUESS/GUESS.alldat.yrmeans.rds")
+
+
+
+sec2yr <- 1*60*60*24*365.25
+JJAmeans.GUESS <- readRDS("outputs/data/GUESS/GUESS.alldat.jjameans.rds")
+JJAmeans.GUESS$Tair.C.jja <- JJAmeans.GUESS$Tair - 273.15
+JJAmeans.GUESS$precip.mm.jja <- JJAmeans.GUESS$precip*(sec2yr*3/12)
+colnames(JJAmeans.GUESS)
+
+GUESS.all <- left_join(all.df.yr.GUESS, JJAmeans.GUESS[,c("Year", "Site", "Tair.C.jja", "precip.mm.jja")], by = c("Year", "Site"))
+
+# for GUESS, we also have density, and gwbi at PFT scale, so lets read them in here:
+GWBI.GUESS <- readRDS("Data/GUESS.gwbi.pft.wide.rds")
+GWBI.GUESS$Site <- paste0("X", GWBI.GUESS$Site)
+
+Dens.GUESS <- readRDS("Data/GUESS.Dens.pft.wide.rds")
+Dens.GUESS$Site <- paste0("X", Dens.GUESS$Site)
+
+GUESS.all.y <- left_join(GUESS.all, GWBI.GUESS, by =c("Year", "Site"))
+GUESS.all <- left_join(GUESS.all.y, Dens.GUESS, by =c("Year", "Site"))
+
+# make a DF paralell to ED2:
+colnames(ED.all)
+colnames(GUESS.all)
+
+GUESS.totals <- GUESS.all[,c("Year", "Site", "Rel.Dens", "IWUE", "WUEt", "CO2", "Tair", "Tair.C", "precip", "precip.mm",
+                             "Total.Dens", "Total.gwbi", "Tair.C.jja", "precip.mm.jja")]
+
+GUESS.totals$Model <- "GUESS"
+colnames(GUESS.totals) <- c("Year", "Site", "Rel.Dens", "IWUE", "WUEt", "CO2", "Tair", "Tair.C", "precip", "precip.mm",
+                         "Dens", "gwbi", "Tair.C.jja", "precip.mm.jja", "Model")
+
+
+# now subset ED.all by because we dont have all the WUE
+
+ED.totals <- ED.all[,c("Year", "Site", "Rel.Dens", "IWUE", "WUEt", "CO2", "Tair", "Tair.C", "precip", "precip.mm",
+                             "Dens", "GS_gwbi", "Tair.C.jja", "precip.mm.jja")]
+ED.totals$Model <- "ED2"
+colnames(ED.totals) <- c("Year", "Site", "Rel.Dens", "IWUE", "WUEt", "CO2", "Tair", "Tair.C", "precip", "precip.mm",
+                         "Dens", "gwbi", "Tair.C.jja", "precip.mm.jja", "Model")
+
+
+
+# combine together (in case we want to model together):
+ED.GUESS <- rbind(ED.totals, GUESS.totals)
+
+# some prelimiary plots to visualize the data:
+ggplot(ED.GUESS, aes( precip.mm, gwbi,  color = Model))+geom_point()+stat_smooth()+theme(legend.position = "none")+theme_bw()
+ggplot(ED.GUESS, aes( Tair.C.jja,gwbi, color = Model))+geom_point()+stat_smooth()+theme(legend.position = "none")+theme_bw()
+ggplot(ED.GUESS, aes( CO2, gwbi, color = Model))+geom_point()+stat_smooth()+theme(legend.position = "none")+theme_bw()
+ggplot(ED.GUESS, aes( precip.mm.jja, gwbi, color = Model))+geom_point()+stat_smooth()+theme(legend.position = "none")+theme_bw()
+
+
 
 #----------------------------------------
 # Separate Testing and Training Datasets:

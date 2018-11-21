@@ -102,16 +102,22 @@ guess.pft.lab <- c("BNE", "BINE", "BNS", "BIBS", "TeBS", "TelBS", "TeBE",
                    
 dimnames(GUESS.Fcomp) <- list(yrlyvar, paleon$num, guess.pft.lab)
 dimnames(GUESS.Dens) <- list(yrlyvar, paleon$num, guess.pft.lab)
+
 guess.fcomp <- melt(GUESS.Fcomp)
 colnames(guess.fcomp) <- c("Year", "Site", "PFT", "Fcomp")
 
 guess.dens <- melt(GUESS.Dens)
 colnames(guess.dens) <- c("Year", "Site", "PFT", "Dens")
 
-ggplot(guess.fcomp[guess.fcomp$Var2 == 100,], aes(Var1, value, color = Var3))+geom_point()
+ggplot(guess.dens[guess.dens$Site == 100,], aes(Year, Dens, color = PFT))+geom_point()
+
+guess.dens.wide <- guess.dens %>% spread(key= PFT, value = Dens)
+colnames(guess.dens.wide)[3:length(guess.dens.wide)] <- paste0(colnames(guess.dens.wide)[3:length(guess.dens.wide)], ".Dens")
+
 
 
 #save Dens.r and Fcomp.r
+saveRDS(guess.dens.wide, "Data/GUESS.Dens.pft.wide.rds")
 saveRDS(guess.dens, "Data/GUESS.Dens.pft.rds")
 saveRDS(guess.fcomp, "Data/GUESS.Fcomp.pft.rds")
 
@@ -717,6 +723,61 @@ saveRDS(all.df, "outputs/data/ED2/dens_agbi_climate_ED2.rds")
 
 
 
+# -------------write out the dens_agbi_climate_GUESS.rds ----------------------
+
+
+GUESS.reldens <- readRDS("outputs/data/GUESS/GUESS.RelDens.rds")
+GUESS.tair <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.tair.rds")
+GUESS.precip <- readRDS("Data/LPJ-GUESS/lpj-guess.precipf.rds")
+GUESS.IWUE <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.IWUE.rds")
+GUESS.WUEt <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.IWUEet.rds")
+#GUESS.WUEt <- readRDS("Data/LPJ-GUESS/GUESS.WUEt.rds")
+GUESS.CO2 <- ED2.CO2
+
+# get the mean relative density (not sure if this is right--double check)
+sec2yr <- 1*60*60*24*365.25
+source("R/get.yrmeans.R")
+
+reldens.y <- get.yrmeans(GUESS.reldens, "Rel.Dens")
+tair.y <- get.yrmeans(GUESS.tair, "Tair")
+tair.y$Tair.C <- tair.y$Tair - 273.15
+precipf.y <- get.yrmeans(GUESS.precip, "precip")
+precipf.y$precip.mm <- precipf.y$precip*sec2yr # convert to mm
+
+IWUE.y <- get.yrmeans(GUESS.IWUE, "IWUE")
+WUEi.y <- get.yrmeans(GUESS.WUEi, "WUEi")
+WUEt.y <- get.yrmeans(GUESS.WUEt, "WUEt")
+CO2.y <- get.yrmeans(GUESS.CO2, "CO2")
+
+
+# use rGUESSuce to merge these all together
+all.y <- Reduce(function(x, y) merge(x, y, by = c("Year", "Site"),all=TRUE), list(reldens.y, IWUE.y, WUEt.y, CO2.y,
+                                                                                  tair.y, precipf.y))
+
+# save the all.y
+saveRDS(all.y, "outputs/data/GUESS/GUESS.alldat.yrmeans.rds")
+
+
+
+# read in the agbi + total dens as well:
+dens.agbi.site <- readRDS( "outputs/data/GUESS/GUESS.agbi.dens.site.rds")
+#dens.agbi <- readRDS( "outputs/data/GUESS/GUESS.agbi.rds")
+
+all.df <- left_join(all.y, dens.agbi.site, by = c("Year", "Site"))
+
+# in general, CO2, precip, and Tair all affect agbi at sites:
+ggplot(all.df, aes(CO2, agbi, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+ggplot(all.df, aes(precip.mm, agbi, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+ggplot(all.df, aes(Tair.C, agbi, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+ggplot(all.df, aes(CO2, GS_agb, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+ggplot(all.df, aes( GS_agb, agbi, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+
+ggplot(all.df, aes(Tair.C, GS_gwbi, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+ggplot(all.df, aes(precip.mm, GS_gwbi, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+ggplot(all.df, aes(CO2, GS_gwbi, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+ggplot(all.df, aes( GS_gwbi, Dens, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+ggplot(all.df, aes( GS_gwbi, GS_agb, color = Site))+geom_point()+stat_smooth()+theme(legend.position = "none")
+
 #-----What is sensitivity to climate when we relativize the climate data----
 
 # for model == "ED2"
@@ -899,7 +960,7 @@ get.relative.jjameans <- function (model){
     CO2.y <- get.JJAmeans(G.CO2, "CO2")# save the all.y
     LAI.y <- get.JJAmeans(G.LAI, "LAI")
     #AGB.y <- get.JJAmeans(G.AGB, "AGB")
-    dimnames(G.AGB) <- list(yr, site.list, pft.guess)
+    dimnames(G.AGB) <- list(yr, paleon$num, pft.guess)
     totAGB.y <- data.frame(G.AGB[,,"Total"])
     totAGB.y$Year <- yr
     AGB.y <- melt(totAGB.y, id.vars = c("Year"))

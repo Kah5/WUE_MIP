@@ -174,6 +174,7 @@ timevec <- 1:13932
 month <- rep(1:12, 1161)
 yearsince  <- rep(0:1160, each =12)
 year <- yearsince + 850
+yrlyvar <- (0:1160) + 850
 
 # reload function
 plot.yrmean.ts <- function(df, name){
@@ -227,11 +228,36 @@ plot.JJA.ts (GUESS.Evap, "Evap")
 plot.JJA.ts (GUESS.CO2, "CO2")
 plot.JJA.ts(GUESS.precipf, "Precip")
 
+
+# for guess variables with yearly output saved:
+addyrs_toyearly <- function(df){
+    df <- data.frame(df)
+    colnames(df) <- paleon$latlon
+    df$year <- yrlyvar
+    
+    m <- melt(df, id.vars=c("year"))
+    
+    ggplot(m, aes(year, value, color = variable))+geom_line()+theme(legend.position = "none")
+    m 
+}
+
+GUESS.gwbi <- addyrs_toyearly(GUESS.GWBI)
+GUESS.Dens <- addyrs_toyearly(GUESS.Dens)
+GUESS.agb <- addyrs_toyearly(GUESS.AGB)
+GUESS.BA <- addyrs_toyearly(GUESS.BA)
+
+
+ggplot(GUESS.Dens, aes(year, value, color = variable))+geom_line()+theme(legend.position = "none")
+ggplot(GUESS.agb, aes(year, value, color = variable))+geom_line()+theme(legend.position = "none")
+ggplot(GUESS.BA, aes(year, value, color = variable))+geom_line()+theme(legend.position = "none")
+ggplot(GUESS.gwbi, aes(year, value, color = variable))+geom_line()+theme(legend.position = "none")
+
+
 # ---------------------saving as CSV or RDS files for WUE calculations-----------------
 saveRDS(GUESS.GPP, "Data/extracted/GUESS_monthly_GPP.RDS")
 #saveRDS(GUESS.NPP, "Data/extracted/GUESS_monthly_NPP.RDS")
 saveRDS(GUESS.CO2, "Data/extracted/GUESS_monthly_CO2.RDS")
-#saveRDS(GUESS.GWBI, "Data/extracted/GUESS_monthly_GWBI.RDS")
+saveRDS(GUESS.gwbi, "Data/extracted/GUESS_yearly_GWBI.RDS")
 saveRDS(GUESS.tair, "Data/extracted/GUESS_monthly_tair.RDS")
 #saveRDS(GUESS.qair, paste0(getwd(),"/Data/extracted/GUESS_monthly_qair.RDS"))
 saveRDS(GUESS.precipf, paste0(getwd(),"/Data/extracted/GUESS_monthly_precip.RDS"))

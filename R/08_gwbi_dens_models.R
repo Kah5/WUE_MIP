@@ -265,7 +265,8 @@ train.GUESS.full <- GUESS.sort_lag[msk2,]
 train.GUESS.full <- GUESS.sort_lag[!msk2,]
 
 train.GUESS  <- train.GUESS.full[train.GUESS.full$period %in% c("modern-industrial", "industrial-past"),]
-train.GUESS  <- train.GUESS.full[train.GUESS.full$period %in% c("modern-industrial", "industrial-past"),]
+test.GUESS  <- test.GUESS.full[test.GUESS.full$period %in% c("modern-industrial", "industrial-past"),]
+
 
 class(train.ED$site_code)
 
@@ -375,39 +376,30 @@ update(reg.EDel.by_period, 1000); # Burnin for 1000 samples to start, then go hi
  #                           variable.names=c("alpha","beta1", "beta2","beta3","beta3","sigma","sigma_alpha", "sigma_beta1", "sigma_beta2","sigma_beta3", "sigma_beta4"), 
   #                          n.chains = 3, n.iter=2000, thin = 10)
 samp.ED.period <- coda.samples(reg.EDel.by_period, 
-                              variable.names=c("alpha", "beta1", "beta2" ), 
+                              variable.names=c("alpha", "beta1", "beta2", "beta3", "beta4", "beta5", "beta6" ), 
                               n.chains = 3, n.iter=5000, thin = 1)
 
 samp.ED.ypred <- coda.samples(reg.EDel.by_period, 
                                variable.names=c("Ypred" ), 
                                n.chains = 3, n.iter=5000, thin = 1)
 
-#Extract the samples for each parameter
+
+
+# Extract the samples for each parameter
 
 samps       <- samp.ED.period[[1]]
 Yp.samps    <- samp.ED.ypred [[1]]
-alpha.samps <- samps[,(length(test.ED$site_num)+1):(length(test.ED$site_num)+length(unique(test.ED$site_num)))]
-beta.samps  <- samps[,(length(test.ED$site_num)+length(unique(test.ED$site_num))+1):(length(test.ED$site_num)+length(unique(test.ED$site_num))+3)]
-sigma.samps <- samps[,(length(test.ED$site_num)+length(unique(test.ED$site_num))+4):(length(test.ED$site_num)+length(unique(test.ED$site_num))+7)]
+alpha.samps <- samps[,1:length(unique(test.ED$site_num))]
+beta1.samps  <- samps[,(length(unique(test.ED$site_num))+1):(length(unique(test.ED$site_num))+2)]
+beta2.samps  <- samps[,(length(unique(test.ED$site_num))+3):(length(unique(test.ED$site_num))+4)]
+beta3.samps  <- samps[,(length(unique(test.ED$site_num))+5):(length(unique(test.ED$site_num))+6)]
+beta4.samps  <- samps[,(length(unique(test.ED$site_num))+7):(length(unique(test.ED$site_num))+8)]
+beta5.samps  <- samps[,(length(unique(test.ED$site_num))+9):(length(unique(test.ED$site_num))+10)]
+beta6.samps  <- samps[,(length(unique(test.ED$site_num))+11):(length(unique(test.ED$site_num))+12)]
 
 
-# caluculate 95% CI for alpha and beta samps 
-alpha.025 <- quantile(alpha.samps, 0.025)
-alpha.975 <- quantile(alpha.samps, 0.975)
-beta1.025 <- quantile(beta.samps[,1], 0.025)
-beta1.975 <- quantile(beta.samps[,1], 0.975)
-beta2.025 <- quantile(beta.samps[,2], 0.025)
-beta2.975 <- quantile(beta.samps[,2], 0.975)
+# check for convergence:
 
-
-
-a <- data.frame('alpha' = alpha.samps, 'beta.precip' = beta.samps[,1], 'beta.temp' = beta.samps[,2])
-colnames(a)<- c("alpha", "beta.precip", "beta.temp")
-a$num <- rownames(a)
-a.m <- melt(a, id.vars=c("num"))
-
-# make dot + 95% CI plots for each param
-a.mplots <- ggplot(a.m, aes(value, color = variable))+geom_density(alpha = 0.5)+theme_bw()
 
 # plot predicted vs. observed
 Yp.samps <- data.frame(Yp.samps) 
@@ -440,7 +432,127 @@ model.summary <- data.frame(model = "mixed_effects_reg",
 
 
 # from here we want to get sensitivities
-# also plot posteriors by sites:
+# plot marginal distributions of cohort + structure specific parameters:
+a <- data.frame(alpha.samps)
+colnames(a) <- unique(train.ED$site_num)
+a$num <- rownames(a)
+a.m <- melt(a, id.vars=c("num"))
+alpha.mplots <- ggplot(a.m, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Random intercepts")+theme(legend.position = "none")
+
+b1 <- data.frame(beta1.samps)
+colnames(b1) <-unique(train.ED$period)
+#colnames(b2) <- c(paste0(c(unique(train.dry$struct.cohort))))
+b1$num <- rownames(b1)
+b1.m <- melt(b1, id.vars=c("num"))
+b1.mplots <- ggplot(b1.m, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Precipitation Index slope")
+
+
+b2 <- data.frame(beta2.samps)
+colnames(b2) <-unique(train.ED$period)
+#colnames(b2) <- c(paste0(c(unique(train.dry$struct.cohort))))
+b2$num <- rownames(b2)
+b2.m <- melt(b2, id.vars=c("num"))
+b2.mplots <- ggplot(b2.m, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Temperature slope")
+
+b3 <- data.frame(beta3.samps)
+colnames(b3) <-unique(train.ED$period)
+#colnames(b3) <- c(unique(train.dry$struct.cohort)[order(unique(train.dry[,c("struct.cohort", "struct.cohort.code")])[,2])])
+b3$num <- rownames(b3)
+b3.m <- melt(b3, id.vars=c("num"))
+b3.mplots <- ggplot(b3.m, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("gwbi-1 Index slope")
+
+
+b4 <- data.frame(beta4.samps)
+colnames(b4) <-unique(train.ED$period)
+
+#colnames(b4) <- c(unique(train.dry$struct.cohort)[order(unique(train.dry[,c("struct.cohort", "struct.cohort.code")])[,2])])
+b4$num <- rownames(b4)
+b4.m <- melt(b4, id.vars=c("num"))
+b4.mplots <- ggplot(b4.m, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("gwbi-2 Index slope")
+
+b5 <- data.frame(beta5.samps)
+colnames(b5) <-unique(train.ED$period)
+#colnames(b5) <- c(unique(train.dry$struct.cohort)[order(unique(train.dry[,c("struct.cohort", "struct.cohort.code")])[,2])])
+b5$num <- rownames(b5)
+b5.m <- melt(b5, id.vars=c("num"))
+b5.mplots <- ggplot(b5.m, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("gwbi-3 Index slope")
+
+b6 <- data.frame(beta6.samps)
+colnames(b6) <-unique(train.ED$period)
+#
+#colnames(b6) <- c(unique(train.dry$struct.cohort)[order(unique(train.dry[,c("struct.cohort", "struct.cohort.code")])[,2])])
+b6$num <- rownames(b6)
+b6.m <- melt(b6, id.vars=c("num"))
+b6.mplots <- ggplot(b6.m, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("gwbi-4 Index slope")
+
+#>>>>>>>> plot dot plots from guess model:
+a.m$variable2 <- paste0("X",a.m$variable)
+
+a1.sum <- a.m %>% group_by(variable) %>% dplyr::summarise(mean.val = mean(value),
+                                                          Ci.low = quantile(value, 0.025), 
+                                                          Ci.high = quantile(value, 0.975))
+#a1.sum$variable <- factor(a1.sum$variable, levels = c( "Past-Forest", "Past-Savanna", "Modern-Forest", "Modern-Savanna"))
+b1.sum <- b1.m %>% group_by(variable) %>% dplyr::summarise(mean.val = mean(value),
+                                                           Ci.low = quantile(value, 0.025), 
+                                                           Ci.high = quantile(value, 0.975))
+#b
+b2.sum <- b2.m %>% group_by(variable) %>% dplyr::summarise(mean.val = mean(value),
+                                                           Ci.low = quantile(value, 0.025), 
+                                                           Ci.high = quantile(value, 0.975))
+#b2.sum$variable <- factor(b2.sum$variable, levels = c( "Past-Forest", "Past-Savanna", "Modern-Forest", "Modern-Savanna"))
+
+
+b3.sum <- b3.m %>% group_by(variable) %>% dplyr::summarise(mean.val = mean(value),
+                                                           Ci.low = quantile(value, 0.025), 
+                                                           Ci.high = quantile(value, 0.975))
+#b3.sum$variable <- factor(b3.sum$variable, levels = c( "Past-Forest", "Past-Savanna", "Modern-Forest", "Modern-Savanna"))
+
+
+b4.sum <- b4.m %>% group_by(variable) %>% dplyr::summarise(mean.val = mean(value),
+                                                           Ci.low = quantile(value, 0.025), 
+                                                           Ci.high = quantile(value, 0.975))
+#b4.sum$variable <- factor(b4.sum$variable, levels = c( "Past-Forest", "Past-Savanna", "Modern-Forest", "Modern-Savanna"))
+
+b5.sum <- b5.m %>% group_by(variable) %>% dplyr::summarise(mean.val = mean(value),
+                                                           Ci.low = quantile(value, 0.025), 
+                                                           Ci.high = quantile(value, 0.975))
+#b5.sum$variable <- factor(b5.sum$variable, levels = c( "Past-Forest", "Past-Savanna", "Modern-Forest", "Modern-Savanna"))
+
+b6.sum <- b6.m %>% group_by(variable) %>% dplyr::summarise(mean.val = mean(value),
+                                                           Ci.low = quantile(value, 0.025), 
+                                                           Ci.high = quantile(value, 0.975))
+#b6.sum$variable <- factor(b6.sum$variable, levels = c( "Past-Forest", "Past-Savanna", "Modern-Forest", "Modern-Savanna"))
+
+# write out all the dotplots
+# want to order the sites by mean annual precip and/or mean annual temperatuere and then plot:
+# summarize site map and site mat:
+ED.site.clim <- ED.sort_lag %>% group_by(Site) %>% summarise(MAP = mean(precip.mm, na.rm=TRUE), 
+                                                                   MAT = mean(Tair.C, na.rm=TRUE))
+
+a1.sum$Site <- paste0("X", a1.sum$variable)
+a1.clim <- merge(ED.site.clim, a1.sum, by = "Site")
+int.dot.MAP <- ggplot(data.frame(a1.clim), aes(x = mean.val, y = MAP, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+geom_point()+xlim(-0.1, 0.25)+theme(legend.position = "none")
+int.dot.Tmean <- ggplot(data.frame(a1.clim), aes(x = mean.val, y = MAT, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+geom_point()+xlim(-0.1, 0.25)+theme(legend.position = "none")
+
+
+ggplot(data.frame(b1.sum), aes(x = mean.val, y = variable, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+
+  geom_point()+scale_color_manual(values = c("industrial-past" = "blue","modern-industrial" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated Precipitation sensitivity)")+ geom_vline(xintercept = 0, linetype = "dashed")
+
+
+ggplot(data.frame(b2.sum), aes(x = mean.val, y = variable, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+
+  geom_point()+scale_color_manual(values = c("industrial-past" = "blue","modern-industrial" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated JJA temperauture sensitivity")#+xlim(0.06, 0.1) + geom_vline(xintercept = 0, linetype = "dashed")
+
+ggplot(data.frame(b3.sum), aes(x = mean.val, y = variable, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+
+  geom_point()+scale_color_manual(values = c("industrial-past" = "blue","modern-industrial" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated gwbi -1 parameter")#+xlim(0.06, 0.1) + geom_vline(xintercept = 0, linetype = "dashed")
+
+ggplot(data.frame(b4.sum), aes(x = mean.val, y = variable, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+
+  geom_point()+scale_color_manual(values = c("industrial-past" = "blue","modern-industrial" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated gwbi -2 parameter")#+xlim(0.06, 0.1) + geom_vline(xintercept = 0, linetype = "dashed")
+
+ggplot(data.frame(b5.sum), aes(x = mean.val, y = variable, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+
+  geom_point()+scale_color_manual(values = c("industrial-past" = "blue","modern-industrial" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated gwbi -3 parameter")#+xlim(0.06, 0.1) + geom_vline(xintercept = 0, linetype = "dashed")
+
+ggplot(data.frame(b6.sum), aes(x = mean.val, y = variable, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+
+  geom_point()+scale_color_manual(values = c("industrial-past" = "blue","modern-industrial" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated gwbi -4 parameter")#+xlim(0.06, 0.1) + geom_vline(xintercept = 0, linetype = "dashed")
 
 
 #------------------------------------------------------------------------------
@@ -657,7 +769,7 @@ b6.m <- melt(b6, id.vars=c("num"))
 b6.mplots <- ggplot(b6.m, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("gwbi-4 Index slope")
 
 #>>>>>>>> plot dot plots from guess model:
-
+a.m$variable2 <- paste0("X",a.m$variable)
 
 a1.sum <- a.m %>% group_by(variable) %>% dplyr::summarise(mean.val = mean(value),
                                                           Ci.low = quantile(value, 0.025), 
@@ -695,10 +807,15 @@ b6.sum <- b6.m %>% group_by(variable) %>% dplyr::summarise(mean.val = mean(value
 #b6.sum$variable <- factor(b6.sum$variable, levels = c( "Past-Forest", "Past-Savanna", "Modern-Forest", "Modern-Savanna"))
 
 # write out all the dotplots
-int.dot <- ggplot(data.frame(a1.sum), aes(x = mean.val, y = variable, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+geom_point()+xlim(-0.1, 0.25)+scale_color_manual(values = c("Past-Savanna"='#a6611a',
-                                                                                                                                                                                                                                        "Modern-Savanna"='#dfc27d',
-                                                                                                                                                                                                                                        "Modern-Forest"='#c7eae5',
-                                                                                                                                                                                                                                        "Past-Forest"='#018571'))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated Intercept (alpha)")+xlim(-0.3, 0.8) + geom_vline(xintercept = 0, linetype = "dashed")
+# want to order the sites by mean annual precip and/or mean annual temperatuere and then plot:
+# summarize site map and site mat:
+GUESS.site.clim <- GUESS.sort_lag %>% group_by(Site) %>% summarise(MAP = mean(precip.mm, na.rm=TRUE), 
+                                                MAT = mean(Tair.C, na.rm=TRUE))
+
+a1.sum$Site <- paste0("X", a1.sum$variable)
+a1.clim <- merge(GUESS.site.clim, a1.sum, by = "Site")
+int.dot.MAP <- ggplot(data.frame(a1.clim), aes(x = mean.val, y = MAP, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+geom_point()+xlim(-0.1, 0.25)+theme(legend.position = "none")
+int.dot.Tmean <- ggplot(data.frame(a1.clim), aes(x = mean.val, y = MAT, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+geom_point()+xlim(-0.1, 0.25)+theme(legend.position = "none")
 
 
 ggplot(data.frame(b1.sum), aes(x = mean.val, y = variable, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+

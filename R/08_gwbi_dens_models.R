@@ -183,12 +183,17 @@ ED.sort_lag <- ED.sort_lag[!is.na(ED.sort_lag$rel.gwbi_1) & !is.na(ED.sort_lag$r
 # scale the climate parameters:
 
 ED.sort_lag$Precip.scaled = as.vector(scale(ED.sort_lag$precip.mm, center = TRUE, scale = TRUE))
+ED.sort_lag.Precip.scaled = scale(ED.sort_lag$precip.mm, center = TRUE, scale = TRUE)
+
 ED.sort_lag$Temp.jja.scaled = as.vector(scale(ED.sort_lag$Tair.C.jja, center = TRUE, scale = TRUE))
+ED.sort_lag.Temp.jja.scaled = scale(ED.sort_lag$Tair.C.jja, center = TRUE, scale = TRUE)
+
 ED.sort_lag$Temp.scaled = as.vector(scale(ED.sort_lag$Tair.C, center = TRUE, scale = TRUE))
+ED.sort_lag.Temp.scaled = scale(ED.sort_lag$Tair.C, center = TRUE, scale = TRUE)
 
 # scale the CO2 parameters:
 ED.sort_lag$CO2.scaled = as.vector(scale(ED.sort_lag$CO2, center = TRUE, scale = TRUE))
-#ED.sort_lag$site_num <- 
+ED.sort_lag.CO2.scaled = scale(ED.sort_lag$CO2, center = TRUE, scale = TRUE)
 
 #splits <- unlist(strsplit(unique(ED.sort_lag$Site), "X"))
 covert_site_codes <- data.frame(site_num = unique(as.numeric(sapply(strsplit(ED.sort_lag$Site,"X"), `[`, 2))),
@@ -248,12 +253,17 @@ GUESS.sort_lag <- GUESS.sort_lag[!is.na(GUESS.sort_lag$rel.gwbi_1) & !is.na(GUES
 # scale the climate parameters:
 
 GUESS.sort_lag$Precip.scaled = as.vector(scale(GUESS.sort_lag$precip.mm, center = TRUE, scale = TRUE))
+GUESS.sort_lag.Precip.scaled = scale(GUESS.sort_lag$precip.mm, center = TRUE, scale = TRUE)
+
 GUESS.sort_lag$Temp.jja.scaled = as.vector(scale(GUESS.sort_lag$Tair.C.jja, center = TRUE, scale = TRUE))
+GUESS.sort_lag.Temp.jja.scaled = scale(GUESS.sort_lag$Tair.C.jja, center = TRUE, scale = TRUE)
+
 GUESS.sort_lag$Temp.scaled = as.vector(scale(GUESS.sort_lag$Tair.C, center = TRUE, scale = TRUE))
+GUESS.sort_lag.Temp.scaled = scale(GUESS.sort_lag$Tair.C, center = TRUE, scale = TRUE)
 
 # scale the CO2 parameters:
 GUESS.sort_lag$CO2.scaled = as.vector(scale(GUESS.sort_lag$CO2, center = TRUE, scale = TRUE))
-#GUESS.sort_lag$site_num <- 
+GUESS.sort_lag.CO2.scaled = scale(GUESS.sort_lag$CO2, center = TRUE, scale = TRUE)
 
 #splits <- unlist(strsplit(unique(GUESS.sort_lag$Site), "X"))
 covert_site_codes <- data.frame(site_num = unique(as.numeric(sapply(strsplit(GUESS.sort_lag$Site,"X"), `[`, 2))),
@@ -360,8 +370,8 @@ full.ghcn$jja.VPDmax.scaled <- as.vector(scale(full.ghcn$jja.VPDmax, center = TR
 full.ghcn$jja.BAL.scaled <- as.vector(scale(full.ghcn$jja.BAL, center = TRUE, scale = TRUE))
 full.ghcn$MAP.scaled = as.vector(scale(full.ghcn$MAP.prism, center = TRUE, scale = TRUE))
 
-MAP.scaled <- scale(full.ghcn$MAP.prism, center = TRUE, scale = TRUE)
-T.scaled <- scale(full.ghcn$JUNTmax, center= TRUE, scale=TRUE)
+full.ghcn.MAP.scaled <- scale(full.ghcn$MAP.prism, center = TRUE, scale = TRUE)
+full.ghcn.T.scaled <- scale(full.ghcn$JUNTmax, center= TRUE, scale=TRUE)
 
 SP1.scaled <- scale(full.ghcn$SP01_6, center = TRUE, scale = TRUE)
 SP6.scaled <- scale(full.ghcn$SP06_6, center = TRUE, scale = TRUE)
@@ -449,8 +459,8 @@ test.RWI.full <- ghcn.clean[!msk,]
 
 # create a dataste the elimates yrs 1900-1950 for the modern and 1950-present for past:
 
-mod.post <- full.ghcn[full.ghcn$ageclass %in% "Modern" & full.ghcn$Year >= 1950,]
-past.pre <- full.ghcn[full.ghcn$ageclass %in% "Past" & full.ghcn$Year < 1950,]
+mod.post <- full.ghcn[full.ghcn$ageclass %in% "Modern" & full.ghcn$year >= 1950,]
+past.pre <- full.ghcn[full.ghcn$ageclass %in% "Past" & full.ghcn$year < 1950,]
 
 sub.ghcn <- rbind(mod.post, past.pre)
 
@@ -1221,15 +1231,15 @@ cohort.summary.tm.pr$period <- as.factor(cohort.summary.tm.pr$period)
 ggplot(data = cohort.summary.tm.pr, aes(MAP_scaled, gwbi, color = period))+geom_line()+geom_ribbon(data = cohort.summary.tm.pr,aes(ymin = gwbi.low, ymax = gwbi.high, fill = period), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~JJA.T.scaled)
 
 # -------------- read in tree ring data and model tree ring data ---------------------------
-colnames(train.GUESS) <- c("site"  ,     "ID" ,        "year" ,      "RWI"  ,      "MAP.prism" , "Precip.scaled" ,"JUNTmax" ,  
+colnames(train.RWI) <- c("site"  ,     "ID" ,        "year" ,      "RWI"  ,      "MAP.prism" , "Precip.scaled" ,"JUNTmax" ,  
                            "Temp.jja.scaled",  "DBH",  "rel.gwbi" , "rel.gwbi_1" ,"rel.gwbi_2", "rel.gwbi_3", "rel.gwbi_4",
                            "rel.gwbi_5", "ageclass")
-train.GUESS.full <- train.GUESS
+train.rwi.full <- train.RWI
 
-colnames(test.GUESS) <- c("site"  ,     "ID" ,        "year" ,      "RWI"  ,      "MAP.prism" , "Precip.scaled" ,"JUNTmax" ,  
+colnames(test.RWI) <- c("site"  ,     "ID" ,        "year" ,      "RWI"  ,      "MAP.prism" , "Precip.scaled" ,"JUNTmax" ,  
                           "Temp.jja.scaled",  "DBH",  "rel.gwbi" , "rel.gwbi_1" ,"rel.gwbi_2", "rel.gwbi_3", "rel.gwbi_4",
                           "rel.gwbi_5", "ageclass")
-test.GUESS.full <- test.GUESS
+test.rwi.full <- test.RWI
 
 
 # model gwbi as a function of Temp, Precip, CO2, with random slops for time period & site random intercept
@@ -1329,19 +1339,19 @@ RWI4probe <- round(seq(range(train.rwi.full$rel.gwbi_4)[1], range(train.rwi.full
 # expand into full probe
 probe.rwi <- expand.grid(DI.scaled = DIprobe,  T.scaled = Tempprobe,
                            rel.gwbi_1 = 1, rel.gwbi_2= 1, rel.gwbi_3= 1,rel.gwbi_4= 1,
-                           site_num = 1:221,struct.cohort.code= 1:2)
+                           site_num = 1:16,struct.cohort.code= 1:2)
 
 
 
 
 reg.model.by_period <- jags.model(textConnection(rwi_re_site_time_period), 
-                                  data = list(Y = train.rwi$rel.gwbi, n=length(train.rwi$rel.gwbi), Precip.scaled = train.rwi$Precip.scaled, Temp.jja.scaled = train.rwi$Temp.jja.scaled, agbi_1 = train.rwi$rel.gwbi_1,agbi_2 = train.rwi$rel.gwbi_2, agbi_3 = train.rwi$rel.gwbi_3, agbi_4 = train.rwi$rel.gwbi_4,
-                                              period = as.numeric(train.rwi$period_cd), S = unique(train.rwi$site_code),  C = unique(train.rwi$period_cd), sites = train.rwi$site_code, np=length(test.RWI$period_cd), 
-                                              sites.p = test.RWI$site_code, Precip.scaled.p = test.RWI$Precip.scaled, Temp.jja.scaled.p = test.RWI$Temp.jja.scaled, agbi_1.p = test.RWI$rel.gwbi_1, agbi_2.p = test.RWI$rel.gwbi_2, agbi_3.p = test.RWI$rel.gwbi_3, agbi_4.p = test.RWI$rel.gwbi_4,
-                                              period.p = as.numeric(test.RWI$period_cd),
+                                  data = list(Y = train.RWI$rel.gwbi, n=length(train.RWI$rel.gwbi), Precip.scaled = train.RWI$Precip.scaled, Temp.jja.scaled = train.RWI$Temp.jja.scaled, agbi_1 = train.RWI$rel.gwbi_1,agbi_2 = train.RWI$rel.gwbi_2, agbi_3 = train.RWI$rel.gwbi_3, agbi_4 = train.RWI$rel.gwbi_4,
+                                              period = as.numeric(train.RWI$ageclass), S = unique(train.RWI$site),  C = unique(train.RWI$ageclass), sites = train.RWI$site, np=length(test.RWI$ageclass), 
+                                              sites.p = test.RWI$site, Precip.scaled.p = test.RWI$Precip.scaled, Temp.jja.scaled.p = test.RWI$Temp.jja.scaled, agbi_1.p = test.RWI$rel.gwbi_1, agbi_2.p = test.RWI$rel.gwbi_2, agbi_3.p = test.RWI$rel.gwbi_3, agbi_4.p = test.RWI$rel.gwbi_4,
+                                              period.p = as.numeric(test.RWI$ageclass),
                                               
                                               nprobe=length(probe.rwi$struct.cohort.code), 
-                                              sites.probe = probe.rwi$site_num, Precip.scaled.probe = probe.rwi$DI.scaled, Temp.jja.scaled.probe = probe.rwi$T.scaled, agbi_1.probe = probe.rwi$rel.gwbi_1, agbi_2.probe = probe.rwi$rel.gwbi_2, agbi_3.probe = probe.rwi$rel.gwbi_3, agbi_4.probe = probe.rwi$rel.gwbi_4,
+                                              sites.probe = probe.rwi$site, Precip.scaled.probe = probe.rwi$DI.scaled, Temp.jja.scaled.probe = probe.rwi$T.scaled, agbi_1.probe = probe.rwi$rel.gwbi_1, agbi_2.probe = probe.rwi$rel.gwbi_2, agbi_3.probe = probe.rwi$rel.gwbi_3, agbi_4.probe = probe.rwi$rel.gwbi_4,
                                               period.probe = as.numeric(probe.rwi$struct.cohort.code)), n.chains = 3, n.adapt = 100)
 
 
@@ -1376,15 +1386,15 @@ saveRDS(train.RWI, "outputs/gwbi_model/Lag4_cohort_re_clim/rwi_traindata.rds")
 samps       <- samp.rwi.period[[1]]
 Yp.samps    <- samp.rwi.ypred [[1]]
 Yprobe.samps <- samp.rwi.yprobe[[1]]
-alpha.samps <- samps[,1:length(unique(test.RWI$site_num))]
-beta1.samps  <- samps[,(length(unique(test.RWI$site_num))+1):(length(unique(test.RWI$site_num))+2)]
-beta2.samps  <- samps[,(length(unique(test.RWI$site_num))+3):(length(unique(test.RWI$site_num))+4)]
-beta3.samps  <- samps[,(length(unique(test.RWI$site_num))+5):(length(unique(test.RWI$site_num))+6)]
-beta4.samps  <- samps[,(length(unique(test.RWI$site_num))+7):(length(unique(test.RWI$site_num))+8)]
-beta5.samps  <- samps[,(length(unique(test.RWI$site_num))+9):(length(unique(test.RWI$site_num))+10)]
-beta6.samps  <- samps[,(length(unique(test.RWI$site_num))+11):(length(unique(test.RWI$site_num))+12)]
+alpha.samps <- samps[,1:length(unique(test.RWI$site))]
+beta1.samps  <- samps[,(length(unique(test.RWI$site))+1):(length(unique(test.RWI$site))+2)]
+beta2.samps  <- samps[,(length(unique(test.RWI$site))+3):(length(unique(test.RWI$site))+4)]
+beta3.samps  <- samps[,(length(unique(test.RWI$site))+5):(length(unique(test.RWI$site))+6)]
+beta4.samps  <- samps[,(length(unique(test.RWI$site))+7):(length(unique(test.RWI$site))+8)]
+beta5.samps  <- samps[,(length(unique(test.RWI$site))+9):(length(unique(test.RWI$site))+10)]
+beta6.samps  <- samps[,(length(unique(test.RWI$site))+11):(length(unique(test.RWI$site))+12)]
 
-#sigma.samps <- samps[,(length(unique(test.GUESS$site_num))+6):(length(test.GUESS$site_num)+length(unique(test.GUESS$site_num))+12)]
+#sigma.samps <- samps[,(length(unique(test.GUESS$site))+6):(length(test.GUESS$site)+length(unique(test.GUESS$site))+12)]
 
 
 
@@ -1422,13 +1432,13 @@ model.summary <- data.frame(model = "mixed_effects_reg",
 
 # plot marginal distributions of cohort + structure specific parameters:
 a <- data.frame(alpha.samps)
-colnames(a) <- unique(train.RWI$site_num)
+colnames(a) <- unique(train.RWI$site)
 a$num <- rownames(a)
 a.m <- melt(a, id.vars=c("num"))
 alpha.mplots <- ggplot(a.m, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Random intercepts")+theme(legend.position = "none")
 
 b1 <- data.frame(beta1.samps)
-colnames(b1) <-unique(train.RWI$period)
+colnames(b1) <- unique(levels(train.RWI$ageclass)) # past = 2, modern = 1 here
 #colnames(b2) <- c(paste0(c(unique(train.dry$struct.cohort))))
 b1$num <- rownames(b1)
 b1.m <- melt(b1, id.vars=c("num"))
@@ -1436,14 +1446,14 @@ b1.mplots <- ggplot(b1.m, aes(value, fill = variable))+geom_density(alpha = 0.5)
 
 
 b2 <- data.frame(beta2.samps)
-colnames(b2) <-unique(train.RWI$period)
+colnames(b2) <-unique(levels(train.RWI$ageclass)) 
 #colnames(b2) <- c(paste0(c(unique(train.dry$struct.cohort))))
 b2$num <- rownames(b2)
 b2.m <- melt(b2, id.vars=c("num"))
 b2.mplots <- ggplot(b2.m, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Temperature slope")
 
 b3 <- data.frame(beta3.samps)
-colnames(b3) <-unique(train.RWI$period)
+colnames(b3) <-unique(levels(train.RWI$ageclass)) 
 #colnames(b3) <- c(unique(train.dry$struct.cohort)[order(unique(train.dry[,c("struct.cohort", "struct.cohort.code")])[,2])])
 b3$num <- rownames(b3)
 b3.m <- melt(b3, id.vars=c("num"))
@@ -1451,7 +1461,7 @@ b3.mplots <- ggplot(b3.m, aes(value, fill = variable))+geom_density(alpha = 0.5)
 
 
 b4 <- data.frame(beta4.samps)
-colnames(b4) <-unique(train.RWI$period)
+colnames(b4) <-unique(levels(train.RWI$ageclass)) 
 
 #colnames(b4) <- c(unique(train.dry$struct.cohort)[order(unique(train.dry[,c("struct.cohort", "struct.cohort.code")])[,2])])
 b4$num <- rownames(b4)
@@ -1459,14 +1469,14 @@ b4.m <- melt(b4, id.vars=c("num"))
 b4.mplots <- ggplot(b4.m, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("gwbi-2 Index slope")
 
 b5 <- data.frame(beta5.samps)
-colnames(b5) <-unique(train.RWI$period)
+colnames(b5) <-unique(levels(train.RWI$ageclass)) 
 #colnames(b5) <- c(unique(train.dry$struct.cohort)[order(unique(train.dry[,c("struct.cohort", "struct.cohort.code")])[,2])])
 b5$num <- rownames(b5)
 b5.m <- melt(b5, id.vars=c("num"))
 b5.mplots <- ggplot(b5.m, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("gwbi-3 Index slope")
 
 b6 <- data.frame(beta6.samps)
-colnames(b6) <-unique(train.RWI$period)
+colnames(b6) <-unique(levels(train.RWI$ageclass)) 
 #
 #colnames(b6) <- c(unique(train.dry$struct.cohort)[order(unique(train.dry[,c("struct.cohort", "struct.cohort.code")])[,2])])
 b6$num <- rownames(b6)
@@ -1514,33 +1524,34 @@ b6.sum <- b6.m %>% group_by(variable) %>% dplyr::summarise(mean.val = mean(value
 # write out all the dotplots
 # want to order the sites by mean annual precip and/or mean annual temperatuere and then plot:
 # summarize site map and site mat:
-RWI.site.clim <- RWI.sort_lag %>% group_by(Site) %>% summarise(MAP = mean(precip.mm, na.rm=TRUE), 
-                                                                   MAT = mean(Tair.C, na.rm=TRUE))
+RWI.site.clim <- sub.ghcn %>% group_by(site) %>% summarise(MAP = mean(MAP.prism, na.rm=TRUE), 
+                                                                   MAT = mean(JUNTmax, na.rm=TRUE))
 
-a1.sum$Site <- paste0("X", a1.sum$variable)
-a1.clim <- merge(RWI.site.clim, a1.sum, by = "Site")
+a1.sum$Site <- paste0( a1.sum$variable)
+
+a1.clim <- merge(RWI.site.clim, a1.sum, by.x = "site", by.y = "Site")
 int.dot.MAP <- ggplot(data.frame(a1.clim), aes(x = mean.val, y = MAP, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+geom_point()+xlim(-0.1, 0.25)+theme(legend.position = "none")
 int.dot.Tmean <- ggplot(data.frame(a1.clim), aes(x = mean.val, y = MAT, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+geom_point()+xlim(-0.1, 0.25)+theme(legend.position = "none")
 
 
 b1.dot <- ggplot(data.frame(b1.sum), aes(x = mean.val, y = variable, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+
-  geom_point()+scale_color_manual(values = c("industrial-past" = "blue","modern-industrial" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated Precipitation sensitivity)")+xlim(0.06, 0.1) + geom_vline(xintercept = 0, linetype = "dashed")
+  geom_point()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated Precipitation sensitivity)") + geom_vline(xintercept = 0, linetype = "dashed")
 
 
 b2.dot <- ggplot(data.frame(b2.sum), aes(x = mean.val, y = variable, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+
-  geom_point()+scale_color_manual(values = c("industrial-past" = "blue","modern-industrial" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated JJA temperauture sensitivity")#+xlim(0.06, 0.1) + geom_vline(xintercept = 0, linetype = "dashed")
+  geom_point()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated JJA temperauture sensitivity")#+xlim(0.06, 0.1) + geom_vline(xintercept = 0, linetype = "dashed")
 
 b3.dot <- ggplot(data.frame(b3.sum), aes(x = mean.val, y = variable, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+
-  geom_point()+scale_color_manual(values = c("industrial-past" = "blue","modern-industrial" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated gwbi -1 parameter")#+xlim(0.06, 0.1) + geom_vline(xintercept = 0, linetype = "dashed")
+  geom_point()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated gwbi -1 parameter")#+xlim(0.06, 0.1) + geom_vline(xintercept = 0, linetype = "dashed")
 
 b4.dot <- ggplot(data.frame(b4.sum), aes(x = mean.val, y = variable, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+
-  geom_point()+scale_color_manual(values = c("industrial-past" = "blue","modern-industrial" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated gwbi -2 parameter")#+xlim(0.06, 0.1) + geom_vline(xintercept = 0, linetype = "dashed")
+  geom_point()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated gwbi -2 parameter")#+xlim(0.06, 0.1) + geom_vline(xintercept = 0, linetype = "dashed")
 
 b5.dot <- ggplot(data.frame(b5.sum), aes(x = mean.val, y = variable, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+
-  geom_point()+scale_color_manual(values = c("industrial-past" = "blue","modern-industrial" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated gwbi -3 parameter")#+xlim(0.06, 0.1) + geom_vline(xintercept = 0, linetype = "dashed")
+  geom_point()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated gwbi -3 parameter")#+xlim(0.06, 0.1) + geom_vline(xintercept = 0, linetype = "dashed")
 
 b6.dot <- ggplot(data.frame(b6.sum), aes(x = mean.val, y = variable, color = variable, size = 2))+geom_errorbarh( aes(xmin = Ci.low, xmax = Ci.high, size = 1,height = 0))+
-  geom_point()+scale_color_manual(values = c("industrial-past" = "blue","modern-industrial" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated gwbi -4 parameter")#+xlim(0.06, 0.1) + geom_vline(xintercept = 0, linetype = "dashed")
+  geom_point()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+theme(legend.position = "none", axis.title.y = element_blank())+xlab("Estimated gwbi -4 parameter")#+xlim(0.06, 0.1) + geom_vline(xintercept = 0, linetype = "dashed")
 
 
 # combine all the plots together and save to output:
@@ -1600,21 +1611,44 @@ ggplot(data = cohort.summary.tm.pr, aes(MAP_scaled, gwbi, color = period))+geom_
 
 
 
-# ------------- read in both GUESS and ED and plot posteriors together to compare ---------
 
+# ------------- read in both GUESS and ED and plot posteriors together to compare ---------
+library(DMwR)
 GUESS.probe <- readRDS("outputs/gwbi_model/GUESS_probtest.rds")
 GUESS.probe$model <- "LPJ-GUESS"
+GUESS.probe$Precip <- as.numeric(round(unscale(vals = GUESS.probe$MAP_scaled, norm.data = GUESS.sort_lag.Precip.scaled))) 
+GUESS.probe$Temp <- as.numeric(round(unscale(vals = GUESS.probe$JJA.T.scaled, norm.data = GUESS.sort_lag.Temp.jja.scaled))) 
+
+
+
+  
 ED.probe <- readRDS("outputs/gwbi_model/ED_probtest.rds")
 ED.probe$model <- "ED2"
+ED.probe$Precip <- as.numeric(round(unscale(vals = ED.probe$MAP_scaled, norm.data = ED.sort_lag.Precip.scaled))) 
+ED.probe$Temp <- as.numeric(round(unscale(vals = ED.probe$JJA.T.scaled, norm.data = ED.sort_lag.Temp.jja.scaled))) 
 
 
-model.probe <- rbind(GUESS.probe, ED.probe)
 
-cohort.summary.pr <- model.probe %>% group_by(period, MAP_scaled, model) %>% dplyr::summarise(gwbi = mean(gwbi_pred, na.rm=TRUE), 
+RWI.probe <- readRDS("outputs/gwbi_model/RWI_probtest.rds")
+RWI.probe$model <- "Tree Rings"
+RWI.probe$Precip <- as.numeric(round(unscale(vals = RWI.probe$MAP_scaled, norm.data = full.ghcn.MAP.scaled))) 
+RWI.probe$Temp <- as.numeric(round(unscale(vals = RWI.probe$JJA.T.scaled, norm.data = full.ghcn.T.scaled))) 
+RWI.probe$Temp <-  ((RWI.probe$Temp - 32) * (5 / 9)) 
+ 
+
+
+#model.probe <- bind_rows(GUESS.probe, ED.probe)
+
+model.probe.mod <- bind_rows(GUESS.probe, ED.probe)
+model.probe <- bind_rows(model.probe.mod, RWI.probe)
+
+# note 2 == Past and 1 == Modern:
+
+cohort.summary.pr <- model.probe %>% group_by(period, Precip, model) %>% dplyr::summarise(gwbi = mean(gwbi_pred, na.rm=TRUE), 
                                                                                     gwbi.low = quantile(gwbi_pred, 0.025), 
                                                                                     gwbi.high = quantile(gwbi_pred, 0.975)) 
 
-cohort.summary.tm <- model.probe %>% group_by(period, JJA.T.scaled, model) %>% summarise(gwbi = mean(gwbi_pred, na.rm=TRUE), 
+cohort.summary.tm <- model.probe %>% group_by(period, Temp, model) %>% summarise(gwbi = mean(gwbi_pred, na.rm=TRUE), 
                                                                                gwbi.low = quantile(gwbi_pred, 0.025), 
                                                                                gwbi.high = quantile(gwbi_pred, 0.975)) 
 
@@ -1622,16 +1656,82 @@ cohort.summary.tm <- model.probe %>% group_by(period, JJA.T.scaled, model) %>% s
 # need to covert the periods to factors:
 cohort.summary.pr$period <- as.factor(cohort.summary.pr$period)
 cohort.summary.tm$period <- as.factor(cohort.summary.tm$period)
+cohort.summary.tm$ageclass <- ifelse(cohort.summary.tm$period == "1", "Modern", "Past")
+cohort.summary.pr$ageclass <- ifelse(cohort.summary.tm$period == "1", "Modern", "Past")
 
 # compare sensitivities of the models
-ggplot(cohort.summary.pr, aes(MAP_scaled, gwbi, color = model))+geom_line()+geom_ribbon(data = cohort.summary.pr,aes(ymin = gwbi.low, ymax = gwbi.high, fill = model), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~period)
+ggplot(cohort.summary.pr, aes(Precip, gwbi, color = model))+geom_line()+geom_ribbon(data = cohort.summary.pr,aes(ymin = gwbi.low, ymax = gwbi.high, fill = model), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~ageclass, nrow = 2)+theme_bw()
 
-ggplot(cohort.summary.tm, aes(JJA.T.scaled, gwbi, color = model))+geom_line()+geom_ribbon(data = cohort.summary.tm,aes(ymin = gwbi.low, ymax = gwbi.high, fill = model), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~period)
+ggplot(cohort.summary.tm, aes(Temp, gwbi, color = model))+geom_line()+geom_ribbon(data = cohort.summary.tm,aes(ymin = gwbi.low, ymax = gwbi.high, fill = model), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~ageclass, nrow = 2)+theme_bw()
+
+
+# find the grid cells that are closest to the tree ring sites:
+
+
+# read in the spatial points data for the Tree ring data:
+TREERING_PALEON_GRID <- read.csv("/Users/kah/Documents/TreeRings/data/KH_Treering_sites_PALEON_model_grid.csv - KH_Treering_sites_PALEON_model_grid.csv-2.csv")
+
+# find the closest grid cell:
+load("Data/PalEON_siteInfo_all.RData")
+TR.locs <- TREERING_PALEON_GRID[TREERING_PALEON_GRID$Site.code %in% c( "AVO",  "BON",  "COR",  "ENG",  "GLA","GLL",  "GLL1", "GLL2", "GLL3", "GLL4", "HIC",  "MOU",  "PLE",  "PVC", 
+                                                            "STC",  "TOW",  "UNC"  ),]
+TR.sites <- merge(paleon, TREERING_PALEON_GRID, by.x = "latlon", by.y = "latlon_PALEON")
+ggplot(paleon, aes(lon, lat), fill = "forestgreen")+geom_raster()+coord_cartesian()+geom_point(data = TR.locs, aes(x = longitude, y = latitude, color = Site.code))
+
+library(geosphere)
+
+# create distance matrix
+mat <- distm( TR.locs[,c('longitude','latitude')],paleon[,c('lon','lat')], fun=distVincentyEllipsoid)
+
+# assign the name to the point in list1 based on shortest distance in the matrix
+TR.locs$lat_PALEON_closest <- paleon$lat[max.col(-mat)]
+TR.locs$lon_PALEON_closest <- paleon$lon[max.col(-mat)]
+TR.locs$paleon_gridlatlon <- paleon$latlon[max.col(-mat)]
+
+ggplot()+geom_raster(data = paleon, aes(x = lon, y =lat))+coord_cartesian()+geom_point(data = TR.locs, aes(x = longitude, y = latitude, color = Site.code))+geom_raster(data = TR.locs, aes(x = lon_PALEON_closest, y =lat_PALEON_closest), fill = "red")
+
+paleon.sites <- paleon[paleon$latlon %in% TR.locs$paleon_gridlatlon,]
+
+model.site.num <- paleon.sites$num
+model.probe.subset <- model.probe.mod %>% filter(site_num %in% paleon.sites$num)
+model.TR.sites <- bind_rows(model.probe.subset, RWI.probe)
+
+
+# plot out only the grid cells where we have TR sites:
+# note 2 == Past and 1 == Modern:
+
+cohort.sites.pr <- model.TR.sites %>% group_by(period, Precip, model) %>% dplyr::summarise(gwbi = mean(gwbi_pred, na.rm=TRUE), 
+                                                                                              gwbi.low = quantile(gwbi_pred, 0.025), 
+                                                                                              gwbi.high = quantile(gwbi_pred, 0.975)) 
+
+cohort.sites.tm <- model.TR.sites %>% group_by(period, Temp, model) %>% summarise(gwbi = mean(gwbi_pred, na.rm=TRUE), 
+                                                                                         gwbi.low = quantile(gwbi_pred, 0.025), 
+                                                                                         gwbi.high = quantile(gwbi_pred, 0.975)) 
+
+
+# need to covert the periods to factors:
+cohort.sites.pr$period <- as.factor(cohort.sites.pr$period)
+cohort.sites.tm$period <- as.factor(cohort.sites.tm$period)
+cohort.sites.tm$ageclass <- ifelse(cohort.sites.tm$period == "1", "Modern", "Past")
+cohort.sites.pr$ageclass <- ifelse(cohort.sites.tm$period == "1", "Modern", "Past")
+
+# compare sensitivities of the models
+ggplot(cohort.sites.pr, aes(Precip, gwbi, color = model))+geom_line()+geom_ribbon(data = cohort.sites.pr,aes(ymin = gwbi.low, ymax = gwbi.high, fill = model), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~ageclass, nrow = 2)+theme_bw()
+
+ggplot(cohort.sites.tm, aes(Temp, gwbi, color = model))+geom_line()+geom_ribbon(data = cohort.sites.tm,aes(ymin = gwbi.low, ymax = gwbi.high, fill = model), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~ageclass, nrow = 2)+theme_bw()
+
+
+ggplot(cohort.sites.pr, aes(Precip, gwbi, color = ageclass))+geom_line()+geom_ribbon(data = cohort.sites.pr,aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 2)+theme_bw()
+
+ggplot(cohort.sites.tm, aes(Temp, gwbi, color = ageclass))+geom_line()+geom_ribbon(data = cohort.sites.tm,aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 2)+theme_bw()
+
+
+
 
 
 
 #---------------WUE response to climate in models and in data-----------------
-mod <- lm(IWUE ~ gwbi + Precip.scaled + Temp.jja.scaled  + gwbi_1 +gwbi_2 +gwbi_3 +gwbi_4+gwbi_5 + Site, data = train.GUESS)
+mod <- lm(IWUE ~ gwbi + Precip.scaled + Temp.jja.scaled  + gwbi_1 + gwbi_2 + gwbi_3 + gwbi_4 + gwbi_5 + Site, data = train.GUESS)
 summary(mod)
 
 

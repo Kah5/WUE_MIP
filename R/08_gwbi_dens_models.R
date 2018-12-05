@@ -267,22 +267,23 @@ GUESS.sort_lag.CO2.scaled = scale(GUESS.sort_lag$CO2, center = TRUE, scale = TRU
 
 #splits <- unlist(strsplit(unique(GUESS.sort_lag$Site), "X"))
 covert_site_codes <- data.frame(site_num = unique(as.numeric(sapply(strsplit(GUESS.sort_lag$Site,"X"), `[`, 2))),
-                                site_code = 1:length(unique(as.numeric(sapply(strsplit(GUESS.sort_lag$Site,"X"), `[`, 2)))))
+                                site_code = 1:length(unique(GUESS.sort_lag$Site)))
 
 GUESS.sort_lag$site_num <- as.numeric(sapply(strsplit(GUESS.sort_lag$Site,"X"), `[`, 2))
 GUESS.sort_lag <- left_join(GUESS.sort_lag, covert_site_codes, by = "site_num")
 
 # relativise iWUE:
-mean.IWUE.GUESS <- GUESS.sort_lag %>% group_by(site_num) %>% summarise(mean.iWUE = mean(IWUE, na.rm =TRUE))
+mean.IWUE.GUESS <- GUESS.sort_lag %>% group_by(Site) %>% summarise(mean.iWUE = mean(IWUE, na.rm =TRUE))
 
 mean.IWUE.ED <- ED.sort_lag %>% group_by(Site) %>% summarise(mean.iWUE = mean(IWUE, na.rm =TRUE))
 
-mean.IWUE.GUESS <- left_join(GUESS.sort_lag, mean.IWUE.GUESS, by = "site_num")
+mean.IWUE.GUESS <- left_join(GUESS.sort_lag, mean.IWUE.GUESS, by = "Site")
 mean.IWUE.ED <- left_join(ED.sort_lag, mean.IWUE.ED, by = "Site")
 
 mean.IWUE.GUESS$rel.IWUE <- mean.IWUE.GUESS$IWUE - mean.IWUE.GUESS$mean.iWUE
 mean.IWUE.ED$rel.IWUE <- mean.IWUE.ED$IWUE - mean.IWUE.ED$mean.iWUE
 ggplot(mean.IWUE.ED[!is.infinite(mean.IWUE.ED$IWUE),], aes(Year, rel.IWUE, color = Site))+geom_point()+theme(legend.position = "none")
+ggplot(mean.IWUE.GUESS, aes(Year, rel.IWUE, color = Site))+geom_point()+theme(legend.position = "none")
 
 GUESS.sort_lag <- left_join(GUESS.sort_lag, mean.IWUE.GUESS[,c("Site", "Year", "rel.IWUE")], by = c("Year", "Site"))
 ED.sort_lag <- left_join(ED.sort_lag, mean.IWUE.ED[,c("Site", "Year", "rel.IWUE")], by = c("Year", "Site"))
@@ -321,7 +322,7 @@ test.GUESS  <- test.GUESS.full[test.GUESS.full$period %in% c("modern-industrial"
 train.full.GUESS <- train.GUESS.full
 test.full.GUESS <- test.GUESS.full
 
-class(train.ED$site_code)
+#unique(train.ED$site_code)
 
 #---------------------read in TR data and relativise to compare----------------------
 full.ghcn <- read.csv("/Users/kah/Documents/TreeRings/outputs/data/rwi_age_dbh_ghcn.df")
@@ -2031,6 +2032,12 @@ subset.iso <- full.iso[!is.na(full.iso$iWUE) & !full.iso$site %in% "BON",] # bon
 
 DiffIWUE.TR <-subset.iso %>% group_by(ageclass) %>% summarise(iWUE = mean(iWUE, na.rm = TRUE))
 
+CO2.df <- train.GUESS %>% group_by(Year)%>% summarise(CO2 = mean (CO2),
+                                            CO2.scaled = mean(CO2.scaled))
+colnames(CO2.df) <- c("year", "CO2", "CO2.scaled")
+
+subset.iso <- left_join(subset.iso, CO2.df, by = "year")
+
 # estimate the % increase in iWUE in the models:
 msk.iso <- caTools::sample.split( subset.iso, SplitRatio = 3/4, group = NULL )
 
@@ -2209,7 +2216,7 @@ summary(guess.wue)
 
 # relativise tree ring data:
 
-tr.wue <- lm(iWUE ~  MAP.scaled + T.scaled + ageclass +mean.diff, data = train.iso)
+tr.wue <- lm(iWUE ~  MAP.scaled + T.scaled + ageclass+CO2 , data = train.iso)
 summary(tr.wue)
 
 
@@ -2233,11 +2240,11 @@ train.iso <- left_join(train.iso, mean.IWUE.tr[,c("site", "year", "rel.IWUE")], 
 test.iso <- left_join(test.iso, mean.IWUE.tr.test[,c("site", "year", "rel.IWUE")], by = c("year", "site"))
 
 
-tr.wue <- lm(rel.IWUE ~  MAP.scaled + T.scaled + ageclass + mean.diff + ageclass + DBH, data = train.iso)
+tr.wue <- lm(rel.IWUE ~  MAP.scaled + T.scaled + ageclass+CO2 + mean.diff + ageclass + DBH, data = train.iso)
 summary(tr.wue)
 
 
-ggplot(train.iso, aes( DBH,iWUE))+geom_point()
+ggplot(train.iso, aes( CO2,rel.IWUE))+geom_point()
 ggplot(train.ED[train.ED$IWUE <= 50,], aes(CO2 ,rel.IWUE))+geom_point()
 ggplot(train.GUESS, aes(Precip.scaled, rel.IWUE))+geom_point()
 
@@ -2360,11 +2367,13 @@ samp.IWUE.ED.yprobe <- coda.samples(IWUE.ED.model,
 saveRDS(samp.IWUE.ED, "outputs/iWUE_climate_CO2/ED_parameter_samps.rds")
 saveRDS(samp.IWUE.ED.ypred, "outputs/iWUE_climate_CO2/ED_Ypred_samps.rds")
 saveRDS(samp.IWUE.ED.yprobe, "outputs/iWUE_climate_CO2/ED_Yprobe_samps.rds")
+samp.IWUE.ED <- readRDS( "outputs/iWUE_climate_CO2/ED_parameter_samps.rds")
 samp.IWUE.ED.yprobe<- readRDS( "outputs/iWUE_climate_CO2/ED_Yprobe_samps.rds")
+samp.IWUE.ED.ypred<- readRDS( "outputs/iWUE_climate_CO2/ED_Ypred_samps.rds")
 
 saveRDS(test.ED, "outputs/iWUE_climate_CO2/ED_testdata.rds")
 saveRDS(train.ED, "outputs/iWUE_climate_CO2/ED_traindata.rds")
-
+test.ED <- readRDS( "outputs/iWUE_climate_CO2/ED_testdata.rds")
 # check for convergence:
 summary(samp.IWUE.ED)
 gelman.diag(samp.IWUE.ED)
@@ -2405,16 +2414,35 @@ BIAS1  <- mean(colMeans(Yp.samps)-test.ED$rel.IWUE)
 
 #-----------run the model for LPJ-GUESS------------
 
+DIprobe <- round(seq(range(train.GUESS$Precip.scaled)[1], range(train.GUESS$Precip.scaled)[2], by = 2), 3)
+Tempprobe <- round(seq(range(train.GUESS$Temp.jja.scaled)[1], range(train.GUESS$Temp.jja.scaled)[2], by = 2), 3)
+CO2probe <- round(seq(range(train.GUESS$CO2.scaled, na.rm = TRUE)[1], range(train.GUESS$CO2.scaled, na.rm = TRUE)[2], by = 2), 2)
+
+# expand into full probe
+
+train.GUESS <- train.GUESS[!is.na(train.GUESS$rel.IWUE) & !is.na(train.GUESS$CO2.scaled),]
+test.GUESS <- test.GUESS[!is.na(test.GUESS$rel.IWUE) & !is.na(test.GUESS$CO2.scaled),]
+# this removes some of the GUESS sites, so 
+site.code.conversion<- data.frame(site_code = unique(test.GUESS$site_code), 
+                                  site_code_new = 1:length(unique(test.GUESS$site_code)))
+
+train.GUESS.wue <- left_join(train.GUESS, site.code.conversion, by = "site_code")
+test.GUESS.wue <- left_join(test.GUESS, site.code.conversion, by = "site_code")
+
+
+probe.GUESS <- expand.grid(DI.scaled = DIprobe,  T.scaled = Tempprobe,
+                           CO2.scaled = CO2probe,
+                           site_num = 1:length(unique(train.GUESS$site_code)),struct.cohort.code= 1:2)
 
 
 IWUE.GUESS.model <- jags.model(textConnection(IWUE_climate_site_period), 
-                            data = list(Y = train.GUESS$rel.IWUE, n=length(train.GUESS$rel.IWUE), Precip.scaled = train.GUESS$Precip.scaled, Temp.jja.scaled = train.GUESS$Temp.jja.scaled, CO2 = train.GUESS$CO2.scaled,
-                                        period = as.numeric(train.GUESS$period_cd), S = unique(train.GUESS$site_num),  C = unique(train.GUESS$period_cd), sites = train.GUESS$site_code, np=length(test.GUESS$period_cd), 
-                                        sites.p = train.GUESS$site_code, Precip.scaled.p = test.GUESS$Precip.scaled, Temp.jja.scaled.p = test.GUESS$Temp.jja.scaled, CO2.p = test.GUESS$CO2.scaled,
-                                        period.p = as.numeric(test.GUESS$period_cd),
+                            data = list(Y = train.GUESS.wue$rel.IWUE, n=length(train.GUESS.wue$rel.IWUE), Precip.scaled = train.GUESS.wue$Precip.scaled, Temp.jja.scaled = train.GUESS.wue$Temp.jja.scaled, CO2 = train.GUESS.wue$CO2.scaled,
+                                        period = as.numeric(train.GUESS.wue$period_cd), S = unique(train.GUESS.wue$site_code_new),  C = unique(train.GUESS.wue$period_cd), sites = train.GUESS.wue$site_code_new, np=length(test.GUESS.wue$period_cd), 
+                                        sites.p = test.GUESS.wue$site_code_new, Precip.scaled.p = test.GUESS.wue$Precip.scaled, Temp.jja.scaled.p = test.GUESS.wue$Temp.jja.scaled, CO2.p = test.GUESS.wue$CO2.scaled,
+                                        period.p = as.numeric(test.GUESS.wue$period_cd),
                                         
                                         nprobe=length(probe.GUESS$struct.cohort.code), 
-                                        sites.probe = probe.GUESS$site, Precip.scaled.probe = probe.GUESS$DI.scaled, Temp.jja.scaled.probe = probe.GUESS$T.scaled, CO2.probe = probe.GUESS$CO2.scaled,
+                                        sites.probe = probe.GUESS$site_num, Precip.scaled.probe = probe.GUESS$DI.scaled, Temp.jja.scaled.probe = probe.GUESS$T.scaled, CO2.probe = probe.GUESS$CO2.scaled,
                                         period.probe = as.numeric(probe.GUESS$struct.cohort.code)), n.chains = 3, n.adapt = 100)
 
 
@@ -2422,7 +2450,7 @@ update(IWUE.GUESS.model, 1000); # Burnin for 1000 samples to start, then go high
 
 samp.IWUE.GUESS <- coda.samples(IWUE.GUESS.model, 
                              variable.names=c("alpha", "beta1", "beta2","beta3" ), 
-                             n.chains = 3, n.iter=10000, thin = 10)
+                             n.chains = 3, n.iter=10000, thin = 1)
 
 samp.IWUE.GUESS.ypred  <- coda.samples(IWUE.GUESS.model, 
                                     variable.names=c("Ypred" ), 
@@ -2477,6 +2505,99 @@ dev.off()
 
 MSE1   <- mean((colMeans(Yp.samps)-test.GUESS$rel.IWUE)^2)
 BIAS1  <- mean(colMeans(Yp.samps)-test.GUESS$rel.IWUE)
+
+
+#-----------------run the model for tree ring derived iWUE----------------------------------
+
+DIprobe <- round(seq(range(train.iso$MAP.scaled)[1], range(train.iso$MAP.scaled)[2], by = 2), 3)
+Tempprobe <- round(seq(range(train.iso$T.scaled)[1], range(train.iso$T.scaled)[2], by = 2), 3)
+CO2probe <- round(seq(range(train.iso$CO2.scaled, na.rm = TRUE)[1], range(train.iso$CO2.scaled, na.rm = TRUE)[2], by = 2), 2)
+
+probe.iso <- expand.grid(DI.scaled = DIprobe,  T.scaled = Tempprobe,
+                         CO2.scaled = CO2probe,
+                         site_num = 1:3,struct.cohort.code= 1:2)
+
+# add dummy site codes for train.iso
+site_code_dummy <- data.frame(site = unique(train.iso$site),
+                              site_code = 1:length(unique(train.iso$site)))
+train.iso.wue <- left_join(train.iso, site_code_dummy, by = "site")
+test.iso.wue <- left_join(test.iso, site_code_dummy, by = "site")
+
+test.iso.wue <- test.iso.wue[!is.na(test.iso.wue$CO2.scaled),]
+train.iso.wue <- train.iso.wue[!is.na(train.iso.wue$CO2.scaled),]
+
+IWUE.iso.model <- jags.model(textConnection(IWUE_climate_site_period), 
+                               data = list(Y = train.iso.wue$rel.IWUE, n=length(train.iso.wue$rel.IWUE), Precip.scaled = train.iso.wue$MAP.scaled, Temp.jja.scaled = train.iso.wue$T.scaled, CO2 = train.iso.wue$CO2.scaled,
+                                           period = as.numeric(train.iso.wue$ageclass), S = unique(train.iso.wue$site_code),  C = unique(train.iso.wue$ageclass), sites = as.numeric(train.iso.wue$site_code), np=length(test.iso.wue$ageclass), 
+                                           sites.p = test.iso.wue$site_code, Precip.scaled.p = test.iso.wue$MAP.scaled, Temp.jja.scaled.p = test.iso.wue$T.scaled, CO2.p = test.iso.wue$CO2.scaled,
+                                           period.p = as.numeric(test.iso.wue$ageclass),
+                                           
+                                           nprobe = length(probe.iso$struct.cohort.code), 
+                                           sites.probe = as.numeric(probe.iso$site_num), Precip.scaled.probe = probe.iso$DI.scaled, Temp.jja.scaled.probe = probe.iso$T.scaled, CO2.probe = probe.iso$CO2.scaled,
+                                           period.probe = as.numeric(probe.iso$struct.cohort.code)), n.chains = 3, n.adapt = 100)
+
+
+update(IWUE.iso.model, 1000); # Burnin for 1000 samples to start, then go higher later
+
+samp.IWUE.iso <- coda.samples(IWUE.iso.model, 
+                                variable.names=c("alpha", "beta1", "beta2","beta3" ), 
+                                n.chains = 3, n.iter=10000, thin = 10)
+
+samp.IWUE.iso.ypred  <- coda.samples(IWUE.iso.model, 
+                                       variable.names=c("Ypred" ), 
+                                       n.chains = 3, n.iter=8000, thin = 10)
+
+samp.IWUE.iso.yprobe <- coda.samples(IWUE.iso.model, 
+                                       variable.names=c("Yprobe" ), 
+                                       n.chains = 3, n.iter=8000, thin = 10)
+
+saveRDS(samp.IWUE.iso, "outputs/iWUE_climate_CO2/iso_parameter_samps.rds")
+saveRDS(samp.IWUE.iso.ypred, "outputs/iWUE_climate_CO2/iso_Ypred_samps.rds")
+saveRDS(samp.IWUE.iso.yprobe, "outputs/iWUE_climate_CO2/iso_Yprobe_samps.rds")
+samp.IWUE.iso.yprobe<- readRDS( "outputs/iWUE_climate_CO2/iso_Yprobe_samps.rds")
+
+saveRDS(test.iso, "outputs/iWUE_climate_CO2/iso_testdata.rds")
+saveRDS(train.iso, "outputs/iWUE_climate_CO2/iso_traindata.rds")
+
+# check for convergence:
+summary(samp.IWUE.iso)
+gelman.diag(samp.IWUE.iso)
+acfplot(samp.IWUE.iso)
+
+#Extract the samples for each parameter
+
+samps       <- samp.IWUE.iso[[1]]
+Yp.samps    <- samp.IWUE.iso.ypred [[1]]
+Yprobe.samps <- samp.IWUE.iso.yprobe[[1]]
+alpha.samps <- samps[,1:length(unique(test.iso$site))]
+beta1.samps  <- samps[,(length(unique(test.iso$site))+1):(length(unique(test.iso$site))+2)]
+beta2.samps  <- samps[,(length(unique(test.iso$site))+3):(length(unique(test.iso$site))+4)]
+beta3.samps  <- samps[,(length(unique(test.iso$site))+5):(length(unique(test.iso$site))+6)]
+
+
+# plot predicted vs. observed
+Yp.samps <- data.frame(Yp.samps) 
+Yp.m <- melt(Yp.samps)
+Yp.summary <- Yp.m %>% group_by(variable) %>% dplyr::summarise(Predicted = mean(value),
+                                                               ci.hi = quantile(value,0.975),
+                                                               ci.lo = quantile(value,0.025))
+Yp.summary$Observed <- test.iso$rel.IWUE
+
+pred.obs <- summary(lm(colMeans(Yp.samps) ~ test.iso$rel.IWUE))
+
+p.o.plot <- ggplot(Yp.summary, aes(Observed, Predicted))+geom_point(color = "black", size = 0.5)+geom_errorbar(data = Yp.summary,aes(ymin=ci.lo, ymax=ci.hi), color = "grey", alpha = 0.5)+geom_point(data = Yp.summary, aes(Observed, Predicted), color = "black", size = 0.5)+geom_abline(aes(slope = 1, intercept = 0), color = "red", linetype = "dashed")+geom_text(data=data.frame(pred.obs$r.squared), aes( label = paste("R^2: ", pred.obs$r.squared, sep="")),parse=T,x=1, y=7)
+
+# note poor model fit!
+png(width = 6, height = 5, units = "in", res = 300, "outputs/iWUE_climate_CO2/iso_pred_vs_obs.png")
+p.o.plot
+dev.off()
+
+# calculate MSE & BIAS:
+
+MSE1   <- mean((colMeans(Yp.samps)-test.iso$rel.IWUE)^2)
+BIAS1  <- mean(colMeans(Yp.samps)-test.iso$rel.IWUE)
+
+
 
 
 

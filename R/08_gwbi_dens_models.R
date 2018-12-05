@@ -111,7 +111,7 @@ ggplot(ED.GUESS, aes( precip.mm.jja, rel.gwbi, color = Model))+geom_point()+stat
 # 6. Split into testing and training data:
 
 # remove NAS: 
-ED <- ED.totals[!is.na(ED.totals$rel.gwbi) & !is.na(ED.totals$precip.mm),]
+ED <- ED.totals[!is.na(ED.totals$rel.gwbi) & !is.na(ED.totals$precip.mm) & !is.infinite(ED.totals$IWUE),]
 GUESS <- GUESS.totals[!is.na(GUESS.totals$rel.gwbi) & !is.na(GUESS.totals$precip.mm),]
 
 # create classes for modern, past and pre-industrial:
@@ -272,6 +272,22 @@ covert_site_codes <- data.frame(site_num = unique(as.numeric(sapply(strsplit(GUE
 GUESS.sort_lag$site_num <- as.numeric(sapply(strsplit(GUESS.sort_lag$Site,"X"), `[`, 2))
 GUESS.sort_lag <- left_join(GUESS.sort_lag, covert_site_codes, by = "site_num")
 
+# relativise iWUE:
+mean.IWUE.GUESS <- GUESS.sort_lag %>% group_by(site_num) %>% summarise(mean.iWUE = mean(IWUE, na.rm =TRUE))
+
+mean.IWUE.ED <- ED.sort_lag %>% group_by(Site) %>% summarise(mean.iWUE = mean(IWUE, na.rm =TRUE))
+
+mean.IWUE.GUESS <- left_join(GUESS.sort_lag, mean.IWUE.GUESS, by = "site_num")
+mean.IWUE.ED <- left_join(ED.sort_lag, mean.IWUE.ED, by = "Site")
+
+mean.IWUE.GUESS$rel.IWUE <- mean.IWUE.GUESS$IWUE - mean.IWUE.GUESS$mean.iWUE
+mean.IWUE.ED$rel.IWUE <- mean.IWUE.ED$IWUE - mean.IWUE.ED$mean.iWUE
+ggplot(mean.IWUE.ED[!is.infinite(mean.IWUE.ED$IWUE),], aes(Year, rel.IWUE, color = Site))+geom_point()+theme(legend.position = "none")
+
+GUESS.sort_lag <- left_join(GUESS.sort_lag, mean.IWUE.GUESS[,c("Site", "Year", "rel.IWUE")], by = c("Year", "Site"))
+ED.sort_lag <- left_join(ED.sort_lag, mean.IWUE.ED[,c("Site", "Year", "rel.IWUE")], by = c("Year", "Site"))
+
+
 # combine together (in case we want to model together):
 full.df <- rbind(GUESS.sort_lag, ED.sort_lag)
 
@@ -302,8 +318,8 @@ test.GUESS.full <- GUESS.sort_lag[!msk2,]
 train.GUESS  <- train.GUESS.full[train.GUESS.full$period %in% c("modern-industrial", "industrial-past"),]
 test.GUESS  <- test.GUESS.full[test.GUESS.full$period %in% c("modern-industrial", "industrial-past"),]
 
-train.full.ED <- train.GUESS.full
-test.full.ED <- test.GUESS.full
+train.full.GUESS <- train.GUESS.full
+test.full.GUESS <- test.GUESS.full
 
 class(train.ED$site_code)
 
@@ -1979,16 +1995,16 @@ plot_grid(plot_grid( b1.dot+theme(legend.position = "none"),
 dev.off()
 
 #---------------WUE response to climate in models and in data-----------------
-mod <- lm(IWUE ~ gwbi + Precip.scaled + Temp.jja.scaled  + gwbi_1 + gwbi_2 + gwbi_3 + gwbi_4 + gwbi_5 + Site, data = train.GUESS)
+mod <- lm(IWUE ~ gwbi + Precip.scaled + Temp.jja.scaled  + Site, data = train.GUESS)
 summary(mod)
 
 
 
 
-mod <- lm(WUEt ~ Precip.scaled + Temp.jja.scaled+ CO2+ Site, data = train.GUESS)
+mod <- lm(rel.IWUE ~ Precip.scaled + Temp.jja.scaled+ CO2+ Site, data = train.GUESS)
 summary(mod)
 
-modED <- lm(IWUE ~  Precip.scaled + Temp.jja.scaled + CO2 + Site, data = train.ED)
+modED <- lm(IWUE ~  Precip.scaled + Temp.jja.scaled + CO2 + Site, data = train.ED[!is.infinite(train.ED$IWUE),])
 summary(modED)
 
 ggplot(train.ED[train.ED$WUEt <= 100,], aes(Year, IWUE))+geom_point()
@@ -2183,11 +2199,294 @@ png(height = 8, width = 10, units = "in", res = 300, "outputs/iWUE_intercepts/pc
 pct.IWUE.inc
 dev.off()
 
+#----------------What is relative iWUE sensitive to?-----------------------------
+ed.wue <- lm(rel.IWUE ~  Precip.scaled + rel.gwbi + Temp.jja.scaled + period, data = train.ED[train.ED$rel.IWUE <=50,])
+summary(ed.wue)
+
+guess.wue <- lm(rel.IWUE ~  Precip.scaled + rel.gwbi + Temp.jja.scaled + CO2 + period, data = train.GUESS)
+summary(guess.wue)
+
+
+# relativise tree ring data:
+
+tr.wue <- lm(iWUE ~  MAP.scaled + T.scaled + ageclass +mean.diff, data = train.iso)
+summary(tr.wue)
+
+
+# need to relativise  iWUE for both GUESS, ED and Tree ring derived iWUE:
+mean.IWUE.tr <- train.iso %>% group_by(site) %>% summarise(mean.iWUE = mean(iWUE, na.rm =TRUE))
+mean.IWUE.tr.test <- train.iso %>% group_by(site) %>% summarise(mean.iWUE = mean(iWUE, na.rm =TRUE))
+
+
+mean.IWUE.tr <- left_join(train.iso, mean.IWUE.tr, by = "site")
+
+mean.IWUE.tr$rel.IWUE <- mean.IWUE.tr$iWUE - mean.IWUE.tr$mean.iWUE
+
+
+mean.IWUE.tr.test <- left_join(test.iso, mean.IWUE.tr.test, by = "site")
+mean.IWUE.tr.test$rel.IWUE <- mean.IWUE.tr.test$iWUE - mean.IWUE.tr.test$mean.iWUE
+
+ggplot(mean.IWUE.tr.test, aes(year, rel.IWUE, color = site))+geom_point()+theme(legend.position = "none")
+
+
+train.iso <- left_join(train.iso, mean.IWUE.tr[,c("site", "year", "rel.IWUE")], by = c("year", "site"))
+test.iso <- left_join(test.iso, mean.IWUE.tr.test[,c("site", "year", "rel.IWUE")], by = c("year", "site"))
+
+
+tr.wue <- lm(rel.IWUE ~  MAP.scaled + T.scaled + ageclass + mean.diff + ageclass + DBH, data = train.iso)
+summary(tr.wue)
+
+
+ggplot(train.iso, aes( DBH,iWUE))+geom_point()
+ggplot(train.ED[train.ED$IWUE <= 50,], aes(CO2 ,rel.IWUE))+geom_point()
+ggplot(train.GUESS, aes(Precip.scaled, rel.IWUE))+geom_point()
+
+
+# ---------------IWUE responses to Precipiation, temperature, CO2 in the models-----------------
+#--------ED model IWUE responses:
+
+IWUE_climate_site_period <- "model{
+
+# for each the overall population include re for sites:
+
+# Likelihood
+for(i in 1:n){
+# process model
+Y[i]   ~ dnorm(gfunc[i], inv.var) # Y is iWUE
+
+# function g()
+gfunc[i] <- alpha[sites[i]] + beta1[period[i]]*Precip.scaled[i] + beta2[period[i]]*Temp.jja.scaled[i] + beta3[period[i]]*CO2[i] 
+
+}
+
+
+# Assume normal priors for betas, but generate a beta + alpha for each ageclass
+for(c in 1:length(C)){
+beta1[c] ~ dnorm(mu_beta1, inv_beta1)
+beta2[c] ~ dnorm(mu_beta2, inv_beta2)
+beta3[c] ~ dnorm(mu_beta3, inv_beta3)
+
+}
+
+for(s in 1:length(S)){
+alpha[s] ~ dnorm(mu_alpha, inv_alpha)
+}
+
+# use normal hyperpriors for each hyperparamters 
+mu_alpha ~ dunif(-2, 2)
+mu_beta1 ~ dunif(-2, 2)
+mu_beta2 ~ dunif(-2, 2)
+mu_beta3 ~ dunif(-2, 2)
+
+
+inv_alpha   ~ dgamma(0.001, 0.001)
+sigma_alpha <- 1/sqrt(inv_alpha)
+inv_beta1   ~ dgamma(0.001, 0.001)
+sigma_beta1 <- 1/sqrt(inv_beta1)
+inv_beta2   ~ dgamma(0.001, 0.001)
+sigma_beta2 <- 1/sqrt(inv_beta2)
+inv_beta3   ~ dgamma(0.001, 0.001)
+sigma_beta3 <- 1/sqrt(inv_beta3)
+
+
+# Non-informative Prior for the inverse population variances
+
+#alpha_ref ~ dnorm(0,0.1)
+inv.var   ~ dgamma(0.001, 0.001)
+sigma     <- 1/sqrt(inv.var)
+
+
+# Predictions
+for(i in 1:np){
+# process model
+Ypred[i]   ~ dnorm(gfunc.p[i], inv.var) # Y is agbi
+
+# function g()
+gfunc.p[i] <- alpha[sites.p[i]] + beta1[period.p[i]]*Precip.scaled.p[i] + beta2[period.p[i]]*Temp.jja.scaled.p[i] + beta3[period.p[i]]*CO2.p[i] 
+
+}
+
+# Probe
+for(i in 1:nprobe){
+#process model
+Yprobe[i]   ~ dnorm(gfunc.probe[i], inv.var) # Y is agbi
+
+#function g()
+gfunc.probe[i] <- alpha[sites.probe[i]] + beta1[period.probe[i]]*Precip.scaled.probe[i] + beta2[period.probe[i]]*Temp.jja.scaled.probe[i] + beta3[period.probe[i]]*CO2.probe[i]
+
+}
+
+}"
+
+
+
+DIprobe <- round(seq(range(train.ED$Precip.scaled)[1], range(train.ED$Precip.scaled)[2], by = 2), 3)
+Tempprobe <- round(seq(range(train.ED$Temp.jja.scaled)[1], range(train.ED$Temp.jja.scaled)[2], by = 2), 3)
+CO2probe <- round(seq(range(train.ED$CO2.scaled)[1], range(train.ED$CO2.scaled)[2], by = 2), 2)
+
+# expand into full probe
+probe.ED <- expand.grid(DI.scaled = DIprobe,  T.scaled = Tempprobe,
+                         CO2.scaled = CO2probe,
+                         site_num = unique(train.ED$site_code),struct.cohort.code= 1:2)
+
+
+
+
+IWUE.ED.model <- jags.model(textConnection(IWUE_climate_site_period), 
+                                  data = list(Y = train.ED$rel.IWUE, n=length(train.ED$rel.IWUE), Precip.scaled = train.ED$Precip.scaled, Temp.jja.scaled = train.ED$Temp.jja.scaled, CO2 = train.ED$CO2.scaled,
+                                              period = as.numeric(train.ED$period_cd), S = unique(train.ED$site_num),  C = unique(train.ED$period_cd), sites = train.ED$site_code, np=length(test.ED$period_cd), 
+                                              sites.p = train.ED$site_code, Precip.scaled.p = test.ED$Precip.scaled, Temp.jja.scaled.p = test.ED$Temp.jja.scaled, CO2.p = test.ED$CO2.scaled,
+                                              period.p = as.numeric(test.ED$period_cd),
+                                              
+                                              nprobe=length(probe.ED$struct.cohort.code), 
+                                              sites.probe = probe.ED$site, Precip.scaled.probe = probe.ED$DI.scaled, Temp.jja.scaled.probe = probe.ED$T.scaled, CO2.probe = probe.ED$CO2.scaled,
+                                              period.probe = as.numeric(probe.ED$struct.cohort.code)), n.chains = 3, n.adapt = 100)
+
+
+update(IWUE.ED.model, 1000); # Burnin for 1000 samples to start, then go higher later
+
+samp.IWUE.ED <- coda.samples(IWUE.ED.model, 
+                                variable.names=c("alpha", "beta1", "beta2","beta3" ), 
+                                n.chains = 3, n.iter=10000, thin = 10)
+
+samp.IWUE.ED.ypred  <- coda.samples(IWUE.ED.model, 
+                               variable.names=c("Ypred" ), 
+                               n.chains = 3, n.iter=5000, thin = 1)
+
+samp.IWUE.ED.yprobe <- coda.samples(IWUE.ED.model, 
+                                variable.names=c("Yprobe" ), 
+                                n.chains = 3, n.iter=5000, thin = 1)
+
+saveRDS(samp.IWUE.ED, "outputs/iWUE_climate_CO2/ED_parameter_samps.rds")
+saveRDS(samp.IWUE.ED.ypred, "outputs/iWUE_climate_CO2/ED_Ypred_samps.rds")
+saveRDS(samp.IWUE.ED.yprobe, "outputs/iWUE_climate_CO2/ED_Yprobe_samps.rds")
+samp.IWUE.ED.yprobe<- readRDS( "outputs/iWUE_climate_CO2/ED_Yprobe_samps.rds")
+
+saveRDS(test.ED, "outputs/iWUE_climate_CO2/ED_testdata.rds")
+saveRDS(train.ED, "outputs/iWUE_climate_CO2/ED_traindata.rds")
+
+# check for convergence:
+summary(samp.IWUE.ED)
+gelman.diag(samp.IWUE.ED)
+#acfplot(samp.IWUE.ED)
+
+#Extract the samples for each parameter
+
+samps       <- samp.IWUE.ED[[1]]
+Yp.samps    <- samp.IWUE.ED.ypred [[1]]
+Yprobe.samps <- samp.IWUE.ED.yprobe[[1]]
+alpha.samps <- samps[,1:length(unique(test.ED$site))]
+beta1.samps  <- samps[,(length(unique(test.ED$site))+1):(length(unique(test.ED$site))+2)]
+beta2.samps  <- samps[,(length(unique(test.ED$site))+3):(length(unique(test.ED$site))+4)]
+beta3.samps  <- samps[,(length(unique(test.ED$site))+5):(length(unique(test.ED$site))+6)]
+
+
+# plot predicted vs. observed
+Yp.samps <- data.frame(Yp.samps) 
+Yp.m <- melt(Yp.samps)
+Yp.summary <- Yp.m %>% group_by(variable) %>% dplyr::summarise(Predicted = mean(value),
+                                                               ci.hi = quantile(value,0.975),
+                                                               ci.lo = quantile(value,0.025))
+Yp.summary$Observed <- test.ED$rel.IWUE
+
+pred.obs <- summary(lm(colMeans(Yp.samps) ~ test.ED$rel.IWUE))
+
+p.o.plot <- ggplot(Yp.summary, aes(Observed, Predicted))+geom_point(color = "black", size = 0.5)+geom_errorbar(data = Yp.summary,aes(ymin=ci.lo, ymax=ci.hi), color = "grey", alpha = 0.5)+geom_point(data = Yp.summary, aes(Observed, Predicted), color = "black", size = 0.5)+geom_abline(aes(slope = 1, intercept = 0), color = "red", linetype = "dashed")+geom_text(data=data.frame(pred.obs$r.squared), aes( label = paste("R^2: ", pred.obs$r.squared, sep="")),parse=T,x=1, y=7)
+
+# note poor model fit!
+png(width = 6, height = 5, units = "in", res = 300, "outputs/iWUE_climate_CO2/ED_pred_vs_obs.png")
+p.o.plot
+dev.off()
+
+# calculate MSE & BIAS:
+
+MSE1   <- mean((colMeans(Yp.samps)-test.ED$rel.IWUE)^2)
+BIAS1  <- mean(colMeans(Yp.samps)-test.ED$rel.IWUE)
+
+#-----------run the model for LPJ-GUESS------------
+
+
+
+IWUE.GUESS.model <- jags.model(textConnection(IWUE_climate_site_period), 
+                            data = list(Y = train.GUESS$rel.IWUE, n=length(train.GUESS$rel.IWUE), Precip.scaled = train.GUESS$Precip.scaled, Temp.jja.scaled = train.GUESS$Temp.jja.scaled, CO2 = train.GUESS$CO2.scaled,
+                                        period = as.numeric(train.GUESS$period_cd), S = unique(train.GUESS$site_num),  C = unique(train.GUESS$period_cd), sites = train.GUESS$site_code, np=length(test.GUESS$period_cd), 
+                                        sites.p = train.GUESS$site_code, Precip.scaled.p = test.GUESS$Precip.scaled, Temp.jja.scaled.p = test.GUESS$Temp.jja.scaled, CO2.p = test.GUESS$CO2.scaled,
+                                        period.p = as.numeric(test.GUESS$period_cd),
+                                        
+                                        nprobe=length(probe.GUESS$struct.cohort.code), 
+                                        sites.probe = probe.GUESS$site, Precip.scaled.probe = probe.GUESS$DI.scaled, Temp.jja.scaled.probe = probe.GUESS$T.scaled, CO2.probe = probe.GUESS$CO2.scaled,
+                                        period.probe = as.numeric(probe.GUESS$struct.cohort.code)), n.chains = 3, n.adapt = 100)
+
+
+update(IWUE.GUESS.model, 1000); # Burnin for 1000 samples to start, then go higher later
+
+samp.IWUE.GUESS <- coda.samples(IWUE.GUESS.model, 
+                             variable.names=c("alpha", "beta1", "beta2","beta3" ), 
+                             n.chains = 3, n.iter=10000, thin = 10)
+
+samp.IWUE.GUESS.ypred  <- coda.samples(IWUE.GUESS.model, 
+                                    variable.names=c("Ypred" ), 
+                                    n.chains = 3, n.iter=5000, thin = 1)
+
+samp.IWUE.GUESS.yprobe <- coda.samples(IWUE.GUESS.model, 
+                                    variable.names=c("Yprobe" ), 
+                                    n.chains = 3, n.iter=5000, thin = 1)
+
+saveRDS(samp.IWUE.GUESS, "outputs/iWUE_climate_CO2/GUESS_parameter_samps.rds")
+saveRDS(samp.IWUE.GUESS.ypred, "outputs/iWUE_climate_CO2/GUESS_Ypred_samps.rds")
+saveRDS(samp.IWUE.GUESS.yprobe, "outputs/iWUE_climate_CO2/GUESS_Yprobe_samps.rds")
+samp.IWUE.GUESS.yprobe<- readRDS( "outputs/iWUE_climate_CO2/GUESS_Yprobe_samps.rds")
+
+saveRDS(test.GUESS, "outputs/iWUE_climate_CO2/GUESS_testdata.rds")
+saveRDS(train.GUESS, "outputs/iWUE_climate_CO2/GUESS_traindata.rds")
+
+# check for convergence:
+summary(samp.IWUE.GUESS)
+gelman.diag(samp.IWUE.GUESS)
+acfplot(samp.IWUE.GUESS)
+
+#Extract the samples for each parameter
+
+samps       <- samp.IWUE.GUESS[[1]]
+Yp.samps    <- samp.IWUE.GUESS.ypred [[1]]
+Yprobe.samps <- samp.IWUE.GUESS.yprobe[[1]]
+alpha.samps <- samps[,1:length(unique(test.GUESS$site))]
+beta1.samps  <- samps[,(length(unique(test.GUESS$site))+1):(length(unique(test.GUESS$site))+2)]
+beta2.samps  <- samps[,(length(unique(test.GUESS$site))+3):(length(unique(test.GUESS$site))+4)]
+beta3.samps  <- samps[,(length(unique(test.GUESS$site))+5):(length(unique(test.GUESS$site))+6)]
+
+
+# plot predicted vs. observed
+Yp.samps <- data.frame(Yp.samps) 
+Yp.m <- melt(Yp.samps)
+Yp.summary <- Yp.m %>% group_by(variable) %>% dplyr::summarise(Predicted = mean(value),
+                                                               ci.hi = quantile(value,0.975),
+                                                               ci.lo = quantile(value,0.025))
+Yp.summary$Observed <- test.GUESS$rel.IWUE
+
+pred.obs <- summary(lm(colMeans(Yp.samps) ~ test.GUESS$rel.IWUE))
+
+p.o.plot <- ggplot(Yp.summary, aes(Observed, Predicted))+geom_point(color = "black", size = 0.5)+geom_errorbar(data = Yp.summary,aes(ymin=ci.lo, ymax=ci.hi), color = "grey", alpha = 0.5)+geom_point(data = Yp.summary, aes(Observed, Predicted), color = "black", size = 0.5)+geom_abline(aes(slope = 1, intercept = 0), color = "red", linetype = "dashed")+geom_text(data=data.frame(pred.obs$r.squared), aes( label = paste("R^2: ", pred.obs$r.squared, sep="")),parse=T,x=1, y=7)
+
+# note poor model fit!
+png(width = 6, height = 5, units = "in", res = 300, "outputs/iWUE_climate_CO2/GUESS_pred_vs_obs.png")
+p.o.plot
+dev.off()
+
+# calculate MSE & BIAS:
+
+MSE1   <- mean((colMeans(Yp.samps)-test.GUESS$rel.IWUE)^2)
+BIAS1  <- mean(colMeans(Yp.samps)-test.GUESS$rel.IWUE)
+
+
+
+
+
 #---------------Density response to climate & models-----------------
-mod <- lm(Dens ~ gwbi + Precip.scaled + Temp.jja.scaled  + gwbi_1 + gwbi_2 +gwbi_3 +gwbi_4+gwbi_5 + Site, data = train.GUESS)
+mod <- lm(Dens ~  Precip.scaled + Temp.jja.scaled  + Site, data = train.GUESS)
 summary(mod)
 
-modED <- lm(Dens ~ gwbi + Precip.scaled + Temp.jja.scaled  + gwbi_1 +gwbi_2 +gwbi_3 +gwbi_4+gwbi_5 + Site, data = train.ED)
+modED <- lm(Dens ~  Precip.scaled + Temp.jja.scaled  + Site, data = train.ED)
 summary(modED)
 
 
@@ -2590,7 +2889,7 @@ probe.GUESS <- expand.grid(DI.scaled = DIprobe,  T.scaled = Tempprobe,
 
 
 reg.model.by_period <- jags.model(textConnection(GUESS_dens_climate), 
-                                  data = list(Y = train.GUESS$Dens, n=length(train.GUESS$Dens), Precip.scaled = train.GUESS$Precip.scaled, Temp.jja.scaled = train.GUESS$Temp.jja.scaled, 
+                                  data = list(Y = train.GUESS$Dens/100, n=length(train.GUESS$Dens), Precip.scaled = train.GUESS$Precip.scaled, Temp.jja.scaled = train.GUESS$Temp.jja.scaled, 
                                               period = as.numeric(train.GUESS$period_cd), S = unique(train.GUESS$site_code),  C = unique(train.GUESS$period_cd), sites = train.GUESS$site_code, np=length(test.GUESS$period_cd), 
                                               sites.p = test.GUESS$site_code, Precip.scaled.p = test.GUESS$Precip.scaled, Temp.jja.scaled.p = test.GUESS$Temp.jja.scaled, 
                                               period.p = as.numeric(test.GUESS$period_cd),
@@ -2642,9 +2941,9 @@ Yp.m <- melt(Yp.samps)
 Yp.summary <- Yp.m %>% group_by(variable) %>% dplyr::summarise(Predicted = mean(value),
                                                                ci.hi = quantile(value,0.975),
                                                                ci.lo = quantile(value,0.025))
-Yp.summary$Observed <- test.GUESS$Dens
+Yp.summary$Observed <- (test.GUESS$Dens/100)
 
-pred.obs <- summary(lm(colMeans(Yp.samps) ~ test.GUESS$Dens))
+pred.obs <- summary(lm(colMeans(Yp.samps) ~ (test.GUESS$Dens/100)))
 
 p.o.plot <- ggplot(Yp.summary, aes(Observed, Predicted))+geom_point(color = "black", size = 0.5)+geom_errorbar(data = Yp.summary,aes(ymin=ci.lo, ymax=ci.hi), color = "grey", alpha = 0.5)+geom_point(data = Yp.summary, aes(Observed, Predicted), color = "black", size = 0.5)+geom_abline(aes(slope = 1, intercept = 0), color = "red", linetype = "dashed")+geom_text(data=data.frame(pred.obs$r.squared), aes( label = paste("R^2: ", pred.obs$r.squared, sep="")),parse=T,x=1, y=7)
 
@@ -2676,7 +2975,7 @@ a.m <- melt(a, id.vars=c("num"))
 alpha.mplots <- ggplot(a.m, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Random intercepts")+theme(legend.position = "none")
 
 b1 <- data.frame(beta1.samps)
-colnames(b1) <-unique(train.ED$period)
+colnames(b1) <- unique(train.GUESS$period)[order(unique(train.GUESS$period_cd))]
 #colnames(b2) <- c(paste0(c(unique(train.dry$struct.cohort))))
 b1$num <- rownames(b1)
 b1.m <- melt(b1, id.vars=c("num"))
@@ -2684,11 +2983,11 @@ b1.mplots <- ggplot(b1.m, aes(value, fill = variable))+geom_density(alpha = 0.5)
 
 
 b2 <- data.frame(beta2.samps)
-colnames(b2) <-unique(train.ED$period)
+colnames(b2) <- unique(train.GUESS$period)[order(unique(train.GUESS$period_cd))]
 #colnames(b2) <- c(paste0(c(unique(train.dry$struct.cohort))))
 b2$num <- rownames(b2)
 b2.m <- melt(b2, id.vars=c("num"))
-b2.mplots <- ggplot(b2.m, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Precipitation Index slope")
+b2.mplots <- ggplot(b2.m, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Temp Index slope")
 
 #>>>>>>>> plot dot plots from ED model:
 a.m$variable2 <- paste0("X",a.m$variable)
@@ -2736,8 +3035,8 @@ dev.off()
 
 #------------------------------Run the density-climate model for ED2---------------------
 
-DIprobe <- round(seq(range(train.ED.full$Precip.scaled)[1], range(train.ED.full$Precip.scaled)[2], by = 2), 3)
-Tempprobe <- round(seq(range(train.ED.full$Temp.jja.scaled)[1], range(train.ED.full$Temp.jja.scaled)[2], by = 2), 3)
+DIprobe <- round(seq(range(train.ED$Precip.scaled)[1], range(train.ED$Precip.scaled)[2], by = 2), 3)
+Tempprobe <- round(seq(range(train.ED$Temp.jja.scaled)[1], range(train.ED$Temp.jja.scaled)[2], by = 2), 3)
 
 # expand into full probe
 probe.ED <- expand.grid(DI.scaled = DIprobe,  T.scaled = Tempprobe,
@@ -2748,7 +3047,7 @@ probe.ED <- expand.grid(DI.scaled = DIprobe,  T.scaled = Tempprobe,
 
 
 reg.model.by_period <- jags.model(textConnection(GUESS_dens_climate), 
-                                  data = list(Y = train.ED$Dens, n=length(train.ED$Dens), Precip.scaled = train.ED$Precip.scaled, Temp.jja.scaled = train.ED$Temp.jja.scaled, 
+                                  data = list(Y = train.ED$Dens/100000, n=length(train.ED$Dens), Precip.scaled = train.ED$Precip.scaled, Temp.jja.scaled = train.ED$Temp.jja.scaled, 
                                               period = as.numeric(train.ED$period_cd), S = unique(train.ED$site_code),  C = unique(train.ED$period_cd), sites = train.ED$site_code, np=length(test.ED$period_cd), 
                                               sites.p = test.ED$site_code, Precip.scaled.p = test.ED$Precip.scaled, Temp.jja.scaled.p = test.ED$Temp.jja.scaled, 
                                               period.p = as.numeric(test.ED$period_cd),
@@ -2760,9 +3059,6 @@ reg.model.by_period <- jags.model(textConnection(GUESS_dens_climate),
 
 update(reg.model.by_period, 1000); # Burnin for 1000 samples to start, then go higher later
 
-#samp.ED.period <- coda.samples(reg.EDel.by_period, 
-#                           variable.names=c("alpha","beta1", "beta2","beta3","beta3","sigma","sigma_alpha", "sigma_beta1", "sigma_beta2","sigma_beta3", "sigma_beta4"), 
-#                          n.chains = 3, n.iter=2000, thin = 10)
 dens.clim.ED.period <- coda.samples(reg.model.by_period, 
                                        variable.names=c("alpha", "beta1", "beta2" ), 
                                        n.chains = 3, n.iter=5000, thin = 1)
@@ -2775,20 +3071,23 @@ dens.clim.ED.yprobe <- coda.samples(reg.model.by_period,
                                        variable.names=c("Yprobe" ), 
                                        n.chains = 3, n.iter=5000, thin = 1)
 
-saveRDS(samp.ED.period, "outputs/density_model_climate/ED_parameter_samps.rds")
-saveRDS(samp.ED.ypred, "outputs/density_model_climate/ED_Ypred_samps.rds")
-saveRDS(samp.ED.yprobe, "outputs/density_model_climate/ED_Yprobe_samps.rds")
-samp.ED.yprobe <- readRDS( "outputs/density_model_climate/ED_Yprobe_samps.rds")
+saveRDS(dens.clim.ED.period , "outputs/density_model_climate/ED_parameter_samps.rds")
+saveRDS(dens.clim.ED.ypred, "outputs/density_model_climate/ED_Ypred_samps.rds")
+saveRDS(dens.clim.ED.yprobe, "outputs/density_model_climate/ED_Yprobe_samps.rds")
+
+dens.clim.ED.yprobe <- readRDS( "outputs/density_model_climate/ED_Yprobe_samps.rds")
+dens.clim.ED.ypred <- readRDS( "outputs/density_model_climate/ED_Ypred_samps.rds")
+dens.clim.ED.period <- readRDS( "outputs/density_model_climate/ED_parameter_samps.rds")
 
 saveRDS(test.ED, "outputs/density_model_climate/ED_testdata.rds")
 saveRDS(train.ED, "outputs/density_model_climate/ED_traindata.rds")
-
-
+test.ED <- readRDS("outputs/density_model_climate/ED_testdata.rds")
+train.ED <- readRDS("outputs/density_model_climate/ED_traindata.rds")
 #Extract the samples for each parameter
 
-samps       <- samp.ED.period[[1]]
-Yp.samps    <- samp.ED.ypred [[1]]
-Yprobe.samps <- samp.ED.yprobe[[1]]
+samps       <- dens.clim.ED.period[[1]]
+Yp.samps    <- dens.clim.ED.ypred [[1]]
+Yprobe.samps <- dens.clim.ED.yprobe[[1]]
 alpha.samps <- samps[,1:length(unique(test.ED$site_num))]
 beta1.samps  <- samps[,(length(unique(test.ED$site_num))+1):(length(unique(test.ED$site_num))+2)]
 beta2.samps  <- samps[,(length(unique(test.ED$site_num))+3):(length(unique(test.ED$site_num))+4)]
@@ -2800,7 +3099,7 @@ Yp.m <- melt(Yp.samps)
 Yp.summary <- Yp.m %>% group_by(variable) %>% dplyr::summarise(Predicted = mean(value),
                                                                ci.hi = quantile(value,0.975),
                                                                ci.lo = quantile(value,0.025))
-Yp.summary$Observed <- test.ED$gwbi
+Yp.summary$Observed <- test.ED$Dens
 
 pred.obs <- summary(lm(colMeans(Yp.samps) ~ test.ED$Dens))
 
@@ -2828,13 +3127,13 @@ model.summary <- data.frame(model = "mixed_effects_reg",
 
 # plot marginal distributions of cohort + structure specific parameters:
 a <- data.frame(alpha.samps)
-colnames(a) <- unique(train.ED$site_num)
+colnames(a) <- 
 a$num <- rownames(a)
 a.m <- melt(a, id.vars=c("num"))
 alpha.mplots <- ggplot(a.m, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Random intercepts")+theme(legend.position = "none")
 
 b1 <- data.frame(beta1.samps)
-colnames(b1) <-unique(train.ED$period)
+colnames(b1) <- unique(train.ED$period)[order(unique(train.ED$period_cd))]
 #colnames(b2) <- c(paste0(c(unique(train.dry$struct.cohort))))
 b1$num <- rownames(b1)
 b1.m <- melt(b1, id.vars=c("num"))
@@ -2842,7 +3141,7 @@ b1.mplots <- ggplot(b1.m, aes(value, fill = variable))+geom_density(alpha = 0.5)
 
 
 b2 <- data.frame(beta2.samps)
-colnames(b2) <-unique(train.ED$period)
+colnames(b2) <- unique(train.ED$period)[order(unique(train.ED$period_cd))]
 #colnames(b2) <- c(paste0(c(unique(train.dry$struct.cohort))))
 b2$num <- rownames(b2)
 b2.m <- melt(b2, id.vars=c("num"))
@@ -2887,6 +3186,107 @@ b2.dot <- ggplot(data.frame(b2.sum), aes(x = mean.val, y = variable, color = var
 
 
 # combine all the plots together and save to output:
-png(height = 12, width = 5, units = "in", res = 300, "outputs/density_model_climate/ED_full_dot_plot_cohort.png")
-cowplot::plot_grid(int.dot.MAP, b1.dot, b2.dot,ncol = 1)
+png(height = 8, width = 5, units = "in", res = 300, "outputs/density_model_climate/ED_full_dot_plot_cohort.png")
+cowplot::plot_grid(b1.dot, b2.dot,ncol = 1)
+dev.off()
+
+
+# -------------------------combine dotplots from density models for ED and GUESS------------------
+#------------------------Bring in all the coefficient estimates and put in one big graph-----------
+
+
+
+samp.GUESS.period <- readRDS( "outputs/density_model_climate/GUESS_parameter_samps.rds")
+samp.ED.period <- readRDS( "outputs/density_model_climate/ED_parameter_samps.rds")
+
+
+samp.GUESS.period <- samp.GUESS.period[[1]]
+samp.ED.period <- samp.ED.period[[1]]
+
+
+# get parameter estimates from ED model:
+alpha.sampsED <- samp.ED.period[,1:length(unique(test.ED$site_num))]
+beta1.sampsED  <- samp.ED.period[,(length(unique(test.ED$site_num))+1):(length(unique(test.ED$site_num))+2)]
+beta2.sampsED  <- samp.ED.period[,(length(unique(test.ED$site_num))+3):(length(unique(test.ED$site_num))+4)]
+
+a <- data.frame(alpha.sampsED)
+colnames(a) <- unique(train.ED$site_num)
+a$num <- rownames(a)
+a.m.ED <- melt(a, id.vars=c("num"))
+alpha.mplots <- ggplot(a.m.ED, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Random intercepts")+theme(legend.position = "none")
+a.m.ED$model <- "ED2"
+
+b1 <- data.frame(beta1.sampsED)
+colnames(b1) <- c("Modern", "Past") # past = 2, modern = 1 here
+b1$num <- rownames(b1)
+b1.m.ED <- melt(b1, id.vars=c("num"))
+b1.mplots <- ggplot(b1.m.ED, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Random intercepts")+theme(legend.position = "none")
+b1.m.ED$model <- "ED2"
+
+b2 <- data.frame(beta2.sampsED)
+colnames(b2) <-c("Modern", "Past")
+b2$num <- rownames(b2)
+b2.m.ED <- melt(b2, id.vars=c("num"))
+b2.m.ED$model <- "ED2"
+
+
+# get parameter estimates from LPJ-GUESS model:
+alpha.sampsGUESS <- samp.GUESS.period[,1:length(unique(test.GUESS$site_num))]
+beta1.sampsGUESS  <- samp.GUESS.period[,(length(unique(test.GUESS$site_num))+1):(length(unique(test.GUESS$site_num))+2)]
+beta2.sampsGUESS  <- samp.GUESS.period[,(length(unique(test.GUESS$site_num))+3):(length(unique(test.GUESS$site_num))+4)]
+
+a <- data.frame(alpha.sampsGUESS)
+colnames(a) <- unique(train.GUESS$site_num)
+a$num <- rownames(a)
+a.m.GUESS <- melt(a, id.vars=c("num"))
+alpha.mplots <- ggplot(a.m.GUESS, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Random intercepts")+theme(legend.position = "none")
+a.m.GUESS$model <- "LPJ-GUESS"
+
+b1 <- data.frame(beta1.sampsGUESS)
+colnames(b1) <- c("Modern", "Past") # past = 2, modern = 1 here
+b1$num <- rownames(b1)
+b1.m.GUESS <- melt(b1, id.vars=c("num"))
+b1.m.GUESS$model <- "LPJ-GUESS"
+
+b2 <- data.frame(beta2.sampsGUESS)
+colnames(b2) <-c("Modern", "Past")
+b2$num <- rownames(b2)
+b2.m.GUESS <- melt(b2, id.vars=c("num"))
+b2.m.GUESS$model <- "LPJ-GUESS"
+
+
+
+# now combine all the beta1s together and make a modern past dotplot:
+b1.m <- bind_rows( b1.m.ED, b1.m.GUESS )
+b2.m <- bind_rows( b2.m.ED, b2.m.GUESS )
+
+
+b1.sum <- b1.m %>% group_by(variable, model) %>% dplyr::summarise(mean.val = mean(value),
+                                                                  Ci.low = quantile(value, 0.025), 
+                                                                  Ci.high = quantile(value, 0.975))
+
+b1.sum$variable <- factor(b1.sum$variable, levels = c( "Past",  "Modern"))
+
+b2.sum <- b2.m %>% group_by(variable, model) %>% dplyr::summarise(mean.val = mean(value),
+                                                                  Ci.low = quantile(value, 0.025), 
+                                                                  Ci.high = quantile(value, 0.975))
+b2.sum$variable <- factor(b2.sum$variable, levels = c( "Past",  "Modern"))
+
+
+
+# now plot dotplots:
+
+b1.dot <- ggplot(data.frame(b1.sum), aes(x = model, y = mean.val, color = variable), size = 2.5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size = 2, position = position_dodge(width=0.5))+
+  geom_point(position=position_dodge(width=0.5), size = 2.5)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Precipitation \n sensitivity") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 35)+theme( axis.title.x = element_blank(), panel.grid = element_blank())
+
+b2.dot <- ggplot(data.frame(b2.sum), aes(x = model, y = mean.val, color = variable), size = 2.5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size = 2, position = position_dodge(width=0.5))+
+  geom_point(position=position_dodge(width=0.5), size = 2.5)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Temperature \n sensitivity") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 35)+theme( axis.title.x = element_blank(), panel.grid = element_blank())
+
+
+legend <- get_legend(b1.dot)
+
+png(height = 10, width = 10, units = "in", res = 500, "outputs/density_model_climate/all_params_dotplot.png")
+plot_grid(plot_grid( b1.dot+theme(legend.position = "none"), 
+                     b2.dot+theme(legend.position = "none"), 
+                     ncol = 1, align = "hv"),legend, ncol = 2, rel_widths = c(1,0.25))
 dev.off()

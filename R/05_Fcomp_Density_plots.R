@@ -262,7 +262,7 @@ map.highest <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, 
 # for each year & site get the PFT with highest Fcomp:
 map.highest.gif <- map.highest + transition_time(Year) +
   labs(title = "Dominant PFT Year: {frame_time}") 
-map.highest.gif <- animate(map.highest.gif, duration = 580)
+map.highest.gif <- animate(map.highest.gif)
 anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_highes_pft_GUESS.gif"), map.highest.gif)
 
 

@@ -62,7 +62,7 @@ colnames(AGBI.m) <- c("Year", "Site", "AGBI")
 AGBdens<- merge(AGBdens, AGBI.m, by =c("Year", "Site"))
 
 AVGdens <- AGBdens[,c("Year", "Site", "TotalDens")]
-test <- dcast( AVGdens, TotalDens ~ Site, fun.aggregate = "mean")
+test <- dcast( AVGdens, TotalDens ~ Site, FUN = "mean")
 #---------------plot total density vs aboveground biomass (by site?)-------------
 
 # check timesereies ot make sure they look okay
@@ -86,31 +86,32 @@ dev.off()
 # for LPJ-GUESS:
 #------------What is the relationship between density and Biomass in the models------------
 
-# read in density files for ED2:
+# read in density files for LPJGUESS:
 
 Dens <- readRDS("/Users/kah/Documents/WUE_MIP/Data/LPJ-GUESS/LPJ-GUESS.Dens.rds")
 
 
 load("/Users/kah/Documents/WUE_MIP/Data/PalEON_siteInfo_all.RData")
 
-# make plots for ED2:
-timevec <- 1:13932
-month <- rep(1:12, 1161)
-yearsince  <- rep(0:1160, each =12)
-year <- yearsince + 850
+yr <- 850:2010
 
 # try unlist ot convert Fcomp to a df
 #df <- data.frame(matrix(unlist(Fcomp), nrow=13932, byrow=T),stringsAsFactors=FALSE)
 #test <- do.call(rbind, lapply(Fcomp, data.frame, stringsAsFactors=FALSE))
 
 #convert list to array
+pft.guess=c("BNE", "BINE", "BNS", "BIBS", "TeBS", "BeIBS", "TeBE", "TrBE", "TrIBE", "TrBR", "C3G", "C4G", "Total")
 
-dimnames(Dens) <- list(year, paleon$num)
 
-pfts <- c("pine.north" ,"conifer.late","temp.decid.early", "temp.decid.mid",   
-          "temp.decid.late", "grass.c3.temp" )
 
-Dens.r <- Dens[,,pfts]
+dimnames(Dens) <- list(yr, paleon$num, pft.guess)
+
+
+
+pfts.mod <- c("BNE" ,"BINE","BNS", "BIBS",   
+          "TeBS","BeIBS","TeBE", "C3G", "Total" )
+
+Dens.r <- Dens[,,pfts.mod]
 CO2<- readRDS("/Users/kah/Documents/WUE_MIP/Data/ED2/ED2.CO2.rds")
 TotalDens <- CO2
 
@@ -123,21 +124,25 @@ for(i in 1:length(paleon$num)){
 }
 
 dimnames(TotalDens) <- list(year, paleon$num)
-saveRDS(TotalDens, "/Users/kah/Documents/WUE_MIP/outputs/data/ED2/TotalDens.rds")
+saveRDS(TotalDens, "/Users/kah/Documents/WUE_MIP/outputs/data/GUESS/TotalDens.rds")
 
-# read in AGB
-AGB <- readRDS("/Users/kah/Documents/WUE_MIP/Data/ED2/ED2.AGB.rds")
-dimnames(AGB) <- list(year, paleon$num)
 
-# get the yearly mean of AGB and Dens
-source("/Users/kah/Documents/WUE_MIP/R/get.yrmeans.R")
-AGB.y <- get.yrmeans(AGB, "AGB")
-TotalDens.y <- get.yrmeans(TotalDens, "TotalDens")
 
-AGBdens <- merge(AGB.y, TotalDens.y, by = c("Year", "Site"))
 
-saveRDS(AGBdens, "/Users/kah/Documents/WUE_MIP/outputs/data/ED2/AGBDens.rds")
 
+# # read in AGB
+# AGB <- readRDS("/Users/kah/Documents/WUE_MIP/outputs/data/GUESS/")
+# dimnames(AGB) <- list(year, paleon$num)
+# 
+# # get the yearly mean of AGB and Dens
+# source("/Users/kah/Documents/WUE_MIP/R/get.yrmeans.R")
+# AGB.y <- get.yrmeans(AGB, "AGB")
+# TotalDens.y <- get.yrmeans(TotalDens, "TotalDens")
+# 
+# AGBdens <- merge(AGB.y, TotalDens.y, by = c("Year", "Site"))
+# 
+# saveRDS(AGBdens, "/Users/kah/Documents/WUE_MIP/outputs/data/ED2/AGBDens.rds")
+# 
 
 # read in AGBI
 AGBI <- readRDS("/Users/kah/Documents/WUE_MIP/outputs/data/ED2/ED2.agbi.rds")
@@ -169,7 +174,12 @@ dev.off()
 # from this figure, it is apparent that at intermediate AGB, you can have highish and lowish densities
 
 
+# using gganimate to look at relationship between agb and total dens over time
+p <- ggplot(AGBdens, aes(AGB, TotalDens, color = Site))+geom_point()+
+  theme(legend.position = "none")+theme_bw()+ylab("Total Density (trees/ha)")+xlab("Aboveground biomass (kgC/m2)")+theme(legend.position = "none")
 
+p + transition_time(Year) +
+  labs(title = "Year: {frame_time}")+shadow_mark(alpha = 0.3, size = 0.5)
 
 # ------------look at the relationship a few different ways:----------------------
 # 1. Does the curver look the same Before and after 1800?

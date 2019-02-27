@@ -978,16 +978,16 @@ GUESS4probe <- round(seq(range(train.GUESS.full$rel.gwbi_4)[1], range(train.GUES
 # expand into full probe
 probe.GUESS <- expand.grid(DI.scaled = DIprobe,  T.scaled = Tempprobe,
                         rel.gwbi_1 = 1, rel.gwbi_2= 1, rel.gwbi_3= 1,rel.gwbi_4= 1,
-                        site_num = 1:16,struct.cohort.code= 1:2)
+                        site_num = 1:length(unique(train.GUESS$Site)),struct.cohort.code= 1:2)
 
 
 
 
 reg.model.by_period <- jags.model(textConnection(GUESS_re_site_time_period), 
                                 data = list(Y = train.GUESS$rel.gwbi, n=length(train.GUESS$rel.gwbi), Precip.scaled = train.GUESS$Precip.scaled, Temp.jja.scaled = train.GUESS$Temp.jja.scaled, agbi_1 = train.GUESS$rel.gwbi_1,agbi_2 = train.GUESS$rel.gwbi_2, agbi_3 = train.GUESS$rel.gwbi_3, agbi_4 = train.GUESS$rel.gwbi_4,
-                                            period = as.numeric(train.GUESS$ageclass), S = unique(train.GUESS$site),  C = unique(train.GUESS$ageclass), sites = train.GUESS$site, np=length(test.GUESS$ageclass), 
-                                            sites.p = test.GUESS$site, Precip.scaled.p = test.GUESS$Precip.scaled, Temp.jja.scaled.p = test.GUESS$Temp.jja.scaled, agbi_1.p = test.GUESS$rel.gwbi_1, agbi_2.p = test.GUESS$rel.gwbi_2, agbi_3.p = test.GUESS$rel.gwbi_3, agbi_4.p = test.GUESS$rel.gwbi_4,
-                                            period.p = as.numeric(test.GUESS$ageclass),
+                                            period = as.numeric(train.GUESS$period_cd), S = unique(train.GUESS$site_num),  C = unique(train.GUESS$period_cd), sites = train.GUESS$site_num, np=length(test.GUESS$period_cd), 
+                                            sites.p = test.GUESS$site_num, Precip.scaled.p = test.GUESS$Precip.scaled, Temp.jja.scaled.p = test.GUESS$Temp.jja.scaled, agbi_1.p = test.GUESS$rel.gwbi_1, agbi_2.p = test.GUESS$rel.gwbi_2, agbi_3.p = test.GUESS$rel.gwbi_3, agbi_4.p = test.GUESS$rel.gwbi_4,
+                                            period.p = as.numeric(test.GUESS$period_cd),
                                            
                                             nprobe=length(probe.GUESS$struct.cohort.code), 
                                             sites.probe = probe.GUESS$site_num, Precip.scaled.probe = probe.GUESS$DI.scaled, Temp.jja.scaled.probe = probe.GUESS$T.scaled, agbi_1.probe = probe.GUESS$rel.gwbi_1, agbi_2.probe = probe.GUESS$rel.gwbi_2, agbi_3.probe = probe.GUESS$rel.gwbi_3, agbi_4.probe = probe.GUESS$rel.gwbi_4,
@@ -1634,6 +1634,7 @@ ggplot(data = cohort.summary.tm.pr, aes(MAP_scaled, gwbi, color = period))+geom_
 # ------------- read in both GUESS and ED and plot posteriors together to compare ---------
 library(DMwR)
 GUESS.probe <- readRDS("outputs/gwbi_model/GUESS_probtest.rds")
+
 GUESS.probe$model <- "LPJ-GUESS"
 GUESS.probe$Precip <- as.numeric(round(unscale(vals = GUESS.probe$MAP_scaled, norm.data = GUESS.sort_lag.Precip.scaled))) 
 GUESS.probe$Temp <- as.numeric(round(unscale(vals = GUESS.probe$JJA.T.scaled, norm.data = GUESS.sort_lag.Temp.jja.scaled))) 
@@ -1684,9 +1685,17 @@ ggplot(cohort.summary.pr, aes(Precip, gwbi, color = model))+geom_line()+geom_rib
 ggplot(cohort.summary.tm, aes(Temp, gwbi, color = model))+geom_line()+geom_ribbon(data = cohort.summary.tm,aes(ymin = gwbi.low, ymax = gwbi.high, fill = model), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~ageclass, nrow = 2)+theme_bw()
 
 
-ggplot(cohort.summary.pr, aes(Precip, gwbi, color = ageclass))+geom_line()+geom_ribbon(data = cohort.summary.pr,aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 2)+theme_bw()
+precip.overall.sens <- ggplot(cohort.summary.pr, aes(Precip, gwbi, color = ageclass))+geom_line()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+geom_ribbon(data = cohort.summary.pr,aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 1)+theme_bw(base_size = 35)+xlab("Annual Precipitation (mm)")+ylab("Relative Growth")+theme(panel.grid = element_blank())
 
-ggplot(cohort.summary.tm, aes(Temp, gwbi, color = ageclass))+geom_line()+geom_ribbon(data = cohort.summary.tm,aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 2)+theme_bw()
+temp.overall.sens <- ggplot(cohort.summary.tm, aes(Temp, gwbi, color = ageclass))+geom_line()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+geom_ribbon(data = cohort.summary.tm,aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 1)+theme_bw(base_size = 35)+labs(x = expression('Summer Temperature ('*~degree*C*')'),y = "Relative Growth")+theme(panel.grid = element_blank())
+
+legend <- get_legend(precip.overall.sens)
+
+png(height = 10, width = 14, units = "in", res = 500, "outputs/gwbi_model/Lag4_cohort_re_clim/marginal_P_T_effects.png")
+plot_grid(plot_grid( precip.overall.sens+theme(legend.position = "none"), 
+                     temp.overall.sens+theme(legend.position = "none"), 
+                      ncol = 1, align = "hv"),legend, ncol = 2, rel_widths = c(1,0.25))
+dev.off()
 
 
 # find the grid cells that are closest to the tree ring sites:
@@ -1749,9 +1758,207 @@ ggplot(cohort.sites.pr, aes(Precip, gwbi, color = ageclass))+geom_line()+geom_ri
 
 ggplot(cohort.sites.tm, aes(Temp, gwbi, color = ageclass))+geom_line()+geom_ribbon(data = cohort.sites.tm,aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 3)+theme_bw(base_size = 12)+ylab("Relativized Woody Growth")+xlab(expression("Temperature " ( degree*C)))
 
+# plot out pretty plot for just grid cells closest to 
+precip.sites.sens <- ggplot(cohort.sites.pr, aes(Precip, gwbi, color = ageclass))+geom_line()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+geom_ribbon(data = cohort.summary.pr,aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 1)+theme_bw(base_size = 35)+xlab("Annual Precipitation (mm)")+ylab("Relative Growth")+theme(panel.grid = element_blank(), legend.title = element_blank())
+
+temp.sites.sens <- ggplot(cohort.sites.tm, aes(Temp, gwbi, color = ageclass))+geom_line()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+geom_ribbon(data = cohort.summary.tm,aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 1)+theme_bw(base_size = 35)+labs(x = expression('Summer Temperature ('*~degree*C*')'),y = "Relative Growth")+theme(panel.grid = element_blank(), legend.title = element_blank())
+
+legend <- get_legend(precip.sites.sens)
+
+png(height = 9, width = 14.5, units = "in", res = 500, "outputs/gwbi_model/Lag4_cohort_re_clim/marginal_P_T_effects_TR_sites_only.png")
+plot_grid( precip.sites.sens+theme(legend.position = "none"), 
+                     temp.sites.sens+theme(legend.position = "none"), 
+                     ncol = 1, align = "hv")
+dev.off()
 
 
 
+# now lets look at posteriors for different conditions:
+cohort.sites.tm.pr <- model.TR.sites %>% group_by(period, Temp, Precip, model) %>% summarise(gwbi = mean(gwbi_pred, na.rm=TRUE), 
+                                                                                  gwbi.low = quantile(gwbi_pred, 0.025), 
+                                                                                  gwbi.high = quantile(gwbi_pred, 0.975)) 
+
+cohort.sites.tm.pr$period <- as.factor(cohort.sites.tm.pr$period)
+cohort.sites.tm.pr$ageclass <- ifelse(cohort.sites.tm.pr$period == "1", "Modern", "Past")
+cohort.sites.tm.pr$Precip <- as.numeric(cohort.sites.tm.pr$Precip)
+
+cool <- ggplot(cohort.sites.tm.pr[cohort.sites.tm.pr$Temp < 15,], aes(Precip, gwbi, color = ageclass))+geom_line()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+geom_ribbon(data = cohort.sites.tm.pr[cohort.sites.tm.pr$Temp < 15,],aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 1)+theme_bw(base_size = 35)+xlab("Annual Precipitation (mm)")+ylab("Relative Growth")+theme(panel.grid = element_blank(), legend.title = element_blank())
+warm <- ggplot(cohort.sites.tm.pr[cohort.sites.tm.pr$Temp > 21 & cohort.sites.tm.pr$Temp < 24,], aes(Precip, gwbi, color = ageclass))+geom_line()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+geom_ribbon(data = cohort.sites.tm.pr[cohort.sites.tm.pr$Temp > 21 & cohort.sites.tm.pr$Temp < 24,],aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 1)+theme_bw(base_size = 35)+xlab("Annual Precipitation (mm)")+ylab("Relative Growth")+theme(panel.grid = element_blank(), legend.title = element_blank())
+
+title1 <- ggdraw()+draw_label(expression('COOL SUMMERS (>15'*~degree*C*')'), size = 42, fontface = "bold")
+title2 <- ggdraw()+draw_label(expression('HOT SUMMERS (>25'*~degree*C*')'), size = 42, fontface = "bold")
+
+legend <- get_legend(cool)
+
+png(height = 12.5, width = 14, units = "in", res = 500, "outputs/gwbi_model/Lag4_cohort_re_clim/P_effects_low_high_temp_TR_sites_only.png")
+plot_grid( title1, 
+                     cool+theme(legend.position = "none"), 
+                     title2,
+                     warm+theme(legend.position = "none"), 
+                      ncol=1, rel_heights=c(0.1,1,0.1, 1), align = "hv")  # rel_heights values control title margins
+dev.off()
+
+png(height = 9, width = 14.5, units = "in", res = 500, "outputs/gwbi_model/Lag4_cohort_re_clim/P_effects_low_high_temp_TR_sites_only_no_labels.png")
+plot_grid(  
+                     cool+ylim(-1,2.5)+theme(legend.position = "none"), 
+                     
+                     warm+ylim(-1,2.5)+theme(legend.position = "none"), 
+                     ncol=1, align = "hv") # rel_heights values control title margins
+dev.off()
+
+model.TR.sites.grouped <- model.TR.sites
+model.TR.sites.grouped$Temp_class <- ifelse(model.TR.sites.grouped$Temp <=15, "Low", 
+                                            ifelse(model.TR.sites.grouped$Temp > 15 & model.TR.sites.grouped$Temp <= 20, "Med",
+                                                   ifelse(model.TR.sites.grouped$Temp > 20,"High",NA)))
+
+
+model.TR.sites.grouped$Dry_class <- ifelse(model.TR.sites.grouped$Precip <= 300, "Low", 
+                                            ifelse(model.TR.sites.grouped$Precip > 300 & model.TR.sites.grouped$Precip <= 1110, "Med",
+                                                   ifelse(model.TR.sites.grouped$Precip > 1111,"High",NA)))
+
+cohort.sites.groups <- model.TR.sites.grouped %>% group_by(period, Temp_class, Dry_class, model) %>% summarise(gwbi = mean(gwbi_pred, na.rm=TRUE), 
+                                                                                             gwbi.low = quantile(gwbi_pred, 0.025), 
+                                                                                             gwbi.high = quantile(gwbi_pred, 0.975)) 
+
+
+
+cohort.sites.groups$period <- as.factor(cohort.sites.groups$period)
+cohort.sites.groups$ageclass <- ifelse(cohort.sites.groups$period == "1", "Modern", "Past")
+#cohort.sites.groups$Precip <- as.numeric(cohort.sites.groups$Precip)
+
+
+ggplot(cohort.sites.groups[cohort.sites.groups$Temp_class %in% c("Low", "High") & cohort.sites.groups$Dry_class %in% c("Low", "High"),], aes(x = Temp_class, y = gwbi, color = ageclass))+geom_point(size = 5)+geom_errorbar( aes(ymin = gwbi.low, ymax = gwbi.high, size = 0.5,width = 0.5))+facet_grid(model ~ Dry_class)#+facet_wrap(~model)
+
+
+# read in climate data for future projections to plot onto figures:
+rcp <- 85
+climate <- "pr"
+setwd('/Users/kah/Documents/bimodality/data/cc85pr70/')
+#spec.table <- read.csv('/Users/kah/Documents/bimodality/data/midwest_pls_full_density_pr_alb1.7-5.csv')
+coordinates(TR.locs) <- ~ lon_PALEON_closest+ lat_PALEON_closest 
+proj4string(TR.locs) <- '+proj=longlat +datum=NAD83 +no_defs +ellps=GRS80 +towgs84=0,0,0 '
+#tree.ll <- spTransform(TR.locs, crs('+proj=longlat +datum=NAD83 +no_defs +ellps=GRS80 +towgs84=0,0,0 '))
+
+month <- sprintf("%02d", 1:12)
+month.abb <- c('Jan', 'Oct', 'Nov', "Dec","Feb","Mar","Apr", "May", 
+               'Jun', "Jul", "Aug", "Sep")
+filenames <- list.files(pattern=paste0("cc",rcp,climate,"70",".*\\.tif$", sep = ""))
+s <- stack(filenames)
+t <- crop(s, extent(TR.locs))#make all into a raster
+#s <- projectRaster(t, crs='+init=epsg:3175') # project in great lakes albers
+#crop to the extent of tree ring data
+y <- data.frame(rasterToPoints(t)) #covert to dataframe
+
+colnames(y) <- c("x", "y", month.abb)
+y$gridNumber <- cellFromXY(s, y[, 1:2])
+#write.csv(y ,paste0('C:/Users/JMac/Documents/Kelly/biomodality/outputs/ccsm4_2.6_precip.csv' ))
+
+full <- y
+full$total<- rowSums(full[,3:14], na.rm=TRUE)
+full$SI <- rowSums(abs(full[,3:14]-(full[,16]/12)))/full[,16]
+  
+# now extract full 
+ggplot(full, aes(x,y, fill = total))+geom_raster()
+
+full <- full[,c("x","y", "total")]
+coordinates(full) <- ~x + y
+gridded(full) <- TRUE
+avgs <- stack(full) 
+proj4string(full) <- '+proj=longlat +datum=NAD83 +no_defs +ellps=GRS80 +towgs84=0,0,0 '
+#full.rast <- raster(full)
+
+TR.locs.df <- data.frame(TR.locs)
+TR.locs.df$ccesm_85_70_total_pr <- raster::extract(avgs, TR.locs.df[,c("lon_PALEON_closest", "lat_PALEON_closest")])
+
+# now pull summer temperatures:
+rcp <- 85
+climate <- "tn"
+setwd('/Users/kah/Documents/bimodality/data/cc85tn70/')
+
+month <- sprintf("%02d", 1:12)
+month.abb <- c('Jan', 'Oct', 'Nov', "Dec","Feb","Mar","Apr", "May", 
+               'Jun', "Jul", "Aug", "Sep")
+filenames <- list.files(pattern=paste0("cc",rcp,climate,"70",".*\\.tif$", sep = ""))
+s <- stack(filenames)
+t <- crop(s, extent(TR.locs))#make all into a raster
+
+#crop to the extent of tree ring data
+y <- data.frame(rasterToPoints(t)) #covert to dataframe
+
+colnames(y) <- c("x", "y", month.abb)
+y$gridNumber <- cellFromXY(s, y[, 1:2])
+#write.csv(y ,paste0('C:/Users/JMac/Documents/Kelly/biomodality/outputs/ccsm4_2.6_precip.csv' ))
+
+full <- y
+full$JJA_tmean <- (rowMeans(full[,c("Jun", "Jul", "Aug")], na.rm=TRUE)/10)
+full$SI <- (rowSums(abs(full[,3:14]-(full[,16]/12)))/full[,16])/10
+
+# now extract full 
+ggplot(full, aes(x,y, fill = JJA_tmean))+geom_raster()
+
+full <- full[,c("x","y", "JJA_tmean")]
+coordinates(full) <- ~x + y
+gridded(full) <- TRUE
+avgs <- stack(full) 
+proj4string(full) <- '+proj=longlat +datum=NAD83 +no_defs +ellps=GRS80 +towgs84=0,0,0 '
+#full.rast <- raster(full)
+
+
+TR.locs.df$ccesm_85_70_JJA_temp <- data.frame(raster::extract(avgs, TR.locs.df[,c("lon_PALEON_closest", "lat_PALEON_closest")]))
+
+# now add the ranges of TR future climate to plots:
+
+
+future.clims <- unique(TR.locs.df[,c("lat_PALEON_closest", "lon_PALEON_closest", "ccesm_85_70_JJA_temp", "ccesm_85_70_total_pr")])
+precip.overall.sens.fut <- ggplot(cohort.summary.pr, aes(Precip, gwbi, color = ageclass))+geom_line()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+geom_ribbon(data = cohort.summary.pr,aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 1)+theme_bw(base_size = 35)+xlab("Annual Precipitation (mm)")+ylab("Relative Growth")+theme(panel.grid = element_blank())
+future.clims <- data.frame(future.clims)
+
+TR.pr <- max(future.clims$ccesm_85_70_total_pr)
+TR.temp <- max(future.clims$ccesm_85_70_JJA_temp)
+
+future.clims.summary <- data.frame(climate = c("Precip", "Temp"),
+                                   max = c(TR.pr, 32),
+                                   min = c(500, TR.temp),
+                                   ymax = c(2.5,2.5),
+                                   ymin = c(-1.5,-1.5))
+
+future.clims.sum <- data.frame(Temp = c(TR.temp, 32),
+                               Precip = c(500, TR.pr),
+                               ymin = c(-1.5,-1.5),
+                               ymax = c(2.5,2.5))
+
+temp.overall.sens.fut <- ggplot() +geom_rect(data = future.clims.summary[future.clims.summary$climate %in% "Temp",] , aes(xmin = min, xmax = max,ymin = ymin, ymax = ymax), fill = "grey", alpha = 0.1)+
+  geom_line(data = cohort.summary.tm, aes(Temp, gwbi, color = ageclass))+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+geom_ribbon(data = cohort.summary.tm,aes(x = Temp,ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.4, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 1)+theme_bw(base_size = 35)+labs(x = expression('Summer Temperature ('*~degree*C*')'),y = "Relative Growth")+theme(panel.grid = element_blank())#+geom_rect(data = future.clims.summary[future.clims.summary$climate %in% "Temp",] , aes(xmin = min, xmax = max,ymin = ymin, ymax = ymax), fill = "red", alpha = 0.1)
+
+
+precip.overall.sens.fut <- ggplot()+geom_rect(data = future.clims.summary[future.clims.summary$climate %in% "Precip",] , aes(xmin = min, xmax = max,ymin = ymin, ymax = ymax), fill = "grey", alpha = 0.1)+geom_line(data = cohort.summary.pr, aes(Precip, gwbi, color = ageclass))+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+geom_ribbon(data = cohort.summary.pr,aes(x = Precip,ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.4, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 1)+theme_bw(base_size = 35)+xlab("Annual Precipitation (mm)")+ylab("Relative Growth")+theme(panel.grid = element_blank())
+
+legend <- get_legend(precip.overall.sens)
+setwd("/Users/kah/Documents/WUE_MIP/WUE_MIP/")
+
+png(height = 9, width = 14, units = "in", res = 500, "outputs/gwbi_model/Lag4_cohort_re_clim/marginal_P_T_effects_with_future_ranges.png")
+plot_grid( precip.overall.sens.fut+theme(legend.position = "none"), 
+                     temp.overall.sens.fut+theme(legend.position = "none"), 
+                     ncol = 1, align = "hv")
+dev.off()
+
+
+# make the cool and warm plots with shading:
+
+cool.fut <- ggplot()+geom_rect(data = future.clims.summary[future.clims.summary$climate %in% "Precip",] , aes(xmin = min, xmax = max,ymin = ymin, ymax = ymax), fill = "grey", alpha = 0.1, show.legend = TRUE)+geom_line(data = cohort.sites.tm.pr[cohort.sites.tm.pr$Temp < 15,], aes(Precip, gwbi, color = ageclass))+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+geom_ribbon(data = cohort.sites.tm.pr[cohort.sites.tm.pr$Temp < 15,],aes(x = Precip, ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 1)+theme_bw(base_size = 35)+xlab("Annual Precipitation (mm)")+ylab("Relative Growth")+theme(panel.grid = element_blank(), legend.title = element_blank(), legend.position = "bottom")
+warm.fut <- ggplot()+geom_rect(data = future.clims.summary[future.clims.summary$climate %in% "Precip",] , aes(xmin = min, xmax = max,ymin = ymin, ymax = ymax), fill = "grey", alpha = 0.1)+geom_line(data = cohort.sites.tm.pr[cohort.sites.tm.pr$Temp > 21 & cohort.sites.tm.pr$Temp < 24,], aes(Precip, gwbi, color = ageclass))+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+geom_ribbon(data = cohort.sites.tm.pr[cohort.sites.tm.pr$Temp > 21 & cohort.sites.tm.pr$Temp < 24,],aes(x = Precip, ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 1)+theme_bw(base_size = 35)+xlab("Annual Precipitation (mm)")+ylab("Relative Growth")+theme(panel.grid = element_blank(), legend.title = element_blank())
+
+legend.fut <- get_legend(cool.fut)
+
+png(height = 9, width = 14, units = "in", res = 500, "outputs/gwbi_model/Lag4_cohort_re_clim/hot_cool_Precip_effects_with_future_ranges.png")
+plot_grid( cool.fut + theme(legend.position = "none"), 
+           warm.fut + theme(legend.position = "none"), 
+           ncol = 1, align = "hv")
+dev.off()
+
+png(height = 2, width = 4, units = "in", res = 300, "outputs/gwbi_model/Lag4_cohort_re_clim/legend_fut.png")
+plot_grid(legend.fut)
+dev.off()
 #------------------------Bring in all the coefficient estimates and put in one big graph-----------
 
 
@@ -1759,6 +1966,11 @@ ggplot(cohort.sites.tm, aes(Temp, gwbi, color = ageclass))+geom_line()+geom_ribb
 samp.rwi.period <- readRDS( "outputs/gwbi_model/Lag4_cohort_re_clim/rwi_parameter_samps.rds")
 samp.GUESS.period <- readRDS( "outputs/gwbi_model/Lag4_cohort_re_clim/GUESS_parameter_samps.rds")
 samp.ED.period <- readRDS( "outputs/gwbi_model/Lag4_cohort_re_clim/ED_parameter_samps.rds")
+
+test.RWI <- readRDS( "outputs/gwbi_model/Lag4_cohort_re_clim/rwi_testdata.rds")
+test.GUESS <- readRDS( "outputs/gwbi_model/Lag4_cohort_re_clim/GUESS_testdata.rds")
+test.ED <- readRDS( "outputs/gwbi_model/Lag4_cohort_re_clim/ED_testdata.rds")
+
 
 samp.rwi.period <- samp.rwi.period[[1]]
 samp.GUESS.period <- samp.GUESS.period[[1]]
@@ -1964,36 +2176,93 @@ b6.sum <- b6.m %>% group_by(variable, model) %>% dplyr::summarise(mean.val = mea
 
 b6.sum$variable <- factor(b6.sum$variable, levels = c( "Past",  "Modern"))
 
+
 # now plot dotplots:
 
-b1.dot <- ggplot(data.frame(b1.sum), aes(x = model, y = mean.val, color = variable), size = 2.5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size = 2, position = position_dodge(width=0.5))+
-  geom_point(position=position_dodge(width=0.5), size = 2.5)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Precipitation \n sensitivity") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 35)+theme( axis.title.x = element_blank(), panel.grid = element_blank())+ylim(0,0.25)
+b1.dot <- ggplot(data.frame(b1.sum), aes(x = model, y = mean.val, color = variable), size = 5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0.5, alpha = 0.8), size = 5, position = position_dodge(width=0.5))+
+  geom_point(position=position_dodge(width=0.5), size = 5)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Precipitation \n sensitivity") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 25)+theme( axis.title.x = element_blank(), panel.grid = element_blank())+ylim(0,0.25)
 
-b2.dot <- ggplot(data.frame(b2.sum), aes(x = model, y = mean.val, color = variable), size = 2.5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size = 2, position = position_dodge(width=0.5))+
-  geom_point(position=position_dodge(width=0.5), size = 2.5)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Temperature \n sensitivity") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 35)+theme( axis.title.x = element_blank(), panel.grid = element_blank())+ylim(-0.150,0)
+b1.dot <- ggplot(data.frame(b1.sum), aes(x = model, y = mean.val, color = variable), size =  5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size =  5, position = position_dodge(width=0.5))+
+  geom_point(position=position_dodge(width=0.5), size =  10)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Temperature \n sensitivity") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 25)+theme( axis.title.x = element_blank(), panel.grid = element_blank())+ylim(0,0.25)
 
-b3.dot <- ggplot(data.frame(b3.sum), aes(x = model, y = mean.val, color = variable), size = 2.5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size = 2, position = position_dodge(width=0.5))+
-  geom_point(position=position_dodge(width=0.5), size = 2.5)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Lag -1 effect") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 35)+theme( axis.title.x = element_blank(), panel.grid = element_blank())#+ylim(-0.150,0)
+b1.dot <- ggplot(data.frame(b1.sum), aes(x = model, y = mean.val, color = variable), size =  5)+geom_point(position=position_dodge(width=0.5), size =  10)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size =  5, position = position_dodge(width=0.5))+
+  geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Precipitation \n sensitivity") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 25)+theme( axis.title.x = element_blank(), panel.grid = element_blank())+ylim(0,0.25)
 
-b4.dot <- ggplot(data.frame(b4.sum), aes(x = model, y = mean.val, color = variable), size = 2.5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size = 2, position = position_dodge(width=0.5))+
-  geom_point(position=position_dodge(width=0.5), size = 2.5)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Lag -2 effect") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 35)+theme( axis.title.x = element_blank(), panel.grid = element_blank())#+ylim(-0.150,0)
+b2.dot <- ggplot(data.frame(b2.sum), aes(x = model, y = mean.val, color = variable), size =  5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size =  5, position = position_dodge(width=0.5))+
+  geom_point(position=position_dodge(width=0.5), size =  10)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Temperature \n sensitivity") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 25)+theme( axis.title.x = element_blank(), panel.grid = element_blank())+ylim(-0.155,0)
 
-b5.dot <- ggplot(data.frame(b5.sum), aes(x = model, y = mean.val, color = variable), size = 2.5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size = 2, position = position_dodge(width=0.5))+
-  geom_point(position=position_dodge(width=0.5), size = 2.5)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Lag -3 effect") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 35)+theme( axis.title.x = element_blank(), panel.grid = element_blank())#+ylim(-0.150,0)
+b3.dot <- ggplot(data.frame(b3.sum), aes(x = model, y = mean.val, color = variable), size = 5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size =  5, position = position_dodge(width=0.5))+
+  geom_point(position=position_dodge(width=0.5), size =  10)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Lag -1 effect") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 25)+theme( axis.title.x = element_blank(), panel.grid = element_blank())#+ylim(-0.150,0)
 
-b6.dot <- ggplot(data.frame(b6.sum), aes(x = model, y = mean.val, color = variable), size = 2.5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size = 2, position = position_dodge(width=0.5))+
-  geom_point(position=position_dodge(width=0.5), size = 2.5)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Lag -4 effect") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 35)+theme( axis.title.x = element_blank(), panel.grid = element_blank())#+ylim(-0.150,0)
+b4.dot <- ggplot(data.frame(b4.sum), aes(x = model, y = mean.val, color = variable), size =  5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size =  5, position = position_dodge(width=0.5))+
+  geom_point(position=position_dodge(width=0.5), size =  10)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Lag -2 effect") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 25)+theme( axis.title.x = element_blank(), panel.grid = element_blank())#+ylim(-0.150,0)
+
+b5.dot <- ggplot(data.frame(b5.sum), aes(x = model, y = mean.val, color = variable), size =  5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size =  5, position = position_dodge(width=0.5))+
+  geom_point(position=position_dodge(width=0.5), size =  10)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Lag -3 effect") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 25)+theme( axis.title.x = element_blank(), panel.grid = element_blank())#+ylim(-0.150,0)
+
+b6.dot <- ggplot(data.frame(b6.sum), aes(x = model, y = mean.val, color = variable), size = 5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size =  5, position = position_dodge(width=0.5))+
+  geom_point(position=position_dodge(width=0.5), size =  10)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Lag -4 effect") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 25)+theme( axis.title.x = element_blank(), panel.grid = element_blank())#+ylim(-0.150,0)
 
 legend <- get_legend(b1.dot)
 
-png(height = 24, width = 12, units = "in", res = 500, "outputs/gwbi_model/Lag4_cohort_re_clim/all_params_dotplot.png")
-plot_grid(plot_grid( b1.dot+theme(legend.position = "none"), 
+png(height = 14, width = 14, units = "in", res = 500, "outputs/gwbi_model/Lag4_cohort_re_clim/all_params_dotplot.png")
+plot_grid( b1.dot+theme(legend.position = "none"), 
                      b2.dot+theme(legend.position = "none"), 
                      b3.dot+theme(legend.position = "none"), 
                      b4.dot+theme(legend.position = "none"), 
                      b5.dot+theme(legend.position = "none"),
-                     b6.dot+theme(legend.position = "none"), ncol = 1, align = "hv"),legend, ncol = 2, rel_widths = c(1,0.25))
+                     b6.dot+theme(legend.position = "none"), ncol = 2, align = "hv", rel_heights = c(1,1,1,1,1,1))
 dev.off()
+
+png(height = 20, width = 7, units = "in", res = 500, "outputs/gwbi_model/Lag4_cohort_re_clim/all_params_dotplot_vertical.png")
+plot_grid( b1.dot+theme(legend.position = "none", plot.margin = unit(c(-1, 0, 0, 0), "cm")), 
+           b2.dot+theme(legend.position = "none",plot.margin = unit(c(0, 0, 0, 0), "cm")), 
+           b3.dot+theme(legend.position = "none",plot.margin = unit(c(0, 0, 0, 0), "cm")), 
+           b4.dot+theme(legend.position = "none",plot.margin = unit(c(0, 0, 0, 0), "cm")), 
+           b5.dot+theme(legend.position = "none",plot.margin = unit(c(0, 0, 0, 0), "cm")),
+           b6.dot+theme(legend.position = "none"), ncol = 1, align = "hv",axis = "tb", rel_heights = c(1,1,1,1,1,1))
+dev.off()
+
+png(height = 8, width = 20, units = "in", res = 500, "outputs/gwbi_model/Lag4_cohort_re_clim/all_params_dotplot_horizontal.png")
+plot_grid( b1.dot+theme(legend.position = "none", plot.margin = unit(c(-1, 0, 0, 0), "cm")), 
+           b2.dot+theme(legend.position = "none",plot.margin = unit(c(0, 0, 0, 0), "cm")), 
+           b3.dot+theme(legend.position = "none",plot.margin = unit(c(0, 0, 0, 0), "cm")), 
+           b4.dot+theme(legend.position = "none",plot.margin = unit(c(0, 0, 0, 0), "cm")), 
+           b5.dot+theme(legend.position = "none",plot.margin = unit(c(0, 0, 0, 0), "cm")),
+           b6.dot+theme(legend.position = "none"), ncol = 3, align = "hv",axis = "tb", rel_heights = c(1,1,1,1,1,1))
+dev.off()
+# calculate mean differences between parameters:
+
+b1.class <- b1.m %>% group_by(num, model) %>% spread( key = variable, value = value)
+b1.class$pct_change <- ((b1.class$Modern - b1.class$Past))
+
+beta1.diff <- b1.class %>% group_by(model) %>% summarise(mean = mean(pct_change),
+                                           ci.low = quantile(pct_change, 0.025), 
+                                           ci.high = quantile(pct_change, 0.975))
+
+# plot average change in drought sensitivity
+pct.drought.change <- ggplot(beta1.diff, aes( x=model, y = mean, fill = model))+geom_bar(stat="identity")+geom_errorbar( aes(ymin = ci.low, ymax = ci.high, width = 0.25), size = 1.5, position = position_dodge(width=0.5))+scale_fill_manual(values = c('#1b9e77',
+                                                                                                                                                                                                                                                         '#d95f02',
+                                                                                                                                                                                                                                                         '#7570b3'))+theme_bw(base_size = 35)+theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())+ylab("drought sensitvity change \n between Modern and Past")
+
+png(height = 8, width = 10, units = "in", res = 300, "outputs/gwbi_model/Lag4_cohort_re_clim/pct_change_drought_senstivity_updated.png")
+pct.drought.change
+dev.off()
+
+
+# calculate pct temperature change
+b2.class <- b2.m %>% group_by(num, model) %>% spread( key = variable, value = value)
+b2.class$pct_change <- ((b2.class$Modern - b2.class$Past))
+
+beta2.diff <- b2.class %>% group_by(model) %>% summarise(mean = mean(pct_change),
+                                                         ci.low = quantile(pct_change, 0.025), 
+                                                         ci.high = quantile(pct_change, 0.975))
+
+# plot average change in drought sensitivity
+pct.temp.change <- ggplot(beta2.diff, aes( x=model, y = mean, fill = model))+geom_bar(stat="identity")+geom_errorbar( aes(ymin = ci.low, ymax = ci.high, width = 0.25), size = 1.5, position = position_dodge(width=0.5))+scale_fill_manual(values = c('#1b9e77',
+                                                                                                                                                                                                                                                          '#d95f02',
+                                                                                                                                                                                                                                                          '#7570b3'))+theme_bw(base_size = 35)+theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())+ylab("drought sensitvity change \n between Modern and Past")
+
 
 #---------------WUE response to climate in models and in data-----------------
 mod <- lm(IWUE ~ gwbi + Precip.scaled + Temp.jja.scaled  + Site, data = train.GUESS)
@@ -2354,7 +2623,7 @@ update(IWUE.ED.model, 1000); # Burnin for 1000 samples to start, then go higher 
 
 samp.IWUE.ED <- coda.samples(IWUE.ED.model, 
                                 variable.names=c("alpha", "beta1", "beta2","beta3" ), 
-                                n.chains = 3, n.iter=10000, thin = 10)
+                                n.chains = 3, n.iter=10000, thin = 1)
 
 samp.IWUE.ED.ypred  <- coda.samples(IWUE.ED.model, 
                                variable.names=c("Ypred" ), 
@@ -2527,7 +2796,7 @@ test.iso.wue <- test.iso.wue[!is.na(test.iso.wue$CO2.scaled),]
 train.iso.wue <- train.iso.wue[!is.na(train.iso.wue$CO2.scaled),]
 
 IWUE.iso.model <- jags.model(textConnection(IWUE_climate_site_period), 
-                               data = list(Y = train.iso.wue$rel.IWUE, n=length(train.iso.wue$rel.IWUE), Precip.scaled = train.iso.wue$MAP.scaled, Temp.jja.scaled = train.iso.wue$T.scaled, CO2 = train.iso.wue$CO2.scaled,
+                               data = list(Y = train.iso.wue$rel.IWUE/10, n=length(train.iso.wue$rel.IWUE), Precip.scaled = train.iso.wue$MAP.scaled, Temp.jja.scaled = train.iso.wue$T.scaled, CO2 = train.iso.wue$CO2.scaled,
                                            period = as.numeric(train.iso.wue$ageclass), S = unique(train.iso.wue$site_code),  C = unique(train.iso.wue$ageclass), sites = as.numeric(train.iso.wue$site_code), np=length(test.iso.wue$ageclass), 
                                            sites.p = test.iso.wue$site_code, Precip.scaled.p = test.iso.wue$MAP.scaled, Temp.jja.scaled.p = test.iso.wue$T.scaled, CO2.p = test.iso.wue$CO2.scaled,
                                            period.p = as.numeric(test.iso.wue$ageclass),
@@ -2578,9 +2847,9 @@ beta3.samps  <- samps[,(length(unique(test.iso$site))+5):(length(unique(test.iso
 # plot predicted vs. observed
 Yp.samps <- data.frame(Yp.samps) 
 Yp.m <- melt(Yp.samps)
-Yp.summary <- Yp.m %>% group_by(variable) %>% dplyr::summarise(Predicted = mean(value),
-                                                               ci.hi = quantile(value,0.975),
-                                                               ci.lo = quantile(value,0.025))
+Yp.summary <- Yp.m %>% group_by(variable) %>% dplyr::summarise(Predicted = mean(value)*10,
+                                                               ci.hi = quantile(value,0.975)*10,
+                                                               ci.lo = quantile(value,0.025)*10)
 Yp.summary$Observed <- test.iso$rel.IWUE
 
 pred.obs <- summary(lm(colMeans(Yp.samps) ~ test.iso$rel.IWUE))
@@ -2596,6 +2865,407 @@ dev.off()
 
 MSE1   <- mean((colMeans(Yp.samps)-test.iso$rel.IWUE)^2)
 BIAS1  <- mean(colMeans(Yp.samps)-test.iso$rel.IWUE)
+
+
+#----------------- pull in all the rel.WUE model outputs and summarise ----------------------------------
+samp.rwi.period <- readRDS( "outputs/iWUE_climate_CO2/iso_parameter_samps.rds")
+samp.GUESS.period <- readRDS( "outputs/iWUE_climate_CO2/GUESS_parameter_samps.rds")
+samp.ED.period <- readRDS( "outputs/iWUE_climate_CO2/ED_parameter_samps.rds")
+
+test.iso.wue <- readRDS( "outputs/iWUE_climate_CO2/iso_testdata.rds")
+test.GUESS <- readRDS( "outputs/iWUE_climate_CO2/GUESS_testdata.rds")
+test.ED <- readRDS( "outputs/iWUE_climate_CO2/ED_testdata.rds")
+
+samp.rwi.period <- samp.rwi.period[[1]]
+samp.GUESS.period <- samp.GUESS.period[[1]]
+samp.ED.period <- samp.ED.period[[1]]
+
+# get parameter estimates from TR model:
+alpha.samps <- samp.rwi.period[,1:length(unique(test.iso.wue$site))]
+beta1.samps  <- samp.rwi.period[,(length(unique(test.iso.wue$site))+1):(length(unique(test.iso.wue$site))+2)]
+beta2.samps  <- samp.rwi.period[,(length(unique(test.iso.wue$site))+3):(length(unique(test.iso.wue$site))+4)]
+beta3.samps  <- samp.rwi.period[,(length(unique(test.iso.wue$site))+5):(length(unique(test.iso.wue$site))+6)]
+
+a <- data.frame(alpha.samps)
+colnames(a) <- unique(train.iso.wue$site)
+a$num <- rownames(a)
+a.m.TR <- melt(a, id.vars=c("num"))
+alpha.mplots <- ggplot(a.m.TR, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Random intercepts")+theme(legend.position = "none")
+
+b1 <- data.frame(beta1.samps)
+colnames(b1) <- unique(levels(train.iso.wue$ageclass)) # past = 2, modern = 1 here
+b1$num <- rownames(b1)
+b1.m.TR <- melt(b1, id.vars=c("num"))
+b1.m.TR$model <- "Tree Rings"
+b1.mplots <- ggplot(b1.m.TR, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Random intercepts")+theme(legend.position = "none")
+
+b2 <- data.frame(beta2.samps)
+colnames(b2) <-unique(levels(train.iso.wue$ageclass)) 
+b2$num <- rownames(b2)
+b2.m.TR <- melt(b2, id.vars=c("num"))
+b2.m.TR$model <- "Tree Rings"
+b2.mplots <- ggplot(b2.m.TR, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Random intercepts")+theme(legend.position = "none")
+
+b3 <- data.frame(beta3.samps)
+colnames(b3) <-unique(levels(train.iso.wue$ageclass)) 
+b3$num <- rownames(b3)
+b3.m.TR<- melt(b3, id.vars=c("num"))
+b3.m.TR$model <- "Tree Rings"
+b3.m.mplots <- ggplot(b3.m.TR, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Random intercepts")+theme(legend.position = "none")
+
+
+# get parameter estimates from ED model:
+alpha.sampsED <- samp.ED.period[,1:length(unique(test.ED$site_num))]
+beta1.sampsED  <- samp.ED.period[,(length(unique(test.ED$site_num))+1):(length(unique(test.ED$site_num))+2)]
+beta2.sampsED  <- samp.ED.period[,(length(unique(test.ED$site_num))+3):(length(unique(test.ED$site_num))+4)]
+beta3.sampsED  <- samp.ED.period[,(length(unique(test.ED$site_num))+5):(length(unique(test.ED$site_num))+6)]
+
+a <- data.frame(alpha.sampsED)
+colnames(a) <- unique(train.ED$site_num)
+a$num <- rownames(a)
+a.m.ED <- melt(a, id.vars=c("num"))
+alpha.mplots <- ggplot(a.m.ED, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Random intercepts")+theme(legend.position = "none")
+a.m.ED$model <- "ED2"
+
+b1 <- data.frame(beta1.sampsED)
+colnames(b1) <- c("Modern", "Past") # past = 2, modern = 1 here
+b1$num <- rownames(b1)
+b1.m.ED <- melt(b1, id.vars=c("num"))
+b1.m.ED$model <- "ED2"
+
+b2 <- data.frame(beta2.sampsED)
+colnames(b2) <-c("Modern", "Past")
+b2$num <- rownames(b2)
+b2.m.ED <- melt(b2, id.vars=c("num"))
+b2.m.ED$model <- "ED2"
+
+b3 <- data.frame(beta3.sampsED)
+colnames(b3) <-c("Modern", "Past")
+b3$num <- rownames(b3)
+b3.m.ED<- melt(b3, id.vars=c("num"))
+b3.m.ED$model <- "ED2"
+
+
+
+# get parameter estimates from LPJ-GUESS model:
+alpha.sampsGUESS <- samp.GUESS.period[,1:length(unique(test.GUESS$site_num))]
+beta1.sampsGUESS  <- samp.GUESS.period[,(length(unique(test.GUESS$site_num))+1):(length(unique(test.GUESS$site_num))+2)]
+beta2.sampsGUESS  <- samp.GUESS.period[,(length(unique(test.GUESS$site_num))+3):(length(unique(test.GUESS$site_num))+4)]
+beta3.sampsGUESS  <- samp.GUESS.period[,(length(unique(test.GUESS$site_num))+5):(length(unique(test.GUESS$site_num))+6)]
+
+a <- data.frame(alpha.sampsGUESS)
+colnames(a) <- unique(train.GUESS$site)
+a$num <- rownames(a)
+a.m.GUESS <- melt(a, id.vars=c("num"))
+alpha.mplots <- ggplot(a.m.GUESS, aes(value, fill = variable))+geom_density(alpha = 0.5)+theme_bw()+xlab("Random intercepts")+theme(legend.position = "none")
+a.m.GUESS$model <- "LPJ-GUESS"
+
+b1 <- data.frame(beta1.sampsGUESS)
+colnames(b1) <- c("Modern", "Past") # past = 2, modern = 1 here
+b1$num <- rownames(b1)
+b1.m.GUESS <- melt(b1, id.vars=c("num"))
+b1.m.GUESS$model <- "LPJ-GUESS"
+
+b2 <- data.frame(beta2.sampsGUESS)
+colnames(b2) <-c("Modern", "Past")
+b2$num <- rownames(b2)
+b2.m.GUESS <- melt(b2, id.vars=c("num"))
+b2.m.GUESS$model <- "LPJ-GUESS"
+
+b3 <- data.frame(beta3.sampsGUESS)
+colnames(b3) <-c("Modern", "Past")
+b3$num <- rownames(b3)
+b3.m.GUESS<- melt(b3, id.vars=c("num"))
+b3.m.GUESS$model <- "LPJ-GUESS"
+
+
+
+# now combine all the beta1s together and make a modern past dotplot:
+b1.m <- bind_rows(b1.m.TR, b1.m.ED, b1.m.GUESS)
+b2.m <- bind_rows(b2.m.TR, b2.m.ED, b2.m.GUESS)
+b3.m <- bind_rows(b3.m.TR, b3.m.ED, b3.m.GUESS)
+
+
+b1.sum <- b1.m %>% group_by(variable, model) %>% dplyr::summarise(mean.val = mean(value),
+                                                                  Ci.low = quantile(value, 0.025), 
+                                                                  Ci.high = quantile(value, 0.975))
+
+b1.sum$variable <- factor(b1.sum$variable, levels = c( "Past",  "Modern"))
+
+b2.sum <- b2.m %>% group_by(variable, model) %>% dplyr::summarise(mean.val = mean(value),
+                                                                  Ci.low = quantile(value, 0.025), 
+                                                                  Ci.high = quantile(value, 0.975))
+b2.sum$variable <- factor(b2.sum$variable, levels = c( "Past",  "Modern"))
+
+
+b3.sum <- b3.m %>% group_by(variable, model) %>% dplyr::summarise(mean.val = mean(value),
+                                                                  Ci.low = quantile(value, 0.025), 
+                                                                  Ci.high = quantile(value, 0.975))
+b3.sum$variable <- factor(b3.sum$variable, levels = c( "Past",  "Modern"))
+
+
+
+# now plot dotplots:
+
+b1.dot <- ggplot(data.frame(b1.sum), aes(x = model, y = mean.val, color = variable), size = 5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size = 5, position = position_dodge(width=0.5))+
+  geom_point(position=position_dodge(width=0.5), size = 10)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Precipitation \n sensitivity") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 35)+theme( axis.title.x = element_blank(), panel.grid = element_blank())+ylim(0,0.75)
+
+#ggplot(data.frame(b2.sum), aes(x = model, y = mean.val, color = variable), size =  5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size =  5, position = position_dodge(width=0.5))+
+ # geom_point(position=position_dodge(width=0.5), size =  10)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Temperature \n sensitivity") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 25)+theme( axis.title.x = element_blank(), panel.grid = element_blank())+ylim(-0.155,0)
+
+
+b2.dot <- ggplot(data.frame(b2.sum), aes(x = model, y = mean.val, color = variable), size = 5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size = 5, position = position_dodge(width=0.5))+
+  geom_point(position=position_dodge(width=0.5), size = 10)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+ylab("Temperature \n sensitivity") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 35)+theme( axis.title.x = element_blank(), panel.grid = element_blank())
+
+b3.dot <- ggplot(data.frame(b3.sum), aes(x = model, y = mean.val, color = variable), size = 2.5)+geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size = 5, position = position_dodge(width=0.5))+
+  geom_point(position=position_dodge(width=0.5), size = 10)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+labs(y= expression(CO[2]~sensitivity)) + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 35)+theme( axis.title.x = element_blank(), panel.grid = element_blank())+ylim(0,0.7)
+
+
+legend <- get_legend(b1.dot)
+
+png(height = 12, width = 12, units = "in", res = 500, "outputs/iWUE_climate_CO2/all_params_dotplot.png")
+plot_grid(plot_grid( b1.dot+theme(legend.position = "none"), 
+                     b2.dot+theme(legend.position = "none"), 
+                     b3.dot+theme(legend.position = "none"), 
+                      ncol = 1, align = "hv"),legend, ncol = 2, rel_widths = c(1,0.25))
+dev.off()
+
+png(height = 6, width = 26.5, units = "in", res = 500, "outputs/iWUE_climate_CO2/all_params_dotplot_horizontal.png")
+plot_grid( b1.dot+theme(legend.position = "none"), 
+                     b2.dot+theme(legend.position = "none"), 
+                     b3.dot+theme(legend.position = "none"), 
+                     ncol = 3, align = "hv")
+dev.off()
+
+new.legend<- get_legend(b2.dot + theme(legend.position = "bottom"))
+
+png(height = 6, width = 8, units = "in", res = 500, "outputs/iWUE_climate_CO2/legend.png")
+plot_grid(new.legend)
+dev.off()
+
+# ------------------------plot posterior predictive distributions-----------
+# ------------- read in both GUESS and ED and plot posteriors together to compare ---------
+library(DMwR)
+GUESS.probe <- readRDS("outputs/iWUE_climate_CO2/GUESS_Yprobe_samps.rds")
+GUESS.probe <- data.frame(GUESS.probe[[1]]) 
+Yp.m <- melt(GUESS.probe)
+colnames(GUESS.probe) <- 1:length(GUESS.probe)
+probe.m <- melt(GUESS.probe)
+colnames(probe.m) <- c("num", "WUE_pred")
+
+probe.GUESS$num <- 1:length(probe.GUESS[,1])
+
+# summarize by cohort class only:
+probe.GUESS$num <- as.factor(as.character(probe.GUESS$num))
+full.p <- probe.GUESS
+
+GUESS.probtest <- dplyr::inner_join(probe.m, full.p, by=c("num"))
+colnames(GUESS.probtest) <- c("num", "WUE_pred", "MAP_scaled", "JJA.T.scaled", "CO2.scaled", "site_num", "period")
+saveRDS(GUESS.probtest, "outputs/iWUE_climate_CO2/GUESS_probtest.rds")
+
+
+GUESS.probtest$model <- "LPJ-GUESS"
+GUESS.probtest$Precip <- as.numeric(round(unscale(vals = GUESS.probtest$MAP_scaled, norm.data = GUESS.sort_lag.Precip.scaled))) 
+GUESS.probtest$Temp <- as.numeric(round(unscale(vals = GUESS.probtest$JJA.T.scaled, norm.data = GUESS.sort_lag.Temp.jja.scaled))) 
+GUESS.probtest$CO2 <- as.numeric(round(unscale(vals = GUESS.probtest$CO2.scaled, norm.data = GUESS.sort_lag.CO2.scaled))) 
+
+
+
+
+ED.probe <- readRDS("outputs/iWUE_climate_CO2/ED_Yprobe_samps.rds")
+ED.probe <- data.frame(ED.probe[[1]])
+Yp.m <- melt(ED.probe)
+colnames(ED.probe) <- 1:length(ED.probe)
+probe.m <- melt(ED.probe)
+colnames(probe.m) <- c("num", "WUE_pred")
+
+probe.ED$num <- 1:length(probe.ED[,1])
+
+# summarize by cohort class only:
+probe.ED$num <- as.factor(as.character(probe.ED$num))
+full.p <- probe.ED
+
+ED.probtest <- dplyr::inner_join(probe.m, full.p, by=c("num"))
+colnames(ED.probtest) <- c("num", "WUE_pred", "MAP_scaled", "JJA.T.scaled", "CO2.scaled", "site_num", "period")
+saveRDS(ED.probtest, "outputs/iWUE_climate_CO2/ED_probtest.rds")
+
+
+ED.probtest$model <- "ED2"
+ED.probtest$Precip <- as.numeric(round(unscale(vals = ED.probtest$MAP_scaled, norm.data = ED.sort_lag.Precip.scaled))) 
+ED.probtest$Temp <- as.numeric(round(unscale(vals = ED.probtest$JJA.T.scaled, norm.data = ED.sort_lag.Temp.jja.scaled))) 
+ED.probtest$CO2 <- as.numeric(round(unscale(vals = ED.probtest$CO2.scaled, norm.data = ED.sort_lag.CO2.scaled))) 
+
+
+
+RWI.probe <- readRDS("outputs/gwbi_model/RWI_probtest.rds")
+RWI.probe$model <- "Tree Rings"
+RWI.probe$Precip <- as.numeric(round(unscale(vals = probe.iso$DI.scaled, norm.data = full.ghcn.MAP.scaled))) 
+RWI.probe$Temp <- as.numeric(round(unscale(vals = probe.iso$T.scaled, norm.data = full.ghcn.T.scaled))) 
+RWI.probe$Temp <-  ((RWI.probe$Temp - 32) * (5 / 9)) 
+
+
+
+#model.probe <- bind_rows(GUESS.probe, ED.probe)
+
+model.probe.mod <- bind_rows(GUESS.probe, ED.probe)
+model.probe <- bind_rows(model.probe.mod, RWI.probe)
+
+# note 2 == Past and 1 == Modern:
+
+cohort.summary.pr <- model.probe %>% group_by(period, Precip, model) %>% dplyr::summarise(gwbi = mean(gwbi_pred, na.rm=TRUE), 
+                                                                                          gwbi.low = quantile(gwbi_pred, 0.025), 
+                                                                                          gwbi.high = quantile(gwbi_pred, 0.975)) 
+
+cohort.summary.tm <- model.probe %>% group_by(period, Temp, model) %>% summarise(gwbi = mean(gwbi_pred, na.rm=TRUE), 
+                                                                                 gwbi.low = quantile(gwbi_pred, 0.025), 
+                                                                                 gwbi.high = quantile(gwbi_pred, 0.975)) 
+
+
+# need to covert the periods to factors:
+cohort.summary.pr$period <- as.factor(cohort.summary.pr$period)
+cohort.summary.tm$period <- as.factor(cohort.summary.tm$period)
+cohort.summary.tm$ageclass <- ifelse(cohort.summary.tm$period == "1", "Modern", "Past")
+cohort.summary.pr$ageclass <- ifelse(cohort.summary.pr$period == "1", "Modern", "Past")
+
+# compare sensitivities of the models
+ggplot(cohort.summary.pr, aes(Precip, gwbi, color = model))+geom_line()+geom_ribbon(data = cohort.summary.pr,aes(ymin = gwbi.low, ymax = gwbi.high, fill = model), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~ageclass, nrow = 2)+theme_bw()
+
+ggplot(cohort.summary.tm, aes(Temp, gwbi, color = model))+geom_line()+geom_ribbon(data = cohort.summary.tm,aes(ymin = gwbi.low, ymax = gwbi.high, fill = model), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~ageclass, nrow = 2)+theme_bw()
+
+
+precip.overall.sens <- ggplot(cohort.summary.pr, aes(Precip, gwbi, color = ageclass))+geom_line()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+geom_ribbon(data = cohort.summary.pr,aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 1)+theme_bw(base_size = 35)+xlab("Annual Precipitation (mm)")+ylab("Relative Growth")+theme(panel.grid = element_blank())
+
+temp.overall.sens <- ggplot(cohort.summary.tm, aes(Temp, gwbi, color = ageclass))+geom_line()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+geom_ribbon(data = cohort.summary.tm,aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 1)+theme_bw(base_size = 35)+labs(x = expression('Summer Temperature ('*~degree*C*')'),y = "Relative Growth")+theme(panel.grid = element_blank())
+
+legend <- get_legend(precip.overall.sens)
+
+png(height = 10, width = 14, units = "in", res = 500, "outputs/gwbi_model/Lag4_cohort_re_clim/marginal_P_T_effects.png")
+plot_grid(plot_grid( precip.overall.sens+theme(legend.position = "none"), 
+                     temp.overall.sens+theme(legend.position = "none"), 
+                     ncol = 1, align = "hv"),legend, ncol = 2, rel_widths = c(1,0.25))
+dev.off()
+
+
+# find the grid cells that are closest to the tree ring sites:
+
+
+# read in the spatial points data for the Tree ring data:
+TREERING_PALEON_GRID <- read.csv("/Users/kah/Documents/TreeRings/data/KH_Treering_sites_PALEON_model_grid.csv - KH_Treering_sites_PALEON_model_grid.csv-2.csv")
+
+# find the closest grid cell:
+load("Data/PalEON_siteInfo_all.RData")
+TR.locs <- TREERING_PALEON_GRID[TREERING_PALEON_GRID$Site.code %in% c( "AVO",  "BON",  "COR",  "ENG",  "GLA","GLL",  "GLL1", "GLL2", "GLL3", "GLL4", "HIC",  "MOU",  "PLE",  "PVC", 
+                                                                       "STC",  "TOW",  "UNC"  ),]
+TR.sites <- merge(paleon, TREERING_PALEON_GRID, by.x = "latlon", by.y = "latlon_PALEON")
+
+#get map data for the Midwest:
+states <- map_data("state")
+states <- subset(states, ! region  %in% c("california", 'nevada','arizona','utah','oregon','washington','new mexico','colorado','montana','wyoming','idaho') )
+coordinates(states)<-~long+lat
+#class(states)
+#proj4string(states) <-CRS("+proj=longlat +datum=NAD83")
+#states <- spTransform(states,CRSobj = '+init=epsg:4326')
+mapdata <- data.frame(states)
+
+cbpalette <- c("#ffffcc", "#c2e699", "#78c679", "#31a354", "#006837")
+
+# map of mean density:
+
+png(height = 12, width = 18, units = 'in', res=500,"outputs/PALEON_MODEL_MAP.png")
+ggplot(paleon, aes(lon, lat), fill = "forestgreen")+geom_raster()+coord_cartesian()+geom_point(data = TR.locs, aes(x = longitude, y = latitude), color = "red", fill = "red", shape = 24, size = 6)+geom_polygon(data = mapdata, aes(group = group,x=long, y =lat),colour="black", fill = NA)+coord_equal(xlim= c(-98,-64), ylim=c(35,49)) + theme_bw(base_size = 34)+theme(axis.title = element_blank(), panel.grid = element_blank())
+dev.off()
+
+library(geosphere)
+
+# create distance matrix
+mat <- distm( TR.locs[,c('longitude','latitude')],paleon[,c('lon','lat')], fun=distVincentyEllipsoid)
+
+# assign the name to the point in list1 based on shortest distance in the matrix
+TR.locs$lat_PALEON_closest <- paleon$lat[max.col(-mat)]
+TR.locs$lon_PALEON_closest <- paleon$lon[max.col(-mat)]
+TR.locs$paleon_gridlatlon <- paleon$latlon[max.col(-mat)]
+
+ggplot()+geom_raster(data = paleon, aes(x = lon, y =lat))+coord_cartesian()+geom_point(data = TR.locs, aes(x = longitude, y = latitude, color = Site.code))+geom_raster(data = TR.locs, aes(x = lon_PALEON_closest, y =lat_PALEON_closest), fill = "red")
+
+paleon.sites <- paleon[paleon$latlon %in% TR.locs$paleon_gridlatlon,]
+
+model.site.num <- paleon.sites$num
+model.probe.subset <- model.probe.mod %>% filter(site_num %in% paleon.sites$num)
+model.TR.sites <- bind_rows(model.probe.subset, RWI.probe)
+
+
+# plot out only the grid cells where we have TR sites:
+# note 2 == Past and 1 == Modern:
+
+cohort.sites.pr <- model.TR.sites %>% group_by(period, Precip, model) %>% dplyr::summarise(gwbi = mean(gwbi_pred, na.rm=TRUE), 
+                                                                                           gwbi.low = quantile(gwbi_pred, 0.025), 
+                                                                                           gwbi.high = quantile(gwbi_pred, 0.975)) 
+
+cohort.sites.tm <- model.TR.sites %>% group_by(period, Temp, model) %>% summarise(gwbi = mean(gwbi_pred, na.rm=TRUE), 
+                                                                                  gwbi.low = quantile(gwbi_pred, 0.025), 
+                                                                                  gwbi.high = quantile(gwbi_pred, 0.975)) 
+
+
+# need to covert the periods to factors:
+cohort.sites.pr$period <- as.factor(cohort.sites.pr$period)
+cohort.sites.tm$period <- as.factor(cohort.sites.tm$period)
+cohort.sites.tm$ageclass <- ifelse(cohort.sites.tm$period == "1", "Modern", "Past")
+cohort.sites.pr$ageclass <- ifelse(cohort.sites.pr$period == "1", "Modern", "Past")
+
+# compare sensitivities of the models
+ggplot(cohort.sites.pr, aes(Precip, gwbi, color = model))+geom_line()+geom_ribbon(data = cohort.sites.pr,aes(ymin = gwbi.low, ymax = gwbi.high, fill = model), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~ageclass, nrow = 2)+theme_bw()
+
+ggplot(cohort.sites.tm, aes(Temp, gwbi, color = model))+geom_line()+geom_ribbon(data = cohort.sites.tm,aes(ymin = gwbi.low, ymax = gwbi.high, fill = model), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~ageclass, nrow = 2)+theme_bw()
+
+
+ggplot(cohort.sites.pr, aes(Precip, gwbi, color = ageclass))+geom_line()+geom_ribbon(data = cohort.sites.pr,aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 3)+theme_bw(base_size = 12)+ylab("Relativized Woody Growth")+xlab("Annual Precipitation (mm)")
+
+ggplot(cohort.sites.tm, aes(Temp, gwbi, color = ageclass))+geom_line()+geom_ribbon(data = cohort.sites.tm,aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 3)+theme_bw(base_size = 12)+ylab("Relativized Woody Growth")+xlab(expression("Temperature " ( degree*C)))
+
+# plot out pretty plot for just grid cells closest to 
+precip.sites.sens <- ggplot(cohort.sites.pr, aes(Precip, gwbi, color = ageclass))+geom_line()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+geom_ribbon(data = cohort.summary.pr,aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 1)+theme_bw(base_size = 35)+xlab("Annual Precipitation (mm)")+ylab("Relative Growth")+theme(panel.grid = element_blank(), legend.title = element_blank())
+
+temp.sites.sens <- ggplot(cohort.sites.tm, aes(Temp, gwbi, color = ageclass))+geom_line()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+geom_ribbon(data = cohort.summary.tm,aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 1)+theme_bw(base_size = 35)+labs(x = expression('Summer Temperature ('*~degree*C*')'),y = "Relative Growth")+theme(panel.grid = element_blank(), legend.title = element_blank())
+
+legend <- get_legend(precip.sites.sens)
+
+png(height = 10, width = 14, units = "in", res = 500, "outputs/gwbi_model/Lag4_cohort_re_clim/marginal_P_T_effects_TR_sites_only.png")
+plot_grid(plot_grid( precip.sites.sens+theme(legend.position = "none"), 
+                     temp.sites.sens+theme(legend.position = "none"), 
+                     ncol = 1, align = "hv"),legend, ncol = 2, rel_widths = c(1,0.25))
+dev.off()
+
+
+
+# now lets look at posteriors for different conditions:
+cohort.sites.tm.pr <- model.TR.sites %>% group_by(period, Temp, Precip, model) %>% summarise(gwbi = mean(gwbi_pred, na.rm=TRUE), 
+                                                                                             gwbi.low = quantile(gwbi_pred, 0.025), 
+                                                                                             gwbi.high = quantile(gwbi_pred, 0.975)) 
+
+cohort.sites.tm.pr$period <- as.factor(cohort.sites.tm.pr$period)
+cohort.sites.tm.pr$ageclass <- ifelse(cohort.sites.tm.pr$period == "1", "Modern", "Past")
+cohort.sites.tm.pr$Precip <- as.numeric(cohort.sites.tm.pr$Precip)
+
+cool <- ggplot(cohort.sites.tm.pr[cohort.sites.tm.pr$Temp < 15,], aes(Precip, gwbi, color = ageclass))+geom_line()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+geom_ribbon(data = cohort.sites.tm.pr[cohort.sites.tm.pr$Temp < 15,],aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 1)+theme_bw(base_size = 35)+xlab("Annual Precipitation (mm)")+ylab("Relative Growth")+theme(panel.grid = element_blank(), legend.title = element_blank())
+warm <- ggplot(cohort.sites.tm.pr[cohort.sites.tm.pr$Temp > 21 & cohort.sites.tm.pr$Temp < 24,], aes(Precip, gwbi, color = ageclass))+geom_line()+scale_color_manual(values = c("Past" = "blue","Modern" = "red"))+geom_ribbon(data = cohort.sites.tm.pr[cohort.sites.tm.pr$Temp > 21 & cohort.sites.tm.pr$Temp < 24,],aes(ymin = gwbi.low, ymax = gwbi.high, fill = ageclass), alpha = 0.25, linetype = "dashed", colour = NA)+facet_wrap(~model, nrow = 1)+theme_bw(base_size = 35)+xlab("Annual Precipitation (mm)")+ylab("Relative Growth")+theme(panel.grid = element_blank(), legend.title = element_blank())
+
+title1 <- ggdraw()+draw_label(expression('COOL SUMMERS (>15'*~degree*C*')'), size = 42, fontface = "bold")
+title2 <- ggdraw()+draw_label(expression('HOT SUMMERS (>25'*~degree*C*')'), size = 42, fontface = "bold")
+
+legend <- get_legend(cool)
+
+png(height = 12.5, width = 14, units = "in", res = 500, "outputs/gwbi_model/Lag4_cohort_re_clim/P_effects_low_high_temp_TR_sites_only.png")
+plot_grid(plot_grid( title1, 
+                     cool+theme(legend.position = "none"), 
+                     title2,
+                     warm+theme(legend.position = "none"), 
+                     ncol=1, rel_heights=c(0.1,1,0.1, 1), align = "hv"),
+          legend, ncol = 2, rel_widths = c(1,0.25)) # rel_heights values control title margins
+dev.off()
+
+
+
+
 
 
 

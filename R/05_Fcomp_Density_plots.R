@@ -3,6 +3,7 @@
 library(reshape2)
 library(ggplot2)
 library(tidyr)
+library(gganimate)
 
 # load the necessary data:
 rm(list=ls()) # clear envt
@@ -120,6 +121,252 @@ colnames(guess.dens.wide)[3:length(guess.dens.wide)] <- paste0(colnames(guess.de
 saveRDS(guess.dens.wide, "Data/GUESS.Dens.pft.wide.rds")
 saveRDS(guess.dens, "Data/GUESS.Dens.pft.rds")
 saveRDS(guess.fcomp, "Data/GUESS.Fcomp.pft.rds")
+
+#--------------------Make GIF maps of Fcomp over time-------------------
+# for GUESS, using gganimate--this is the visualize how veg is changing across the region
+
+head(guess.fcomp) # year, site, pft, Fcomp
+guess.fcomp$num <- as.numeric(guess.fcomp$Site)
+# map out each of PFT's changes separately:
+guess.fcomp.ll <- left_join(paleon, guess.fcomp, by = "num")
+
+# 
+# BNE = Boreal needleleaved evergreen
+# BINE = Boreal needleleaved evergreen (shade intolerant)
+# BNS = Boreal needleleved summergreen
+# BIBS = Boreal broadleaved summergreen (shade intolerant)
+# TeBS = Temperate broadleaved summergreen
+# TeIBS = Temperate broadleaved summergreen (shade intolerant)
+# TeBE = Temperate broadleved evergreen
+# TrBE = Tropical broadleaved evergreen
+# TrIBE = Tropical broadleaved evergreen (shade intolerant)
+# TrBR = Tropical broadleaved raingreen
+# C3G = C3 grass
+# C4G = C4 grass
+# Total = sum of al PFTs
+
+# but the ones in the model are:
+# c("BNE" ,"BINE","BNS", "BIBS", "TeBS","TelBS","TeBE", "C3G", "Total" )
+
+# .............................Get PFT with highest Fcomp over time..............................
+by.fcomp <- guess.fcomp.ll %>% group_by(Year, Site) %>% spread(PFT, Fcomp)
+highest.fcomp <-vguess.fcomp.ll %>% filter (!PFT %in% "Total") %>% group_by(Year, Site) %>% filter(Fcomp == max(Fcomp))
+
+# unique highest fcomp = c(BIBS  TeBS  BINE  BNE   TelBS C3G   TeBE)
+
+
+library(maps)
+library(sp)
+library(rgeos)
+
+all_states <- map_data("state")
+states <- subset(all_states, region %in% c(  'minnesota','wisconsin','michigan',"illinois",  'indiana') )
+coordinates(all_states)<-~long+lat
+class(all_states)
+
+ca = map_data("world", "Canada")
+coordinates(ca)<-~long+lat
+ca.data <- data.frame(ca)
+mapdata <- data.frame(all_states)
+
+library(raster)
+library(rgdal)
+library(ggplot2)
+library(reshape2)
+library(plyr)
+library(rnaturalearth)
+#  Assuming you have a path 'Maps' that you store your spatial files in.  This
+#  is all downloaded from <a href=>http://www.naturalearthdata.com/downloads/</a> using the
+#  1:50m "Medium" scale data.
+
+# lakes
+ne_lakes <- ne_download(scale = 50, type = 'lakes', category = 'physical')
+sp::plot(ne_lakes, col = 'blue')
+
+# rivers
+ne_rivers <- ne_download(scale = 110, type = 'rivers_lake_centerlines', category = 'physical')
+sp::plot(ne_rivers, col = 'blue')
+
+# coast:
+ne_coast <- ne_download(scale = 110, type = 'coastline', category = 'physical')
+sp::plot(ne_coast, col = 'blue')
+
+# states:
+ne_state <- ne_download(scale = 110, type = 'states', category = 'cultural')
+
+nat.earth <- stack('/Users/kah/Documents/TreeRings/data/NE2_50M_SR_W/NE2_50M_SR_W/NE2_50M_SR_W.tif')
+
+
+
+#  I have a domain I'm interested in
+quick.subset <- function(x, longlat){
+  
+  # longlat should be a vector of four values: c(xmin, xmax, ymin, ymax)
+  x@data$id <- rownames(x@data)
+  
+  x.f = fortify(x, region="id")
+  x.join = plyr::join(x.f, x@data, by="id")
+  
+  x.subset <- subset(x.join, x.join$long > longlat[1] & x.join$long < longlat[2] &
+                       x.join$lat > longlat[3] & x.join$lat < longlat[4])
+  
+  x.subset
+}
+
+
+domain <- c(-100,-61, 35, 49)
+lakes.subset <- quick.subset(ne_lakes, domain)
+river.subset <- quick.subset(ne_rivers, domain)
+coast.subset <- quick.subset(ne_coast, domain)
+state.subset <- quick.subset(ne_state, c(-105,-61, 35, 49))
+nat.crop <- crop(nat.earth, y=extent(domain))
+
+rast.table <- data.frame(xyFromCell(nat.crop, 1:ncell(nat.crop)),
+                         getValues(nat.crop/255))
+
+rast.table$rgb <- with(rast.table, rgb(NE2_50M_SR_W.1,
+                                       NE2_50M_SR_W.2,
+                                       NE2_50M_SR_W.3,
+                                       1))
+# plot out map
+cbPalette <- c('#a6611a',
+               '#dfc27d',
+               '#80cdc1',
+               '#018571')
+
+NEmap <- ggplot()+
+  geom_raster(data = rast.table, aes(x = x, y = y, fill = NE2_50M_SR_W.1)) +scale_fill_gradientn(colours = rev(cbPalette), guide = FALSE)+
+  
+  geom_path(data=state.subset, aes(x = long, y = lat, group = group), color = 'grey40')+
+  geom_path(data=lakes.subset, aes(x = long, y = lat, group = group), color = 'blue') +
+  geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#ADD8E6') +
+  scale_alpha_discrete(range=c(1,0)) +
+  xlab('') + ylab('')+ coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61)) 
+
+
+
+map.highest <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = highest.fcomp, aes(lon, lat, fill = PFT))+
+  scale_fill_manual( values = c("BIBS"="#7fc97f",
+                                "TeBS"="#beaed4",
+                                "BINE"="#fdc086",
+                                "BNE"="#ffff99",
+                                "TelBS"="#386cb0",
+                                "C3G"="#f0027f",
+                                "TeBE"="#bf5b17"))+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+
+
+
+# for each year & site get the PFT with highest Fcomp:
+map.highest.gif <- map.highest + transition_time(Year) +
+  labs(title = "Dominant PFT Year: {frame_time}") 
+map.highest.gif <- animate(map.highest.gif, duration = 580)
+anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_highes_pft_GUESS.gif"), map.highest.gif)
+
+
+# .............................map out Fcomp for each PFT over time..............................
+map.BNE <- ggplot(guess.fcomp.ll[guess.fcomp.ll$PFT %in% "BNE",], aes(lon, lat, fill = Fcomp))+geom_raster()+
+  scale_fill_gradientn(colors = c("#fff7fb","#ece2f0", "#d0d1e6","#a6bddb","#67a9cf","#3690c0","#02818a","#016c59","#014636"), limits= c(0,1)  )
+
+# for each year & site get the PFT with highest Fcomp:
+map.BNE.gif <- map.BNE + transition_time(Year) +
+  labs(title = "BNE (Boreal needleleaved evergreen) Fcomp Year: {frame_time}") 
+BNE.gif <- animate(map.BNE.gif)
+anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_BNE_GUESS.gif"), BNE.gif)
+
+# ------ for BINE
+map.BINE <- ggplot(guess.fcomp.ll[guess.fcomp.ll$PFT %in% "BINE",], aes(lon, lat, fill = Fcomp))+geom_raster()+
+  scale_fill_gradientn(colors = c("#fff7fb","#ece2f0", "#d0d1e6","#a6bddb","#67a9cf","#3690c0","#02818a","#016c59","#014636"), limits= c(0,1)  )
+
+# for each year & site get the PFT with highest Fcomp:
+
+map.BINE.gif <- map.BINE + transition_time(Year) +
+  labs(title = "BINE Boreal needleleaved evergreen (shade intolerant) Fcomp Year: {frame_time}") 
+BINE.gif <- animate(map.BINE.gif)
+anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_BINE_GUESS.gif"), BINE.gif)
+
+#------ for BNS 
+
+# do the
+map.BNS <- ggplot(guess.fcomp.ll[guess.fcomp.ll$PFT %in% "BNS",], aes(lon, lat, fill = Fcomp))+geom_raster()+
+  scale_fill_gradientn(colors = c("#fff7fb","#ece2f0", "#d0d1e6","#a6bddb","#67a9cf","#3690c0","#02818a","#016c59","#014636"), limits= c(0,1)  )
+
+# for each year & site get the PFT with highest Fcomp:
+
+map.BNS.gif <- map.BNS + transition_time(Year) +
+  labs(title = "BNS Boreal needleleaved summergreen Fcomp Year: {frame_time}") 
+BNS.gif <- animate(map.BNS.gif)
+anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_BNS_GUESS.gif"), BNS.gif)
+
+
+#------ for BIBS
+
+# do the
+map.BIBS <- ggplot(guess.fcomp.ll[guess.fcomp.ll$PFT %in% "BIBS",], aes(lon, lat, fill = Fcomp))+geom_raster()+
+  scale_fill_gradientn(colors = c("#fff7fb","#ece2f0", "#d0d1e6","#a6bddb","#67a9cf","#3690c0","#02818a","#016c59","#014636"), limits= c(0,1)  )
+
+# for each year & site get the PFT with highest Fcomp:
+
+map.BIBS.gif <- map.BIBS + transition_time(Year) +
+  labs(title = "BIBS Boreal broadleaved summergreen Fcomp Year: {frame_time}") 
+BIBS.gif <- animate(map.BIBS.gif)
+anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_BIBS_GUESS.gif"), BIBS.gif)
+
+#------ for TeBS
+
+# do the
+map.TeBS <- ggplot(guess.fcomp.ll[guess.fcomp.ll$PFT %in% "TeBS",], aes(lon, lat, fill = Fcomp))+geom_raster()+
+  scale_fill_gradientn(colors = c("#fff7fb","#ece2f0", "#d0d1e6","#a6bddb","#67a9cf","#3690c0","#02818a","#016c59","#014636"), limits= c(0,1)  )
+
+# for each year & site get the PFT with highest Fcomp:
+
+map.TeBS.gif <- map.TeBS + transition_time(Year) +
+  labs(title = "TeBS Temperate broadleaved summergreen Fcomp Year: {frame_time}") 
+TeBS.gif <- animate(map.TeBS.gif)
+anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_TeBS_GUESS.gif"), TeBS.gif)
+
+
+#------ for TelBS
+
+# do the
+map.TelBS <- ggplot(guess.fcomp.ll[guess.fcomp.ll$PFT %in% "TelBS",], aes(lon, lat, fill = Fcomp))+geom_raster()+
+  scale_fill_gradientn(colors = c("#fff7fb","#ece2f0", "#d0d1e6","#a6bddb","#67a9cf","#3690c0","#02818a","#016c59","#014636"), limits= c(0,1)  )
+
+# for each year & site get the PFT with highest Fcomp:
+
+map.TelBS.gif <- map.TelBS + transition_time(Year) +
+  labs(title = "TelBS Temperate broadleaved summergreen (shade intolerant) Fcomp Year: {frame_time}") 
+TelBS.gif <- animate(map.TelBS.gif)
+anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_TelBS_GUESS.gif"), TelBS.gif)
+
+#------ for TeBE
+
+# do the
+map.TeBE <- ggplot(guess.fcomp.ll[guess.fcomp.ll$PFT %in% "TeBE",], aes(lon, lat, fill = Fcomp))+geom_raster()+
+  scale_fill_gradientn(colors = c("#fff7fb","#ece2f0", "#d0d1e6","#a6bddb","#67a9cf","#3690c0","#02818a","#016c59","#014636"), limits= c(0,1)  )
+
+# for each year & site get the PFT with highest Fcomp:
+
+map.TeBE.gif <- map.TeBE + transition_time(Year) +
+  labs(title = "TeBE Temperate broadleved evergreen Fcomp Year: {frame_time}") 
+TeBE.gif <- animate(map.TeBE.gif)
+anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_TeBE_GUESS.gif"), TeBE.gif)
+
+
+#------ for TeBE
+
+# do the
+map.C3G <- ggplot(guess.fcomp.ll[guess.fcomp.ll$PFT %in% "C3G",], aes(lon, lat, fill = Fcomp))+geom_raster()+
+  scale_fill_gradientn(colors = c("#fff7fb","#ece2f0", "#d0d1e6","#a6bddb","#67a9cf","#3690c0","#02818a","#016c59","#014636"), limits= c(0,1)  )
+
+# for each year & site get the PFT with highest Fcomp:
+
+map.C3G.gif <- map.C3G + transition_time(Year) +
+  labs(title = "C3G C3 grass Fcomp Year: {frame_time}") 
+C3G.gif <- animate(map.C3G.gif)
+anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_C3G_GUESS.gif"), C3G.gif)
 
 
 

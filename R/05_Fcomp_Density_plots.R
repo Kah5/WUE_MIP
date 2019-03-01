@@ -124,6 +124,45 @@ saveRDS(guess.dens.wide, "Data/GUESS.Dens.pft.wide.rds")
 saveRDS(guess.dens, "Data/GUESS.Dens.pft.rds")
 saveRDS(guess.fcomp, "Data/GUESS.Fcomp.pft.rds")
 
+
+#----------- read  LINKAGES fcomp:
+
+# no density file for LINKAGES
+LINK.Fcomp <- readRDS("Data/LINKAGES/PalEON_regional_LINKAGES.Fcomp.rds")
+#ED2.Fcomp <- readRDS("Data/ED2/ED2.Fcomp.RDS")
+#ED2.CO2 <- readRDS('Data/ED2/ED2.CO2.rds')
+load("Data/PalEON_siteInfo_all.RData")
+
+
+LINK.CO2<- GUESS.CO2 <- ED2.CO2
+
+yrlyvar <- (0:1160) + 850
+
+# make plots for ED2:
+timevec <- 1:13932
+month <- rep(1:12, 1161)
+yearsince  <- rep(0:1160, each =12)
+year <- yearsince + 850
+
+#convert list to array
+pft.link=c("beech","chestnut","elm","fir","hemlock","pignut hickory","red maple","sugar maple","red spruce",
+"poplar","tamarack","white ash","white oak","white pine","yellow birch")
+
+dimnames(LINK.Fcomp) <- list(yrlyvar, paleon$num, pft.link)
+
+
+link.Fcomp <- melt(LINK.Fcomp)
+colnames(link.Fcomp) <- c("Year", "Site", "PFT", "Fcomp")
+
+# remove sites with just NA for species
+link.Fcomp$Fcomp <- ifelse(link.Fcomp$Fcomp == -9999, NA, link.Fcomp$Fcomp)
+link.Fcomp.nona <- link.Fcomp[!is.na(link.Fcomp$Fcomp),]
+
+
+saveRDS(link.Fcomp.nona, "Data/LINKAGES.Fcomp.pft.rds")
+#ggplot(link.Fcomp.nona[link.Fcomp.nona$Site %in% "127",], aes(Year, Fcomp, color = PFT))+geom_line()
+
+
 #--------------------Make GIF maps of Fcomp over time-------------------
 # for ED2, using gganimate--this is the visualize how veg is changing across the region
 ED2.fcomp <- melt(Fcomp)
@@ -598,6 +637,121 @@ map.C3G.gif <- map.C3G + transition_time(Year) +
   labs(title = "C3G C3 grass Fcomp Year: {frame_time}") 
 C3G.gif <- animate(map.C3G.gif)
 anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_C3G_GUESS.gif"), C3G.gif)
+
+
+
+
+#--------------------Make GIF maps of Fcomp over time for LINKAGES-------------------
+# for GUESS, using gganimate--this is the visualize how veg is changing across the region
+
+head(link.Fcomp.nona) # year, site, pft, Fcomp
+link.Fcomp.nona$num <- as.numeric(link.Fcomp.nona$Site)
+# map out each of PFT's changes separately:
+link.fcomp.ll <- left_join(paleon, link.Fcomp.nona, by = "num")
+
+
+# .............................Get PFT with highest Fcomp over time for LINKAGES ..............................
+link.by.fcomp <- link.fcomp.ll %>% group_by(Year, Site) %>% spread(PFT, Fcomp)
+link.highest.fcomp <- link.fcomp.ll %>% group_by(Year, Site) %>% filter(Fcomp == max(Fcomp))
+
+# unique highest fcomp = c(BIBS  TeBS  BINE  BNE   TelBS C3G   TeBE)
+
+
+library(maps)
+library(sp)
+library(rgeos)
+
+all_states <- map_data("state")
+states <- subset(all_states, region %in% c(  'minnesota','wisconsin','michigan',"illinois",  'indiana') )
+coordinates(all_states)<-~long+lat
+class(all_states)
+
+ca = map_data("world", "Canada")
+coordinates(ca)<-~long+lat
+ca.data <- data.frame(ca)
+mapdata <- data.frame(all_states)
+
+
+NEmap <- ggplot()+
+  geom_raster(data = rast.table, aes(x = x, y = y, fill = NE2_50M_SR_W.1)) +scale_fill_gradientn(colours = rev(cbPalette), guide = FALSE)+
+  
+  geom_path(data=state.subset, aes(x = long, y = lat, group = group), color = 'grey40')+
+  geom_path(data=lakes.subset, aes(x = long, y = lat, group = group), color = 'blue') +
+  geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#ADD8E6') +
+  scale_alpha_discrete(range=c(1,0)) +
+  xlab('') + ylab('')+ coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61)) 
+
+
+unique(link.highest.fcomp$PFT)
+
+map.highest.link <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = link.highest.fcomp, aes(lon, lat, fill = PFT))+
+  scale_fill_manual(values = c("hemlock" = "#a6cee3",
+  "fir" = "#1f78b4",
+  "white pine"="#b2df8a",
+  "tamarack"="#33a02c",
+  "red maple"="#fb9a99",
+  "sugar maple"="#e31a1c",
+  "pignut hickory"="#fdbf6f",
+  "white oak"= "#ff7f00",
+  "elm"= "#cab2d6",
+  "beech"="#6a3d9a",
+  "white ash"="#ffff99", 
+  "poplar"="#b15928",
+  "red spruce"="black", "chestnut"="#800026"))+
+  coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+
+
+
+# for each year & site get the PFT with highest Fcomp:
+map.highest.gif <- map.highest.link + transition_time(Year) +
+  labs(title = "Dominant PFT Year: {frame_time}") 
+map.highest.gif <- gganimate::animate(map.highest.gif)
+anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_highes_pft_link.gif"), map.highest.gif)
+
+
+# .............................map out Fcomp for each PFT over time..............................
+
+make_fcomp_gif_link <- function (x, species){
+  
+    map.BNE <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+      geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+
+      geom_raster(data = x[x$PFT %in% species,], aes(lon, lat, fill = Fcomp))+
+      scale_fill_gradientn(colors = c("#f7fcfd",
+        "#e0ecf4",
+        "#bfd3e6",
+        "#9ebcda",
+        "#8c96c6",
+        "#8c6bb1",
+        "#88419d",
+        "#810f7c",
+        "#4d004b"), limits= c(0,1)  )+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))+theme_bw()
+    
+    # for each year & site get the PFT with highest Fcomp:
+    map.BNE.gif <- map.BNE + transition_time(Year) +
+      labs(title = paste(species, "Fcomp Year: {frame_time}") )
+    BNE.gif <- gganimate::animate(map.BNE.gif)
+    anim_save(filename=paste0(getwd(), paste0("/outputs/preliminaryplots/gifs/Fcomp_",species,"_link.gif")), BNE.gif)
+
+}
+
+# should use apply, but manually writing them out here
+make_fcomp_gif_link(link.fcomp.ll, "beech")
+make_fcomp_gif_link(link.fcomp.ll, "chestnut")
+make_fcomp_gif_link(link.fcomp.ll, "elm")
+make_fcomp_gif_link(link.fcomp.ll, "fir")
+make_fcomp_gif_link(link.fcomp.ll, "hemlock")
+make_fcomp_gif_link(link.fcomp.ll, "pignut hickory")
+make_fcomp_gif_link(link.fcomp.ll, "red maple")
+make_fcomp_gif_link(link.fcomp.ll, "sugar maple")
+make_fcomp_gif_link(link.fcomp.ll, "red spruce")
+make_fcomp_gif_link(link.fcomp.ll, "poplar")
+make_fcomp_gif_link(link.fcomp.ll, "tamarack")
+make_fcomp_gif_link(link.fcomp.ll, "white ash")
+make_fcomp_gif_link(link.fcomp.ll, "white oak")
+make_fcomp_gif_link(link.fcomp.ll, "yellow birch")
 
 
 

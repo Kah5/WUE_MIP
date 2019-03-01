@@ -4,6 +4,7 @@ library(reshape2)
 library(ggplot2)
 library(tidyr)
 library(gganimate)
+library(dplyr)
 
 # load the necessary data:
 rm(list=ls()) # clear envt
@@ -57,38 +58,39 @@ pfts <- c("pine.north" ,"conifer.late","temp.decid.early", "temp.decid.mid",
 Fcomp.r <- Fcomp[,,pfts]
 Dens.r <- Dens[,,pfts]
 
-# plots of Fcomp at each site (for ED2):
 
-for(i in 1:length(paleon$num)){
-  png(height=7, width = 7, units = 'in', res=300, paste0(getwd(), "/outputs/preliminaryplots/Fcomp/ED2_Fcomp_",paleon[i,]$latlon, ".png"))
-  plot(Fcomp.r[,i,"pine.north"], ylim = c(0,1.5), col = 'red', ylab = "Fcomp", xlab = "Months since 850")
-  points(Fcomp.r[,i,"conifer.late"], col = "forestgreen")
-  points(Fcomp.r[,i,"temp.decid.early"], col = "lightblue")
-  points(Fcomp.r[,i,"temp.decid.mid"], col = 'blue')
-  points(Fcomp.r[,i,"temp.decid.late"], col = "orange")
-  points(Fcomp.r[,i,"grass.c3.temp"], col = "black")
-  legend('topleft',legend=c("pine.north" ,"conifer.late","temp.decid.early", "temp.decid.mid",   
-                            "temp.decid.late", "grass.c3.temp" ), 
-         col = c('red', 'forestgreen', 'lightblue', 'blue', 'orange', 'black'), pch=16)
-  dev.off()
-}
+# plots of Fcomp at each site (for ED2): Not run b/c they take awhile
 
-
-# make the plot for density:
-for(i in 1:length(paleon$num)){
-  png(height=7, width = 7, units = 'in', res=300, paste0(getwd(), "/outputs/preliminaryplots/Dens/ED2_Dens_",paleon[i,]$latlon, ".png"))
-  plot(Dens.r[,i,"pine.north"] , ylim=c(10000, 1000000), col = 'red', ylab = "Dens", xlab = "Months since 850")
-  points(Dens.r[,i,"conifer.late"], col = "forestgreen")
-  points(Dens.r[,i,"temp.decid.early"], col = "lightblue")
-  points(Dens.r[,i,"temp.decid.mid"], col = 'blue')
-  points(Dens.r[,i,"temp.decid.late"], col = "orange")
-  points(Dens.r[,i,"grass.c3.temp"], col = "black")
-  legend('topleft',legend=c("pine.north" ,"conifer.late","temp.decid.early", "temp.decid.mid",   
-                            "temp.decid.late", "grass.c3.temp" ), 
-         col = c('red', 'forestgreen', 'lightblue', 'blue', 'orange', 'black'), pch=16)
-  dev.off()
-}
-
+# for(i in 1:length(paleon$num)){
+#   png(height=7, width = 7, units = 'in', res=300, paste0(getwd(), "/outputs/preliminaryplots/Fcomp/ED2_Fcomp_",paleon[i,]$latlon, ".png"))
+#   plot(Fcomp.r[,i,"pine.north"], ylim = c(0,1.5), col = 'red', ylab = "Fcomp", xlab = "Months since 850")
+#   points(Fcomp.r[,i,"conifer.late"], col = "forestgreen")
+#   points(Fcomp.r[,i,"temp.decid.early"], col = "lightblue")
+#   points(Fcomp.r[,i,"temp.decid.mid"], col = 'blue')
+#   points(Fcomp.r[,i,"temp.decid.late"], col = "orange")
+#   points(Fcomp.r[,i,"grass.c3.temp"], col = "black")
+#   legend('topleft',legend=c("pine.north" ,"conifer.late","temp.decid.early", "temp.decid.mid",   
+#                             "temp.decid.late", "grass.c3.temp" ), 
+#          col = c('red', 'forestgreen', 'lightblue', 'blue', 'orange', 'black'), pch=16)
+#   dev.off()
+# }
+# 
+# 
+# # make the plot for density:
+# for(i in 1:length(paleon$num)){
+#   png(height=7, width = 7, units = 'in', res=300, paste0(getwd(), "/outputs/preliminaryplots/Dens/ED2_Dens_",paleon[i,]$latlon, ".png"))
+#   plot(Dens.r[,i,"pine.north"] , ylim=c(10000, 1000000), col = 'red', ylab = "Dens", xlab = "Months since 850")
+#   points(Dens.r[,i,"conifer.late"], col = "forestgreen")
+#   points(Dens.r[,i,"temp.decid.early"], col = "lightblue")
+#   points(Dens.r[,i,"temp.decid.mid"], col = 'blue')
+#   points(Dens.r[,i,"temp.decid.late"], col = "orange")
+#   points(Dens.r[,i,"grass.c3.temp"], col = "black")
+#   legend('topleft',legend=c("pine.north" ,"conifer.late","temp.decid.early", "temp.decid.mid",   
+#                             "temp.decid.late", "grass.c3.temp" ), 
+#          col = c('red', 'forestgreen', 'lightblue', 'blue', 'orange', 'black'), pch=16)
+#   dev.off()
+# }
+# 
 
 #save Dens.r and Fcomp.r
 saveRDS(Dens.r, "Data/ED2.Dens.pftonly.rds")
@@ -123,6 +125,235 @@ saveRDS(guess.dens, "Data/GUESS.Dens.pft.rds")
 saveRDS(guess.fcomp, "Data/GUESS.Fcomp.pft.rds")
 
 #--------------------Make GIF maps of Fcomp over time-------------------
+# for ED2, using gganimate--this is the visualize how veg is changing across the region
+ED2.fcomp <- melt(Fcomp)
+head(ED2.fcomp) # year, site, pft, Fcomp
+colnames(ED2.fcomp) <- c("time", "Site", "PFT", "Fcomp")
+ED2.fcomp$Year <- year 
+ED2.fcomp$Month <- month 
+ED2.fcomp$num <- as.numeric(ED2.fcomp$Site)
+# map out each of PFT's changes separately:
+ED2.fcomp.ll <- left_join(paleon, ED2.fcomp, by = "num")
+
+# ED2 PFTS
+# "pine.north" ,"conifer.late","temp.decid.early", "temp.decid.mid",   
+#           "temp.decid.late", "grass.c3.temp" )
+
+# but the ones in the model are:
+# c("BNE" ,"BINE","BNS", "BIBS", "TeBS","TelBS","TeBE", "C3G", "Total" )
+
+# .............................Get PFT with highest Fcomp over time for ED2 ..............................
+by.fcomp <- ED2.fcomp.ll %>% group_by( Year, Site, PFT ) %>% dplyr::summarise(Fcompy = mean( Fcomp), 
+                                                                             Fcomp.sd = sd(Fcomp))
+
+by.fcomp2 <-  by.fcomp %>% dplyr::select(Year, Site, PFT, Fcompy) %>% group_by(Year, Site ) %>% spread(key = PFT, value = Fcompy)
+highest.fcomp <- by.fcomp %>% dplyr::select(Year, Site, PFT, Fcompy) %>% group_by(Year, Site) %>% filter(Fcompy == max(Fcompy))
+
+# get latlon again
+ED2.sites <- unique(ED2.fcomp.ll[, c("num", "lon", "lat", "Site")])
+highest.fcomp <- left_join(ED2.sites, highest.fcomp, by = "Site")
+by.fcomp <- left_join(ED2.sites, by.fcomp2, by = "Site")
+by.fcomp.nona <- by.fcomp[!is.na(by.fcomp$grass.c4),]
+
+by.fcomp2<- by.fcomp[!is.na(by.fcomp$grass.c4),]
+library(maps)
+library(sp)
+library(rgeos)
+
+all_states <- map_data("state")
+states <- subset(all_states, region %in% c(  'minnesota','wisconsin','michigan',"illinois",  'indiana') )
+coordinates(all_states)<-~long+lat
+class(all_states)
+
+ca = map_data("world", "Canada")
+coordinates(ca)<-~long+lat
+ca.data <- data.frame(ca)
+mapdata <- data.frame(all_states)
+
+library(raster)
+library(rgdal)
+library(ggplot2)
+library(reshape2)
+library(plyr)
+library(rnaturalearth)
+#  Assuming you have a path 'Maps' that you store your spatial files in.  This
+#  is all downloaded from <a href=>http://www.naturalearthdata.com/downloads/</a> using the
+#  1:50m "Medium" scale data.
+
+# lakes
+ne_lakes <- ne_download(scale = 50, type = 'lakes', category = 'physical')
+sp::plot(ne_lakes, col = 'blue')
+
+# rivers
+ne_rivers <- ne_download(scale = 110, type = 'rivers_lake_centerlines', category = 'physical')
+sp::plot(ne_rivers, col = 'blue')
+
+# coast:
+ne_coast <- ne_download(scale = 110, type = 'coastline', category = 'physical')
+sp::plot(ne_coast, col = 'blue')
+
+# states:
+ne_state <- ne_download(scale = 110, type = 'states', category = 'cultural')
+
+nat.earth <- stack('/Users/kah/Documents/TreeRings/data/NE2_50M_SR_W/NE2_50M_SR_W/NE2_50M_SR_W.tif')
+
+
+
+#  I have a domain I'm interested in
+quick.subset <- function(x, longlat){
+  
+  # longlat should be a vector of four values: c(xmin, xmax, ymin, ymax)
+  x@data$id <- rownames(x@data)
+  
+  x.f = fortify(x, region="id")
+  x.join = plyr::join(x.f, x@data, by="id")
+  
+  x.subset <- subset(x.join, x.join$long > longlat[1] & x.join$long < longlat[2] &
+                       x.join$lat > longlat[3] & x.join$lat < longlat[4])
+  
+  x.subset
+}
+
+
+domain <- c(-100,-61, 35, 49)
+lakes.subset <- quick.subset(ne_lakes, domain)
+river.subset <- quick.subset(ne_rivers, domain)
+coast.subset <- quick.subset(ne_coast, domain)
+state.subset <- quick.subset(ne_state, c(-105,-61, 35, 49))
+nat.crop <- crop(nat.earth, y=extent(domain))
+
+rast.table <- data.frame(xyFromCell(nat.crop, 1:ncell(nat.crop)),
+                         getValues(nat.crop/255))
+
+rast.table$rgb <- with(rast.table, rgb(NE2_50M_SR_W.1,
+                                       NE2_50M_SR_W.2,
+                                       NE2_50M_SR_W.3,
+                                       1))
+# plot out map
+cbPalette <- c('#a6611a',
+               '#dfc27d',
+               '#80cdc1',
+               '#018571')
+
+NEmap <- ggplot()+
+  geom_raster(data = rast.table, aes(x = x, y = y, fill = NE2_50M_SR_W.1)) +scale_fill_gradientn(colours = rev(cbPalette), guide = FALSE)+
+  
+  geom_path(data=state.subset, aes(x = long, y = lat, group = group), color = 'grey40')+
+  geom_path(data=lakes.subset, aes(x = long, y = lat, group = group), color = 'blue') +
+  geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#ADD8E6') +
+  scale_alpha_discrete(range=c(1,0)) +
+  xlab('') + ylab('')+ coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61)) 
+
+#"pine.north" ,"conifer.late","temp.decid.early", "temp.decid.mid",   
+#           "temp.decid.late", "grass.c3.temp" )
+
+highest.fcomp$Year<- as.numeric(highest.fcomp$Year)
+highest.fcomp <- highest.fcomp[!is.na(highest.fcomp$Year),]
+
+map.highest <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = highest.fcomp, aes(lon, lat, fill = PFT))+
+  scale_fill_manual( values = c("pine.north"="#7fc97f",
+                                "temp.decid.late"="#beaed4",
+                                "temp.decid.mid"="#fdc086",
+                                "conifer.late"="#ffff99",
+                                "temp.decid.early"="#386cb0",
+                                "grass.c3.temp"="#f0027f",
+                                "temp.decid.late"="#bf5b17"))+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+
+pfts <- c("pine.north" ,"conifer.late","temp.decid.early", "temp.decid.mid",   
+          "temp.decid.late", "grass.c3.temp" )
+
+
+
+# for each year & site get the PFT with highest Fcomp:
+map.highest.gif <- map.highest + transition_time(time = Year) +
+  labs(title = "Dominant PFT Year: {frame_time}") 
+map.highest.gif <- gganimate::animate(map.highest.gif)
+anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_highest_pft_ED2.gif"), map.highest.gif)
+
+
+# .............................map out Fcomp for each PFT over time..............................
+
+#------ for pine.north 
+map.pine.north <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data= by.fcomp.nona, aes(lon, lat, fill = pine.north))+
+  scale_fill_gradientn(colors = c("#fff7fb","#ece2f0", "#d0d1e6","#a6bddb","#67a9cf","#3690c0","#02818a","#016c59","#014636"), limits= c(0,1)  )+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+# for each year & site get the PFT with highest Fcomp:
+map.pine.north.gif <- map.pine.north + transition_time(Year) +
+  labs(title = "pine.north Fcomp Year: {frame_time}") 
+pine.north.gif <- gganimate:: animate(map.pine.north.gif)
+anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_pine.north_ED2.gif"), pine.north.gif)
+
+# -------for conifer.late 
+map.conifer.late <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data= by.fcomp.nona, aes(lon, lat, fill = conifer.late))+
+  scale_fill_gradientn(colors = c("#fff7fb","#ece2f0", "#d0d1e6","#a6bddb","#67a9cf","#3690c0","#02818a","#016c59","#014636"), limits= c(0,1)  )+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+# for each year & site get the PFT with highest Fcomp:
+map.conifer.late.gif <- map.conifer.late + transition_time(Year) +
+  labs(title = "conifer.late Fcomp Year: {frame_time}") 
+conifer.late.gif <- gganimate:: animate(map.conifer.late.gif)
+anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_conifer.late_ED2.gif"), conifer.late.gif)
+
+# ------for temp.decid.mid 
+map.temp.decid.mid <-ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data= by.fcomp.nona, aes(lon, lat, fill = temp.decid.mid ))+
+  scale_fill_gradientn(colors = c("#fff7fb","#ece2f0", "#d0d1e6","#a6bddb","#67a9cf","#3690c0","#02818a","#016c59","#014636"), limits= c(0,1)  )+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+# for each year & site get the PFT with highest Fcomp:
+map.temp.decid.mid.gif <- map.temp.decid.mid + transition_time(Year) +
+  labs(title = "temp.decid.mid Fcomp Year: {frame_time}") 
+temp.decid.mid.gif <- gganimate:: animate(map.temp.decid.mid.gif)
+anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_temp.decid.mid_ED2.gif"), temp.decid.mid.gif)
+
+
+#------------- for temp.decid.early 
+map.temp.decid.early <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data= by.fcomp.nona, aes(lon, lat, fill = temp.decid.early ))+
+  scale_fill_gradientn(colors = c("#fff7fb","#ece2f0", "#d0d1e6","#a6bddb","#67a9cf","#3690c0","#02818a","#016c59","#014636"), limits= c(0,1)  )+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+# for each year & site get the PFT with highest Fcomp:
+map.temp.decid.early.gif <- map.temp.decid.early + transition_time(Year) +
+  labs(title = "temp.decid.early Fcomp Year: {frame_time}") 
+temp.decid.early.gif <- gganimate:: animate(map.temp.decid.early.gif)
+anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_temp.decid.early_ED2.gif"), temp.decid.early.gif)
+
+#----------- for temp.decid.late 
+map.temp.decid.late <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data= by.fcomp.nona, aes(lon, lat, fill = temp.decid.late ))+
+  scale_fill_gradientn(colors = c("#fff7fb","#ece2f0", "#d0d1e6","#a6bddb","#67a9cf","#3690c0","#02818a","#016c59","#014636"), limits= c(0,1)  )+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+# for each year & site get the PFT with highest Fcomp:
+map.temp.decid.late.gif <- map.temp.decid.late + transition_time(Year) +
+  labs(title = "temp.decid.late Fcomp Year: {frame_time}") 
+temp.decid.late.gif <- gganimate:: animate(map.temp.decid.late.gif)
+anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_temp.decid.late_ED2.gif"), temp.decid.late.gif)
+
+#--------- for grass.c3.temp 
+map.grass.c3.temp <-ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data= by.fcomp.nona, aes(lon, lat, fill = grass.c3.temp ))+
+  scale_fill_gradientn(colors = c("#fff7fb","#ece2f0", "#d0d1e6","#a6bddb","#67a9cf","#3690c0","#02818a","#016c59","#014636"), limits= c(0,1)  )+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+# for each year & site get the PFT with highest Fcomp:
+map.grass.c3.temp.gif <- map.grass.c3.temp + transition_time(Year) +
+  labs(title = "grass.c3.temp Fcomp Year: {frame_time}") 
+grass.c3.temp.gif <- gganimate:: animate(map.grass.c3.temp.gif)
+anim_save(filename=paste0(getwd(), "/outputs/preliminaryplots/gifs/Fcomp_grass.c3.temp_ED2.gif"), grass.c3.temp.gif)
+
+
+
+
+
+#--------------------Make GIF maps of Fcomp over time for GUESS-------------------
 # for GUESS, using gganimate--this is the visualize how veg is changing across the region
 
 head(guess.fcomp) # year, site, pft, Fcomp
@@ -148,9 +379,9 @@ guess.fcomp.ll <- left_join(paleon, guess.fcomp, by = "num")
 # but the ones in the model are:
 # c("BNE" ,"BINE","BNS", "BIBS", "TeBS","TelBS","TeBE", "C3G", "Total" )
 
-# .............................Get PFT with highest Fcomp over time..............................
+# .............................Get PFT with highest Fcomp over time for GUESS ..............................
 by.fcomp <- guess.fcomp.ll %>% group_by(Year, Site) %>% spread(PFT, Fcomp)
-highest.fcomp <-vguess.fcomp.ll %>% filter (!PFT %in% "Total") %>% group_by(Year, Site) %>% filter(Fcomp == max(Fcomp))
+highest.fcomp <- guess.fcomp.ll %>% filter (!PFT %in% "Total") %>% group_by(Year, Site) %>% filter(Fcomp == max(Fcomp))
 
 # unique highest fcomp = c(BIBS  TeBS  BINE  BNE   TelBS C3G   TeBE)
 

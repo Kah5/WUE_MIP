@@ -44,6 +44,8 @@ colnames(JJAmeans.GUESS)
 
 GUESS.all <- left_join(all.df.yr.GUESS, JJAmeans.GUESS[,c("Year", "Site", "Tair.C.jja", "precip.mm.jja")], by = c("Year", "Site"))
 
+test.guess.ed <- left_join(GUESS.all, ED.all, by = c("Year", "Site"))
+
 # for GUESS, we also have density, and gwbi at PFT scale, so lets read them in here:
 GWBI.GUESS <- readRDS("Data/GUESS.gwbi.pft.wide.rds")
 GWBI.GUESS$Site <- paste0("X", GWBI.GUESS$Site)

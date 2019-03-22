@@ -753,6 +753,10 @@ make_fcomp_gif_link(link.fcomp.ll, "white ash")
 make_fcomp_gif_link(link.fcomp.ll, "white oak")
 make_fcomp_gif_link(link.fcomp.ll, "yellow birch")
 
+#-----------------------Do sites switch PFT in response to climate and CO2?-------------
+# 1. quantify the number of pft switches--Do they vary over time or across space in a meaninful way?
+# 2. quantify the type of pft switches--Does CO2 favor 
+
 
 
 #----------------------Are there sites where density is bimodal?----------------
@@ -1248,47 +1252,47 @@ saveRDS(all.y, "outputs/data/ED2/ED2.alldat.yrmeans.rds")
 
 
 # this function currently takes awhile
-plot.sens.subset <- function(df, xname, yname, yrs){
-  df <- df[,c("Year", "Site", xname, yname)]
-  colnames(df) <- c("Year", "Site", "x", "y")
-  df <- df[df$Year %in% yrs, ]
-  lim <- quantile(df$x, .99, na.rm=T) # so we dont plot the outliers
-  
-  png(height = 12, width = 12, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/sensitivity/ED2_", xname,"_", yname,"_",yrs[1],"_",yrs[length(yrs)],"_sens.png"))
-  print(ggplot(data = df, aes(x = x, y = y, color = Site))+geom_point()+xlim(0,lim)+
-          ylab(yname)+ xlab(xname)+stat_smooth(color = "black") +theme_bw()+ theme(legend.position="none") )
-  dev.off()
-  
-# write site level data to a pdf:
-  pdf(paste0(getwd(),"/outputs/preliminaryplots/sensitivity/ED2_", xname,"_", yname,"_",yrs[1],"_",yrs[length(yrs)],"_sens_site.pdf"), 7, 5)
-  for (i in 1:length(unique(df$Site))) {
-    print(ggplot(df[df$Site %in% df$Site[i:(i+24)], ], 
-                 aes(x, y)) + 
-            geom_point() +
-            facet_wrap(~ Site, ncol = 5, nrow = 5) +
-            xlim(0,lim)+
-            ylab(yname)+ xlab(xname)+stat_smooth(color = "black") +theme_bw())
-  }
-  dev.off()
-}
-
-
-plot.sens(all.y, "CO2", "Rel.Dens")
-plot.sens(all.y, "Rel.Dens", "IWUE")
-plot.sens(all.y, "Rel.Dens", "WUEi")
-plot.sens(all.y, "Rel.Dens", "WUEt")
-plot.sens(all.y, "Rel.Dens", "Tair")
-plot.sens(all.y, "Rel.Dens", "precip")
-
-# making the plots for the CO2 dominated era:
-
-plot.sens.subset(all.y, "Rel.Dens", "CO2", 850:1800)
-plot.sens.subset(all.y, "Rel.Dens", "CO2", 1800:2010)
-plot.sens.subset(all.y, "Rel.Dens", "IWUE", 850:1800)
-plot.sens.subset(all.y, "Rel.Dens", "WUEi", 850:1800)
-plot.sens.subset(all.y, "Rel.Dens", "WUEt", 850:1800)
-plot.sens.subset(all.y, "Rel.Dens", "Tair", 850:1800)
-plot.sens.subset(all.y, "Rel.Dens", "precip", 850:1800)
+# plot.sens.subset <- function(df, xname, yname, yrs){
+#   df <- df[,c("Year", "Site", xname, yname)]
+#   colnames(df) <- c("Year", "Site", "x", "y")
+#   df <- df[df$Year %in% yrs, ]
+#   lim <- quantile(df$x, .99, na.rm=T) # so we dont plot the outliers
+#   
+#   png(height = 12, width = 12, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/sensitivity/ED2_", xname,"_", yname,"_",yrs[1],"_",yrs[length(yrs)],"_sens.png"))
+#   print(ggplot(data = df, aes(x = x, y = y, color = Site))+geom_point()+xlim(0,lim)+
+#           ylab(yname)+ xlab(xname)+stat_smooth(color = "black") +theme_bw()+ theme(legend.position="none") )
+#   dev.off()
+#   
+# # write site level data to a pdf:
+#   pdf(paste0(getwd(),"/outputs/preliminaryplots/sensitivity/ED2_", xname,"_", yname,"_",yrs[1],"_",yrs[length(yrs)],"_sens_site.pdf"), 7, 5)
+#   for (i in 1:length(unique(df$Site))) {
+#     print(ggplot(df[df$Site %in% df$Site[i:(i+24)], ], 
+#                  aes(x, y)) + 
+#             geom_point() +
+#             facet_wrap(~ Site, ncol = 5, nrow = 5) +
+#             xlim(0,lim)+
+#             ylab(yname)+ xlab(xname)+stat_smooth(color = "black") +theme_bw())
+#   }
+#   dev.off()
+# }
+# 
+# 
+# plot.sens(all.y, "CO2", "Rel.Dens")
+# plot.sens(all.y, "Rel.Dens", "IWUE")
+# plot.sens(all.y, "Rel.Dens", "WUEi")
+# plot.sens(all.y, "Rel.Dens", "WUEt")
+# plot.sens(all.y, "Rel.Dens", "Tair")
+# plot.sens(all.y, "Rel.Dens", "precip")
+# 
+# # making the plots for the CO2 dominated era:
+# 
+# plot.sens.subset(all.y, "Rel.Dens", "CO2", 850:1800)
+# plot.sens.subset(all.y, "Rel.Dens", "CO2", 1800:2010)
+# plot.sens.subset(all.y, "Rel.Dens", "IWUE", 850:1800)
+# plot.sens.subset(all.y, "Rel.Dens", "WUEi", 850:1800)
+# plot.sens.subset(all.y, "Rel.Dens", "WUEt", 850:1800)
+# plot.sens.subset(all.y, "Rel.Dens", "Tair", 850:1800)
+# plot.sens.subset(all.y, "Rel.Dens", "precip", 850:1800)
 
 # The above plots are all interesteing since precip, tair, WUE, density all vary by site. 
 # may be helpful to determine a site specific sensitivity to CO2, precip, WUE

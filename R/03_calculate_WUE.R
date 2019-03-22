@@ -106,6 +106,7 @@ calc.WUE <- function(model){
       saveRDS(WUEi, "Data/ED2/ED2.WUEi.rds")
       
     }else{
+     
       # for LPJGUESS
       #qair <- readRDS("Data/LPJ-GUESS/")
       tair <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.tair.rds")
@@ -145,8 +146,12 @@ calc.WUE <- function(model){
     }
     
     
-  }
+    }
+ 
+  
+    
 }
+
 
 calc.WUE ("ED2")
 calc.WUE ("LPJ-GUESS")

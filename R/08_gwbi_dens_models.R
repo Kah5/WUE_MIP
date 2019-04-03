@@ -90,6 +90,36 @@ colnames(ED.totals) <- c("Year", "Site", "Rel.Dens", "IWUE", "WUEt", "CO2", "Tai
                          "Dens", "gwbi",  "rel.gwbi","Tair.C.jja", "precip.mm.jja", "Model")
 
 
+# ------------read in model agbi, dens summaries for LPJ-LINK
+all.df.yr.LINK <- readRDS("outputs/data/LINKAGES/LINK.alldat.yrmeans.rds")
+
+
+
+
+test.LINK.ed <- left_join(LINK.all, ED.all, by = c("Year", "Site"))
+
+
+# make a DF paralell to ED2:
+colnames(ED.all)
+colnames(LINK.all)
+
+LINK.totals <- LINK.all[,c("Year", "Site", "Rel.Dens", "IWUE", "WUEt", "CO2", "Tair", "Tair.C", "precip", "precip.mm",
+                             "Total.Dens", "Total.gwbi","mean.diff", "Tair.C.jja", "precip.mm.jja")]
+
+LINK.totals$Model <- "LINK"
+colnames(LINK.totals) <- c("Year", "Site", "Rel.Dens", "IWUE", "WUEt", "CO2", "Tair", "Tair.C", "precip", "precip.mm",
+                            "Dens", "gwbi","rel.gwbi", "Tair.C.jja", "precip.mm.jja", "Model")
+
+
+# now subset ED.all by because we dont have all the WUE
+
+ED.totals <- ED.all[,c("Year", "Site", "Rel.Dens", "IWUE", "WUEt", "CO2", "Tair", "Tair.C", "precip", "precip.mm",
+                       "Dens", "GS_gwbi", "mean.diff", "Tair.C.jja", "precip.mm.jja")]
+ED.totals$Model <- "ED2"
+colnames(ED.totals) <- c("Year", "Site", "Rel.Dens", "IWUE", "WUEt", "CO2", "Tair", "Tair.C", "precip", "precip.mm",
+                         "Dens", "gwbi",  "rel.gwbi","Tair.C.jja", "precip.mm.jja", "Model")
+
+
 
 # combine together (in case we want to model together):
 ED.GUESS <- rbind(ED.totals, GUESS.totals)

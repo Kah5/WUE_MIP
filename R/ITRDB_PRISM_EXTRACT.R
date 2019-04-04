@@ -73,7 +73,7 @@ extract.ll.ppt <- function(x){
   df.s <- data.frame(rasterToPoints(s))
   # extract data for lat long:
   df.select <- dplyr::left_join(df.s, lat.lon.uni, by = c("x", "y"))
-  colnames(df.select) <- c("x", "y", "ppt")
+  colnames(df.select) <- c("x", "y", "ppt", "Longitude", "Latitude")
   df.select$year <- substring(x, 27, 30)
   df.select$month <- substring(x, 31, 32)
   cat(".")

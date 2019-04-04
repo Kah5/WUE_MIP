@@ -15,23 +15,33 @@ library(dplyr)
 library(ggplot2)
 
 #---------------------- 1. load ITRDB data -----------------------------------------------------
+library(raster)
+library(sp)
+library(tidyr)
 # read in the ITRDB file
 rwl.age.ll <- readRDS( "Data/ITRDB/rwl.ages.df.nona_spatial.rds")
+rwl.age.ll.unique <- unique(rwl.age.ll[, c("Longitude", "Latitude", "studyCode", "SPEC.CODE")])
 
-# get the LatLon for the paleon raster grid cell that each itrdb site falls in:
+# get the LatLon for the grid cell:
 toRaster <- "/Users/kah/Documents/WUE_MIP/WUE_MIP/Data/paleon.unit.ll_01.tif"
 paleon.ll <- raster("/Users/kah/Documents/WUE_MIP/WUE_MIP/Data/paleon.unit.ll_01.tif")
-lat.lon <- raster::extract(paleon.ll, rwl.age.ll[,c("Longitude", "Latitude")], cellnumber = TRUE, df = TRUE)
+values(paleon.ll) <- 1:ncell(paleon.ll)
+lat.lon <- raster::extract(paleon.ll, rwl.age.ll.unique[,c("Longitude", "Latitude")], cellnumber = TRUE, df = TRUE)
 y <- data.frame(rasterToPoints(paleon.ll))
+
 xy <- xyFromCell(paleon.ll, cell = lat.lon$cells)
+
 lat.lon$x <- xy[,"x"]
 lat.lon$y <- xy[,"y"]
-lat.lon$Longitude <- rwl.age.ll$Longitude
-lat.lon$Latitude <- rwl.age.ll$Latitude
+lat.lon$Longitude <- rwl.age.ll.unique$Longitude
+lat.lon$Latitude <- rwl.age.ll.unique$Latitude
+lat.lon$Latitude <- rwl.age.ll.unique$Latitude
+
+lat.lon.uni <- unique(lat.lon[, c("x", "y", "Longitude", "Latitude")])
 
 # add paleon grid cells lat longs to the rwl.age.ll data.frame
-rwl.age.ll$Longitude_Pal <- lat.lon$Longitude 
-rwl.age.ll$Latitude_Pal <- lat.lon$Latitude
+rwl.age.ll.unique$Longitude_Pal <- lat.lon$Longitude 
+rwl.age.ll.unique$Latitude_Pal <- lat.lon$Latitude
 
 lat.lon.uni <- unique(lat.lon[, c("x", "y")])
 
@@ -81,7 +91,8 @@ PCvals <- TR$x
 PCvals.rot <- data.frame(TR$rotation)
 PCvals.rot$studyCode <- toupper(rownames(PCvals.rot))
 
-uniquesites <- unique(rwl.age.ll[, c("Longitude", "Latitude","Longitude_Pal", "Latitude_Pal", "SPEC.CODE", "SPEC.NAME", "studyCode", "Elevation")])
+
+uniquesites <- unique(rwl.age.ll.unique[, c("Longitude", "Latitude","Longitude_Pal", "Latitude_Pal", "SPEC.CODE",  "studyCode")])
 
 full.pcs <- left_join(uniquesites, PCvals.rot, by ="studyCode", all.x = FALSE)
 
@@ -100,18 +111,32 @@ ggplot(full.pcs, aes(Latitude, PC2, color = SPEC.CODE))+geom_point()
 uniquesites$x <- uniquesites$Longitude
 uniquesites$y <- uniquesites$Latitude
 
-tmax.summary <- tmax.itrdb.df %>% group_by(x, y, year) %>% dplyr::summarise(meanTmax = mean(Tmax))
+tmax.summary <- tmax.itrdb.df %>% group_by(Longitude, Latitude, year) %>% dplyr::summarise(meanTmax = mean(Tmax))
 
-ggplot()+geom_raster(data = tmax.summary[tmax.summary$year %in% "1895",], aes(x =x,y = y, fill = meanTmax))+
-  geom_point(data = rwl.age.ll.unique, aes(Longitude, Latitude))
+ggplot()+geom_point(data = tmax.summary[tmax.summary$year %in% "1895",], aes(x =Longitude,y = Latitude, color = meanTmax))#+
+  #geom_point(data = rwl.age.ll.unique, aes(Longitude, Latitude))
 
-test.merge <-  merge(tmax.summary, rwl.age.ll.unique, by.x = c("x", "y"), by.y = c("Longitude", "Latitude"))
+#test.merge <-  merge(tmax.summary, rwl.age.ll.unique, by.x = c("x", "y"), by.y = c("Longitude", "Latitude"))
 
-tmax.itrdb <- left_join(tmax.itrdb.df, uniquesites, by = c("x", "y"))
-tmax.itrdb
-ppt.itrdb <- left_join(uniquesites, ppt.itrdb.df, by = c("x", "y"))
+tmax.itrdb <- left_join(tmax.itrdb.df, uniquesites, by = c("Longitude", "Latitude"))
+head(tmax.itrdb)
+ggplot(tmax.itrdb[tmax.itrdb$year %in% "1895" & tmax.itrdb$month %in% "01",], aes(Longitude, Latitude))+geom_point()
+#ppt.itrdb <- left_join(ppt.itrdb.df, uniquesites, by = c("Longitude", "Latitude"))
 
 
+tmax.sites.only <- tmax.itrdb[!is.na(tmax.itrdb$studyCode),]
+tmax.sites.only <- tmax.sites.only[,1:11]
+colnames(tmax.sites.only) <- c("x", "y", "Tmax", "Longitude", "Latitude", "year", "month", "Longitude_Pal", "Latitude_Pal", "SPEC.CODE", "studyCode")
 
+saveRDS(tmax.sites.only, paste0("Data/ITRDB/PRISM/tmax/Tmax_1895_2016_extracted_ITRDB_sites_only.rds"))
+
+# get data reformatted to have months in columns & merge with sites:
+
+tmax.month <- tmax.sites.only %>% select("Longitude", "Latitude","Tmax", "year", "month", "studyCode", "SPEC.CODE") %>% spread(key = month, value = Tmax)
+tmax.month$year <- as.numeric(tmax.month$year)
+
+ggplot(tmax.sites.only[tmax.sites.only$year %in% "1895",], aes(month, Tmax))+geom_point()
+
+ggplot(tmax.month, aes(year, `07`, color = SPEC.CODE))+geom_point()
 
 # 5. Site level correlations of detrended data with multiple climate parameters & do cluster analysis on the corelation output

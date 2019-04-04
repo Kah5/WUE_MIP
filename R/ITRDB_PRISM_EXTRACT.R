@@ -4,19 +4,24 @@ library(sp)
 library(tidyr)
 # read in the ITRDB file
 rwl.age.ll <- readRDS( "Data/ITRDB/rwl.ages.df.nona_spatial.rds")
+rwl.age.ll.unique <- unique(rwl.age.ll[, c("Longitude", "Latitude", "studyCode", "SPEC.CODE")])
 
 # get the LatLon for the grid cell:
 toRaster <- "/Users/kah/Documents/WUE_MIP/WUE_MIP/Data/paleon.unit.ll_01.tif"
 paleon.ll <- raster("/Users/kah/Documents/WUE_MIP/WUE_MIP/Data/paleon.unit.ll_01.tif")
-lat.lon <- raster::extract(paleon.ll, rwl.age.ll[,c("Longitude", "Latitude")], cellnumber = TRUE, df = TRUE)
+values(paleon.ll) <- 1:ncell(paleon.ll)
+lat.lon <- raster::extract(paleon.ll, rwl.age.ll.unique[,c("Longitude", "Latitude")], cellnumber = TRUE, df = TRUE)
 y <- data.frame(rasterToPoints(paleon.ll))
+
 xy <- xyFromCell(paleon.ll, cell = lat.lon$cells)
+
 lat.lon$x <- xy[,"x"]
 lat.lon$y <- xy[,"y"]
-lat.lon$Longitude <- rwl.age.ll$Longitude
-lat.lon$Latitude <- rwl.age.ll$Latitude
+lat.lon$Longitude <- rwl.age.ll.unique$Longitude
+lat.lon$Latitude <- rwl.age.ll.unique$Latitude
+lat.lon$Latitude <- rwl.age.ll.unique$Latitude
 
-lat.lon.uni <- unique(lat.lon[, c("x", "y")])
+lat.lon.uni <- unique(lat.lon[, c("x", "y", "Longitude", "Latitude")])
 
 # --------------Extract Climate Data---------------------
 workingdir <- "/Users/kah/Documents/WUE_MIP/WUE_MIP"
@@ -31,9 +36,10 @@ filenames <- list.files(pattern=paste(".tif$", sep = ""))
 extract.ll.Tmax <- function(x){
         s <- raster(x) #make all into a raster
         df.s <- data.frame(rasterToPoints(s))
+        
         # extract data for lat long:
-        df.select <- dplyr::left_join(df.s, lat.lon.uni, by = c("x", "y"))
-        colnames(df.select) <- c("x", "y", "Tmax")
+        df.select <- dplyr::left_join( df.s,  lat.lon.uni, by = c("x", "y"))
+        colnames(df.select) <- c("x", "y", "Tmax", "Longitude", "Latitude")
         df.select$year <- substring(x, 28, 31)
         df.select$month <- substring(x, 32, 33)
         cat(".")
@@ -42,7 +48,10 @@ extract.ll.Tmax <- function(x){
 } 
 
 
+
+
 files <- data.frame(filenames)
+x <- as.character(files[1,])
 # should take ~ 10 minutes to run for 1400 files in our dataset
 system.time(tmax.list <- apply(as.data.frame(files), MARGIN= 1, FUN=extract.ll.Tmax))
 
@@ -79,5 +88,5 @@ system.time(ppt.list <- apply(as.data.frame(files), MARGIN= 1, FUN=extract.ll.pp
 
 ppt.itrdb.df <- do.call(rbind, ppt.list)
 
-
-write.csv(ppt.itrdb.df, paste0("/Data/ITRDB/PRISM/ppt/ppt_1895_2016_extracted_ITRDB.csv"))
+setwd("/Users/kah/Documents/WUE_MIP/WUE_MIP/")
+saveRDS(ppt.itrdb.df, paste0("Data/ITRDB/PRISM/ppt/ppt_1895_2016_extracted_ITRDB.rds"))

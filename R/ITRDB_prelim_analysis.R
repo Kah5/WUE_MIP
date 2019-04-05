@@ -277,49 +277,103 @@ tmax.clusters <- tmax.cors.df %>% select("Longitude", "Latitude", "SPEC.CODE", "
 ppt.clusters <- ppt.cors.df %>% select("Longitude", "Latitude", "SPEC.CODE", "studyCode", "month", "coef") %>% spread(key = month, value = coef)
 
 # rename the temp and precip column names...This is clunky but it will do for now
-colnames(ppt.clusters)[5:17] <- paste0("ppt_", colnames(ppt.clusters)[5:17])
+colnames(ppt.clusters)[5:18] <- paste0("ppt_", colnames(ppt.clusters)[5:18])
 colnames(tmax.clusters)[9:20] <- paste0("tmax_", colnames(tmax.clusters)[9:20])
 
 # join ppt & tmax cluster dfs:
 all.cors <- left_join(tmax.clusters, ppt.clusters, by = c("Longitude", "Latitude",  "SPEC.CODE", "studyCode"))
 
 
+
+k2 <- cluster::pam(all.cors[,c("tmax_01",       "tmax_02",       "tmax_03",       "tmax_04",      
+                               "tmax_05",       "tmax_06",      "tmax_07",       "tmax_08",       "tmax_09",       "tmax_10",      
+                               "tmax_11",       "tmax_12",       "ppt_01",        "ppt_02",        "ppt_03",        "ppt_04",       
+                               "ppt_05",        "ppt_06",        "ppt_07",        "ppt_08",        "ppt_09",        "ppt_10",       
+                               "ppt_11",        "ppt_12",        "ppt_total" ,"ppt_total.wy" )], k = 2, diss = FALSE)
+all.cors$k2 <- as.character(k2$clustering)
+
+
 k3 <- cluster::pam(all.cors[,c("tmax_01",       "tmax_02",       "tmax_03",       "tmax_04",      
                                     "tmax_05",       "tmax_06",      "tmax_07",       "tmax_08",       "tmax_09",       "tmax_10",      
                                     "tmax_11",       "tmax_12",       "ppt_01",        "ppt_02",        "ppt_03",        "ppt_04",       
                                     "ppt_05",        "ppt_06",        "ppt_07",        "ppt_08",        "ppt_09",        "ppt_10",       
-                                     "ppt_11",        "ppt_12",        "ppt_total"  )], k = 3, diss = FALSE)
+                                     "ppt_11",        "ppt_12",        "ppt_total" ,"ppt_total.wy" )], k = 3, diss = FALSE)
 all.cors$k3 <- as.character(k3$clustering)
 
 k4 <- cluster::pam(all.cors[,c("tmax_01",       "tmax_02",       "tmax_03",       "tmax_04",      
                                "tmax_05",       "tmax_06",      "tmax_07",       "tmax_08",       "tmax_09",       "tmax_10",      
                                "tmax_11",       "tmax_12",       "ppt_01",        "ppt_02",        "ppt_03",        "ppt_04",       
                                "ppt_05",        "ppt_06",        "ppt_07",        "ppt_08",        "ppt_09",        "ppt_10",       
-                               "ppt_11",        "ppt_12",        "ppt_total"  )], k = 4, diss = FALSE)
+                               "ppt_11",        "ppt_12",        "ppt_total","ppt_total.wy"  )], k = 4, diss = FALSE)
 all.cors$k4 <- as.character(k4$clustering)
 
 k5 <- cluster::pam(all.cors[,c("tmax_01",       "tmax_02",       "tmax_03",       "tmax_04",      
                                "tmax_05",       "tmax_06",      "tmax_07",       "tmax_08",       "tmax_09",       "tmax_10",      
                                "tmax_11",       "tmax_12",       "ppt_01",        "ppt_02",        "ppt_03",        "ppt_04",       
                                "ppt_05",        "ppt_06",        "ppt_07",        "ppt_08",        "ppt_09",        "ppt_10",       
-                               "ppt_11",        "ppt_12",        "ppt_total"  )], k = 5, diss = FALSE)
+                               "ppt_11",        "ppt_12",        "ppt_total","ppt_total.wy"  )], k = 5, diss = FALSE)
 all.cors$k5 <- as.character(k5$clustering)
 
 k6 <- cluster::pam(all.cors[,c("tmax_01",       "tmax_02",       "tmax_03",       "tmax_04",      
                                "tmax_05",       "tmax_06",      "tmax_07",       "tmax_08",       "tmax_09",       "tmax_10",      
                                "tmax_11",       "tmax_12",       "ppt_01",        "ppt_02",        "ppt_03",        "ppt_04",       
                                "ppt_05",        "ppt_06",        "ppt_07",        "ppt_08",        "ppt_09",        "ppt_10",       
-                               "ppt_11",        "ppt_12",        "ppt_total"  )], k = 6, diss = FALSE)
+                               "ppt_11",        "ppt_12",        "ppt_total","ppt_total.wy"  )], k = 6, diss = FALSE)
 all.cors$k6 <- as.character(k6$clustering)
 
+summary(k2)
 summary(k3)
+summary(k4)
+summary(k5)
+summary(k6)
 
-ggplot(all.cors, aes(Longitude, Latitude, color = k3))+geom_point()
-ggplot(all.cors, aes(Longitude, Latitude, color = k4))+geom_point()
-ggplot(all.cors, aes(Longitude, Latitude, color = k5))+geom_point()
-ggplot(all.cors, aes(Longitude, Latitude, color = k6))+geom_point()
+# visualise the different cluster k mediod correlations:
+k2.df <- k2$medoids
+k2.df.m <- melt(k2.df)
+ggplot(k2.df.m, aes(Var2, Var1, fill = value))+geom_tile()+scale_fill_distiller(palette = "Spectral")
+
+k3.df <- k3$medoids
+k3.df.m <- melt(k3.df)
+ggplot(k3.df.m, aes(Var2, Var1, fill = value))+geom_tile()+scale_fill_distiller(palette = "Spectral")
+
+k4.df <- k4$medoids
+k4.df.m <- melt(k4.df)
+ggplot(k4.df.m, aes(Var2, Var1, fill = value))+geom_tile()+scale_fill_distiller(palette = "Spectral")
+
+k5.df <- k5$medoids
+k5.df.m <- melt(k5.df)
+ggplot(k5.df.m, aes(Var2, Var1, fill = value))+geom_tile()+scale_fill_distiller(palette = "Spectral")
+
+k6.df <- k6$medoids
+k6.df.m <- melt(k6.df)
+ggplot(k6.df.m, aes(Var2, Var1, fill = value))+geom_tile()+scale_fill_distiller(palette = "Spectral")
 
 
+ggplot(all.cors, aes(Longitude, Latitude, color = k2, size = ppt_total.wy))+geom_point()+theme(axis.text = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
+ggplot(all.cors, aes(Longitude, Latitude, color = k3, size = ppt_total.wy))+geom_point()+theme(axis.text = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
+ggplot(all.cors, aes(Longitude, Latitude, color = k4, size = ppt_total.wy))+geom_point()+theme(axis.text = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
+ggplot(all.cors, aes(Longitude, Latitude, color = k5, size = ppt_total.wy))+geom_point()+theme(axis.text = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
+ggplot(all.cors, aes(Longitude, Latitude, color = k6, size = ppt_total.wy))+geom_point()+theme(axis.text = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
+
+
+ggplot(all.cors, aes(PALEON, fill = PALEON))+geom_bar()+facet_wrap(~k2)+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggplot(all.cors, aes(PALEON, fill = PALEON))+geom_bar()+facet_wrap(~k3)+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggplot(all.cors, aes(PALEON, fill = PALEON))+geom_bar()+facet_wrap(~k4)+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggplot(all.cors, aes(PALEON, fill = PALEON))+geom_bar()+facet_wrap(~k5)+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggplot(all.cors, aes(PALEON, fill = PALEON))+geom_bar()+facet_wrap(~k6)+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+k6.melt <- melt(all.cors, id.vars = c( "Longitude",     "Latitude" ,     "SPEC.CODE"  ,   "studyCode"  ,   "PALEON" ,       "ED.PFT" ,      
+                                       "LPJ.GUESS.PFT", "LINKAGES", "k6", "k5", "k4", "k3", "k2") )
+
+ggplot(k6.melt, aes(variable, PALEON, fill = value))+geom_tile()+scale_fill_distiller(palette = "Spectral")+facet_wrap(~k6)
+ggplot(k6.melt, aes(variable, PALEON, fill = value))+geom_tile()+scale_fill_distiller(palette = "Spectral")+facet_wrap(~k2)
+ggplot(k6.melt, aes(variable, PALEON, fill = value))+geom_tile()+scale_fill_distiller(palette = "Spectral")+facet_wrap(~k3)
+
+
+png(height = 8, width = 13, units = "in", res = 300, "outputs/ITRDB/ITRDB_crn_cluster_k3_correlations.png")
+ggplot(k6.melt, aes(variable, value , fill = PALEON))+geom_boxplot()+facet_wrap(~k3, ncol = 1)+theme_bw()+
+  theme(axis.text = element_text(angle = 45, hjust = 1), panel.grid = element_blank())+ylab("Correlation Coefficient")+xlab("Climate Variable")+geom_hline(yintercept = 0, color = "grey", linetype = "dashed")
+dev.off()
 
 # make a tile plot grouped &  by species
 

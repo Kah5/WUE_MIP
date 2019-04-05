@@ -49,8 +49,8 @@ lat.lon.uni <- unique(lat.lon[, c("x", "y")])
 #---------------------- 2. load climate data -----------------------------------------------------
 # tmax & ppt to start with:
 
-tmax.itrdb.df <- readRDS( paste0("Data/ITRDB/PRISM/tmax/Tmax_1895_2016_extracted_ITRDB.rds"))
-#ppt.itrdb.df <- readRDS( paste0("/Data/ITRDB/PRISM/"))
+tmax.itrdb.df <- readRDS( "Data/ITRDB/PRISM/tmax/Tmax_1895_2016_extracted_ITRDB.rds")
+ppt.itrdb.df <- readRDS( "Data/ITRDB/PRISM/ppt/ppt_1895_2016_extracted_ITRDB.rds")
 
 
 #---------------------- 3. PCA of tree ring series-----------------------------------------------------
@@ -119,16 +119,14 @@ ggplot()+geom_point(data = tmax.summary[tmax.summary$year %in% "1895",], aes(x =
 #test.merge <-  merge(tmax.summary, rwl.age.ll.unique, by.x = c("x", "y"), by.y = c("Longitude", "Latitude"))
 
 tmax.itrdb <- left_join(tmax.itrdb.df, uniquesites, by = c("Longitude", "Latitude"))
-head(tmax.itrdb)
-ggplot(tmax.itrdb[tmax.itrdb$year %in% "1895" & tmax.itrdb$month %in% "01",], aes(Longitude, Latitude))+geom_point()
-#ppt.itrdb <- left_join(ppt.itrdb.df, uniquesites, by = c("Longitude", "Latitude"))
 
-
+#ggplot(tmax.itrdb[tmax.itrdb$year %in% "1895" & tmax.itrdb$month %in% "01",], aes(Longitude, Latitude))+geom_point()
 tmax.sites.only <- tmax.itrdb[!is.na(tmax.itrdb$studyCode),]
 tmax.sites.only <- tmax.sites.only[,1:11]
 colnames(tmax.sites.only) <- c("x", "y", "Tmax", "Longitude", "Latitude", "year", "month", "Longitude_Pal", "Latitude_Pal", "SPEC.CODE", "studyCode")
 
 saveRDS(tmax.sites.only, paste0("Data/ITRDB/PRISM/tmax/Tmax_1895_2016_extracted_ITRDB_sites_only.rds"))
+
 
 # get data reformatted to have months in columns & merge with sites:
 
@@ -139,6 +137,85 @@ tmax.month$year <- as.numeric(tmax.month$year)
 # join tmax.month with itrdb dataframe:
 rwl.itrdb <- rwl.age.ll[,c("Longitude", "Latitude","SPEC.CODE", "studyCode", "ID", "year", "Age", "RWI", "ageclass", "RWI_1", "RWI_2", "RWI_2")]
 rwl.itrdb.nona <- rwl.itrdb[!is.na(rwl.itrdb$RWI),]
-rwl.itrdb.clim <- left_join(rwl.itrdb.nona, tmax.month, by = c("Longitude", "Latitude"))
+rwl.itrdb.clim <- left_join(rwl.itrdb.nona, tmax.month, by = c("Longitude", "Latitude","SPEC.CODE", "studyCode", "year"))
+
+rwl.itrdb.clim.nona <- rwl.itrdb.clim[!is.na(rwl.itrdb.clim$`01`),]
+
+correlate.tmax <- function(x){
+      test.nona <- rwl.itrdb.clim.nona[rwl.itrdb.clim.nona$studyCode %in% x, ]
+      
+      test.nona$RWI <- as.numeric(test.nona$RWI)
+      corM <- cor(test.nona$RWI, test.nona[, c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")], use = "pairwise.complete")
+      
+      library(Hmisc) # You need to download it first.
+      cor.mat <- rcorr( as.matrix(test.nona[, c("RWI","01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")]), type="pearson") 
+      cor.mat.df <- data.frame(month = c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"),
+                               coef = cor.mat$r[2:13,1], 
+                 p = cor.mat$P[2:13,1])
+      cat("*")
+      cor.mat.df
+}
+
+names <- as.list(as.character(unique(rwl.itrdb.clim.nona$studyCode))) # get names to apply function over
+system.time(tmax.cors <- lapply(names, correlate.tmax))
+names(tmax.cors) <- unique(rwl.itrdb.clim.nona$studyCode)
+
+tmax.cors.df <- do.call(rbind, tmax.cors) # takes a minute
+tmax.cors.df$studyCode <- rep(names(tmax.cors), sapply(tmax.cors, nrow)) # add the site names
+
+# basic tile plot
+ggplot(tmax.cors.df, aes(month, studyCode, fill = coef))+geom_tile()+scale_fill_distiller(palette = "Spectral")
+
+# -------------- do the same to get corrs for ppt:
+# get only sites for ppt:
+ppt.itrdb <- left_join(ppt.itrdb.df, uniquesites, by = c("Longitude", "Latitude"))
+
+#ggplot(ppt.itrdb[ppt.itrdb$year %in% "1895" & ppt.itrdb$month %in% "01",], aes(Longitude, Latitude))+geom_point()
+ppt.sites.only <- ppt.itrdb[!is.na(ppt.itrdb$studyCode),]
+ppt.sites.only <- ppt.sites.only[,1:11]
+colnames(ppt.sites.only) <- c("x", "y", "ppt", "Longitude", "Latitude", "year", "month", "Longitude_Pal", "Latitude_Pal", "SPEC.CODE", "studyCode")
+
+saveRDS(ppt.sites.only, paste0("Data/ITRDB/PRISM/ppt/ppt_1895_2016_extracted_ITRDB_sites_only.rds"))
+
+# get data reformatted to have months in columns & merge with sites:
+
+ppt.month <- ppt.sites.only %>% select("Longitude", "Latitude","ppt", "year", "month", "studyCode", "SPEC.CODE") %>% spread(key = month, value = ppt)
+ppt.month$year <- as.numeric(ppt.month$year)
+
+
+# join ppt.month with itrdb dataframe:
+rwl.itrdb <- rwl.age.ll[,c("Longitude", "Latitude","SPEC.CODE", "studyCode", "ID", "year", "Age", "RWI", "ageclass", "RWI_1", "RWI_2", "RWI_2")]
+rwl.itrdb.nona <- rwl.itrdb[!is.na(rwl.itrdb$RWI),]
+rwl.itrdb.clim <- left_join(rwl.itrdb.nona, ppt.month, by = c("Longitude", "Latitude","SPEC.CODE", "studyCode", "year"))
+
+rwl.itrdb.clim.nona <- rwl.itrdb.clim[!is.na(rwl.itrdb.clim$`01`),]
+
+correlate.ppt <- function(x){
+  test.nona <- rwl.itrdb.clim.nona[rwl.itrdb.clim.nona$studyCode %in% x, ]
+  
+  test.nona$RWI <- as.numeric(test.nona$RWI)
+  corM <- cor(test.nona$RWI, test.nona[, c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")], use = "pairwise.complete")
+  
+  library(Hmisc) # You need to download it first.
+  cor.mat <- rcorr( as.matrix(test.nona[, c("RWI","01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")]), type="pearson") 
+  cor.mat.df <- data.frame(month = c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"),
+                           coef = cor.mat$r[2:13,1], 
+                           p = cor.mat$P[2:13,1])
+  cat("*")
+  cor.mat.df
+}
+
+names <- as.list(as.character(unique(rwl.itrdb.clim.nona$studyCode))) # get names to apply function over
+system.time(ppt.cors <- lapply(names, correlate.ppt))
+names(ppt.cors) <- unique(rwl.itrdb.clim.nona$studyCode)
+
+ppt.cors.df <- do.call(rbind, ppt.cors) # takes a minute
+ppt.cors.df$studyCode <- rep(names(ppt.cors), sapply(ppt.cors, nrow)) # add the site names
+
+# basic tile plot
+ggplot(ppt.cors.df, aes(month, studyCode, fill = coef))+geom_tile()+scale_fill_distiller(palette = "Spectral")
+
+
+
 
 # 5. Site level correlations of detrended data with multiple climate parameters & do cluster analysis on the corelation output

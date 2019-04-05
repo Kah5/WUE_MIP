@@ -162,9 +162,35 @@ names(tmax.cors) <- unique(rwl.itrdb.clim.nona$studyCode)
 
 tmax.cors.df <- do.call(rbind, tmax.cors) # takes a minute
 tmax.cors.df$studyCode <- rep(names(tmax.cors), sapply(tmax.cors, nrow)) # add the site names
+tmax.cors.df <- left_join(uniquesites, tmax.cors.df, by = "studyCode")
+tmax.cors.df<- tmax.cors.df[!is.na(tmax.cors.df$coef),]
+
+
+# read in taxa translation to generalize:
+taxa.trans <- read.csv("Data/ITRDB/SPEC.CODE.TAXA.TRANSLATION.csv", stringsAsFactors = FALSE)
+
+tmax.cors.df <- left_join(tmax.cors.df, taxa.trans, by = "SPEC.CODE")
 
 # basic tile plot
-ggplot(tmax.cors.df, aes(month, studyCode, fill = coef))+geom_tile()+scale_fill_distiller(palette = "Spectral")
+ggplot(tmax.cors.df[tmax.cors.df$PALEON %in% "Pine",], aes(month, studyCode, fill = coef))+geom_tile()+scale_fill_distiller(palette = "Spectral")
+
+
+# cluster the coeffeicent temperature responses:
+tmax.clusters <- tmax.cors.df %>% select("Longitude", "Latitude", "SPEC.CODE", "studyCode", "PALEON", "ED.PFT", "LPJ.GUESS.PFT", "LINKAGES", "month", "coef") %>% spread(key = month, value = coef)
+
+k3 <- cluster::pam(tmax.clusters[,c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")], k = 3, diss = FALSE)
+tmax.clusters$k3 <- as.character(k3$clustering)
+
+k4 <- cluster::pam(tmax.clusters[,c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")], k = 4, diss = FALSE)
+tmax.clusters$k4 <- as.character(k4$clustering)
+
+k5 <- cluster::pam(tmax.clusters[,c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")], k = 5, diss = FALSE)
+tmax.clusters$k5 <- as.character(k5$clustering)
+
+ggplot(tmax.clusters, aes(Longitude, Latitude, color = k3))+geom_point()
+ggplot(tmax.clusters, aes(Longitude, Latitude, color = k4))+geom_point()
+ggplot(tmax.clusters, aes(Longitude, Latitude, color = k5))+geom_point()
+
 
 # -------------- do the same to get corrs for ppt:
 # get only sites for ppt:
@@ -179,8 +205,31 @@ saveRDS(ppt.sites.only, paste0("Data/ITRDB/PRISM/ppt/ppt_1895_2016_extracted_ITR
 
 # get data reformatted to have months in columns & merge with sites:
 
+
+# create function to get the water year
+wtr_yr <- function(df, start_month=9) {
+  # Year offset
+  offset = ifelse(as.numeric(df$month) >= start_month - 1, 1, 0)
+  # Water year
+  adj.year = as.numeric(df$year) + offset
+  # Return the water year
+  adj.year
+}
+
+# use wtr_year function to get water year as a column
+ppt.sites.only$wtr.year <- wtr_yr(ppt.sites.only)
+
+# get total precipitation for each water year:
+long.prism.wy.MAP <- ppt.sites.only %>% group_by(studyCode, wtr.year) %>% summarise(MAP.wy = sum(ppt, na.rm=TRUE) )
+colnames(long.prism.wy.MAP) <- c("studyCode", "year", "MAP.wy")
+ppt.sites.only$year <- as.numeric(ppt.sites.only$year)
+
+ppt.sites.only <- left_join(ppt.sites.only, long.prism.wy.MAP, by = c("studyCode", "year"))
+
 ppt.month <- ppt.sites.only %>% select("Longitude", "Latitude","ppt", "year", "month", "studyCode", "SPEC.CODE") %>% spread(key = month, value = ppt)
 ppt.month$year <- as.numeric(ppt.month$year)
+
+ppt.month <- left_join(ppt.month, long.prism.wy.MAP, by = c("studyCode", "year"))
 
 
 # join ppt.month with itrdb dataframe:
@@ -190,17 +239,20 @@ rwl.itrdb.clim <- left_join(rwl.itrdb.nona, ppt.month, by = c("Longitude", "Lati
 
 rwl.itrdb.clim.nona <- rwl.itrdb.clim[!is.na(rwl.itrdb.clim$`01`),]
 
+# get the total precip for this year (note that it should be for water year, but this is calendar year)
+rwl.itrdb.clim.nona$total <- rowSums(rwl.itrdb.clim.nona[,c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")])
+
 correlate.ppt <- function(x){
   test.nona <- rwl.itrdb.clim.nona[rwl.itrdb.clim.nona$studyCode %in% x, ]
   
   test.nona$RWI <- as.numeric(test.nona$RWI)
-  corM <- cor(test.nona$RWI, test.nona[, c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")], use = "pairwise.complete")
+  corM <- cor(test.nona$RWI, test.nona[, c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "total", "MAP.wy")], use = "pairwise.complete")
   
   library(Hmisc) # You need to download it first.
-  cor.mat <- rcorr( as.matrix(test.nona[, c("RWI","01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")]), type="pearson") 
-  cor.mat.df <- data.frame(month = c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"),
-                           coef = cor.mat$r[2:13,1], 
-                           p = cor.mat$P[2:13,1])
+  cor.mat <- rcorr( as.matrix(test.nona[, c("RWI","01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "total", "MAP.wy")]), type="pearson") 
+  cor.mat.df <- data.frame(month = c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "total", "total.wy"),
+                           coef = cor.mat$r[2:15,1], 
+                           p = cor.mat$P[2:15,1])
   cat("*")
   cor.mat.df
 }
@@ -211,11 +263,69 @@ names(ppt.cors) <- unique(rwl.itrdb.clim.nona$studyCode)
 
 ppt.cors.df <- do.call(rbind, ppt.cors) # takes a minute
 ppt.cors.df$studyCode <- rep(names(ppt.cors), sapply(ppt.cors, nrow)) # add the site names
+ppt.cors.df <- left_join(uniquesites,ppt.cors.df, by = "studyCode")
+ppt.cors.df <- ppt.cors.df[!is.na(ppt.cors.df$coef),]
+
 
 # basic tile plot
 ggplot(ppt.cors.df, aes(month, studyCode, fill = coef))+geom_tile()+scale_fill_distiller(palette = "Spectral")
 
 
+
+# ----------cluster the correlation coeffients & plot tileplots by those clusters:--------------
+tmax.clusters <- tmax.cors.df %>% select("Longitude", "Latitude", "SPEC.CODE", "studyCode", "PALEON", "ED.PFT", "LPJ.GUESS.PFT", "LINKAGES", "month", "coef") %>% spread(key = month, value = coef)
+ppt.clusters <- ppt.cors.df %>% select("Longitude", "Latitude", "SPEC.CODE", "studyCode", "month", "coef") %>% spread(key = month, value = coef)
+
+# rename the temp and precip column names...This is clunky but it will do for now
+colnames(ppt.clusters)[5:17] <- paste0("ppt_", colnames(ppt.clusters)[5:17])
+colnames(tmax.clusters)[9:20] <- paste0("tmax_", colnames(tmax.clusters)[9:20])
+
+# join ppt & tmax cluster dfs:
+all.cors <- left_join(tmax.clusters, ppt.clusters, by = c("Longitude", "Latitude",  "SPEC.CODE", "studyCode"))
+
+
+k3 <- cluster::pam(all.cors[,c("tmax_01",       "tmax_02",       "tmax_03",       "tmax_04",      
+                                    "tmax_05",       "tmax_06",      "tmax_07",       "tmax_08",       "tmax_09",       "tmax_10",      
+                                    "tmax_11",       "tmax_12",       "ppt_01",        "ppt_02",        "ppt_03",        "ppt_04",       
+                                    "ppt_05",        "ppt_06",        "ppt_07",        "ppt_08",        "ppt_09",        "ppt_10",       
+                                     "ppt_11",        "ppt_12",        "ppt_total"  )], k = 3, diss = FALSE)
+all.cors$k3 <- as.character(k3$clustering)
+
+k4 <- cluster::pam(all.cors[,c("tmax_01",       "tmax_02",       "tmax_03",       "tmax_04",      
+                               "tmax_05",       "tmax_06",      "tmax_07",       "tmax_08",       "tmax_09",       "tmax_10",      
+                               "tmax_11",       "tmax_12",       "ppt_01",        "ppt_02",        "ppt_03",        "ppt_04",       
+                               "ppt_05",        "ppt_06",        "ppt_07",        "ppt_08",        "ppt_09",        "ppt_10",       
+                               "ppt_11",        "ppt_12",        "ppt_total"  )], k = 4, diss = FALSE)
+all.cors$k4 <- as.character(k4$clustering)
+
+k5 <- cluster::pam(all.cors[,c("tmax_01",       "tmax_02",       "tmax_03",       "tmax_04",      
+                               "tmax_05",       "tmax_06",      "tmax_07",       "tmax_08",       "tmax_09",       "tmax_10",      
+                               "tmax_11",       "tmax_12",       "ppt_01",        "ppt_02",        "ppt_03",        "ppt_04",       
+                               "ppt_05",        "ppt_06",        "ppt_07",        "ppt_08",        "ppt_09",        "ppt_10",       
+                               "ppt_11",        "ppt_12",        "ppt_total"  )], k = 5, diss = FALSE)
+all.cors$k5 <- as.character(k5$clustering)
+
+k6 <- cluster::pam(all.cors[,c("tmax_01",       "tmax_02",       "tmax_03",       "tmax_04",      
+                               "tmax_05",       "tmax_06",      "tmax_07",       "tmax_08",       "tmax_09",       "tmax_10",      
+                               "tmax_11",       "tmax_12",       "ppt_01",        "ppt_02",        "ppt_03",        "ppt_04",       
+                               "ppt_05",        "ppt_06",        "ppt_07",        "ppt_08",        "ppt_09",        "ppt_10",       
+                               "ppt_11",        "ppt_12",        "ppt_total"  )], k = 6, diss = FALSE)
+all.cors$k6 <- as.character(k6$clustering)
+
+summary(k3)
+
+ggplot(all.cors, aes(Longitude, Latitude, color = k3))+geom_point()
+ggplot(all.cors, aes(Longitude, Latitude, color = k4))+geom_point()
+ggplot(all.cors, aes(Longitude, Latitude, color = k5))+geom_point()
+ggplot(all.cors, aes(Longitude, Latitude, color = k6))+geom_point()
+
+
+
+# make a tile plot grouped &  by species
+
+# also make tile plots grouped & colored by site
+
+# also sorted by lat or lon
 
 
 # 5. Site level correlations of detrended data with multiple climate parameters & do cluster analysis on the corelation output

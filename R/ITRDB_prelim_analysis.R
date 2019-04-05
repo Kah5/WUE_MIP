@@ -13,6 +13,7 @@ library(tidyr)
 library(reshape2)
 library(dplyr)
 library(ggplot2)
+library(cowplot)
 
 #---------------------- 1. load ITRDB data -----------------------------------------------------
 library(raster)
@@ -242,6 +243,8 @@ rwl.itrdb.clim.nona <- rwl.itrdb.clim[!is.na(rwl.itrdb.clim$`01`),]
 # get the total precip for this year (note that it should be for water year, but this is calendar year)
 rwl.itrdb.clim.nona$total <- rowSums(rwl.itrdb.clim.nona[,c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")])
 
+saveRDS(rwl.itrdb.clim.nona, "Data/ITRDB/rwl.itrdb.clim.nona.rds")
+
 correlate.ppt <- function(x){
   test.nona <- rwl.itrdb.clim.nona[rwl.itrdb.clim.nona$studyCode %in% x, ]
   
@@ -349,11 +352,78 @@ k6.df.m <- melt(k6.df)
 ggplot(k6.df.m, aes(Var2, Var1, fill = value))+geom_tile()+scale_fill_distiller(palette = "Spectral")
 
 
-ggplot(all.cors, aes(Longitude, Latitude, color = k2, size = ppt_total.wy))+geom_point()+theme(axis.text = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
-ggplot(all.cors, aes(Longitude, Latitude, color = k3, size = ppt_total.wy))+geom_point()+theme(axis.text = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
-ggplot(all.cors, aes(Longitude, Latitude, color = k4, size = ppt_total.wy))+geom_point()+theme(axis.text = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
-ggplot(all.cors, aes(Longitude, Latitude, color = k5, size = ppt_total.wy))+geom_point()+theme(axis.text = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
-ggplot(all.cors, aes(Longitude, Latitude, color = k6, size = ppt_total.wy))+geom_point()+theme(axis.text = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
+library(maps)
+library(sp)
+library(rgeos)
+
+all_states <- map_data("state")
+states <- subset(all_states, region %in% c(  'minnesota','wisconsin','michigan',"illinois",  'indiana') )
+coordinates(all_states)<-~long+lat
+class(all_states)
+
+ca = map_data("world", "Canada")
+coordinates(ca)<-~long+lat
+ca.data <- data.frame(ca)
+mapdata <- data.frame(all_states)
+
+#-------------MAPS for differenct clusters:----------------
+k2.map <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+
+  #geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+#geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_point(data = all.cors, aes(Longitude, Latitude, color = k2, size = ppt_total.wy))+
+  coord_cartesian(ylim = c(36, 49), xlim= c(-98,-66))+theme_bw()
+
+k3.map <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+
+  #geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+#geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_point(data = all.cors, aes(Longitude, Latitude, color = k3, size = ppt_total.wy))+
+  coord_cartesian(ylim = c(36, 49), xlim= c(-98,-66))+theme_bw()
+
+k4.map <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+
+  #geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+#geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_point(data = all.cors, aes(Longitude, Latitude, color = k4, size = ppt_total.wy))+
+  coord_cartesian(ylim = c(36, 49), xlim= c(-98,-66))+theme_bw()
+
+k5.map <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+
+  #geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+#geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_point(data = all.cors, aes(Longitude, Latitude, color = k5, size = ppt_total.wy))+
+  coord_cartesian(ylim = c(36, 49), xlim= c(-98,-66))+theme_bw()
+
+k6.map <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+
+  #geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+#geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_point(data = all.cors, aes(Longitude, Latitude, color = k6, size = ppt_total.wy))+
+  coord_cartesian(ylim = c(36, 49), xlim= c(-98,-66))+theme_bw()
+
+png(height = 10, width = 18, units = "in", res = 250, "outputs/ITRDB/map_water_yr_precip_cor_clusters.png")
+cowplot::plot_grid(k2.map.tmax, k3.map.tmax, k4.map.tmax, k5.map.tmax, k6.map.tmax, ncol = 2, align = 'hv')
+dev.off()
+
+k2.map.tmax <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+
+  #geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+#geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_point(data = all.cors, aes(Longitude, Latitude, color = k2, size =tmax_06))+
+  coord_cartesian(ylim = c(36, 49), xlim= c(-98,-66))+theme_bw()
+
+k3.map.tmax <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+
+  #geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+#geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_point(data = all.cors, aes(Longitude, Latitude, color = k3, size = tmax_06))+
+  coord_cartesian(ylim = c(36, 49), xlim= c(-98,-66))+theme_bw()
+
+k4.map.tmax <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+
+  #geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+#geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_point(data = all.cors, aes(Longitude, Latitude, color = k4, size = tmax_06))+
+  coord_cartesian(ylim = c(36, 49), xlim= c(-98,-66))+theme_bw()
+
+k5.map.tmax <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+
+  #geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+#geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_point(data = all.cors, aes(Longitude, Latitude, color = k5, size = tmax_06))+
+  coord_cartesian(ylim = c(36, 49), xlim= c(-98,-66))+theme_bw()
+
+k6.map.tmax <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+
+  #geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+#geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_point(data = all.cors, aes(Longitude, Latitude, color = k6, size = tmax_06))+
+  coord_cartesian(ylim = c(36, 49), xlim= c(-98,-66))+theme_bw()
+
+png(height = 10, width = 18, units = "in", res = 250, "outputs/ITRDB/map_jun_tmax_cor_clusters.png")
+cowplot::plot_grid(k2.map.tmax, k3.map.tmax, k4.map.tmax, k5.map.tmax, k6.map.tmax, ncol = 2, align = 'hv')
+dev.off()
 
 
 ggplot(all.cors, aes(PALEON, fill = PALEON))+geom_bar()+facet_wrap(~k2)+theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -375,11 +445,58 @@ ggplot(k6.melt, aes(variable, value , fill = PALEON))+geom_boxplot()+facet_wrap(
   theme(axis.text = element_text(angle = 45, hjust = 1), panel.grid = element_blank())+ylab("Correlation Coefficient")+xlab("Climate Variable")+geom_hline(yintercept = 0, color = "grey", linetype = "dashed")
 dev.off()
 
-# make a tile plot grouped &  by species
 
-# also make tile plots grouped & colored by site
+png(height = 8, width = 13, units = "in", res = 300, "outputs/ITRDB/ITRDB_crn_cluster_k2_correlations.png")
+ggplot(k6.melt, aes(variable, value , fill = PALEON))+geom_boxplot()+facet_wrap(~k2, ncol = 1)+theme_bw()+
+  theme(axis.text = element_text(angle = 45, hjust = 1), panel.grid = element_blank())+ylab("Correlation Coefficient")+xlab("Climate Variable")+geom_hline(yintercept = 0, color = "grey", linetype = "dashed")
+dev.off()
 
-# also sorted by lat or lon
+png(height = 8, width = 13, units = "in", res = 300, "outputs/ITRDB/ITRDB_crn_cluster_k4_correlations.png")
+ggplot(k6.melt, aes(variable, value , fill = PALEON))+geom_boxplot()+facet_wrap(~k4, ncol = 1)+theme_bw()+
+  theme(axis.text = element_text(angle = 45, hjust = 1), panel.grid = element_blank())+ylab("Correlation Coefficient")+xlab("Climate Variable")+geom_hline(yintercept = 0, color = "grey", linetype = "dashed")
+dev.off()
+
+
+
+biplot.2 <- ggplot(all.cors, aes(tmax_06, ppt_total.wy, color = k2))+geom_point()+geom_hline(yintercept = 0, color = "grey")+geom_vline(xintercept = 0, color = "grey")+theme_bw()+ylab("correlation with water year precipitation")+xlab("orrelation with July Tmax")+theme(panel.grid = element_blank())
+biplot.3 <- ggplot(all.cors, aes(tmax_06, ppt_total.wy, color = k3))+geom_point()+geom_hline(yintercept = 0, color = "grey")+geom_vline(xintercept = 0, color = "grey")+theme_bw()+ylab("correlation with water year precipitation")+xlab("correlation with July Tmax")+theme(panel.grid = element_blank())
+biplot.4 <- ggplot(all.cors, aes(tmax_06, ppt_total.wy, color = k4))+geom_point()+geom_hline(yintercept = 0, color = "grey")+geom_vline(xintercept = 0, color = "grey")+theme_bw()+ylab("correlation with water year precipitation")+xlab("correlation with July Tmax")+theme(panel.grid = element_blank())
+biplot.5 <- ggplot(all.cors, aes(tmax_06, ppt_total.wy, color = k5))+geom_point()+geom_hline(yintercept = 0, color = "grey")+geom_vline(xintercept = 0, color = "grey")+theme_bw()+ylab("correlation with water year precipitation")+xlab("correlation with July Tmax")+theme(panel.grid = element_blank())
+biplot.6 <- ggplot(all.cors, aes(tmax_06, ppt_total.wy, color = k6))+geom_point()+geom_hline(yintercept = 0, color = "grey")+geom_vline(xintercept = 0, color = "grey")+theme_bw()+ylab("correlation with water year precipitation")+xlab("correlation with July Tmax")+theme(panel.grid = element_blank())
+
+
+ggplot(all.cors, aes(tmax_06, ppt_06, color = k3))+geom_point()+geom_hline(yintercept = 0, color = "grey")+geom_vline(xintercept = 0, color = "grey")+theme_bw()+ylab("correlation with water year precipitation")+xlab("correlation with July Tmax")+theme(panel.grid = element_blank())
+
+#biplot.spec <- 
+  ggplot(all.cors, aes(tmax_06, ppt_total.wy, color = PALEON))+geom_point()+geom_hline(yintercept = 0, color = "grey")+geom_vline(xintercept = 0, color = "grey")+theme_bw()+ylab("correlation with water year precipitation")+xlab("correlation with July Tmax")+theme(panel.grid = element_blank())
+
+  ggplot(all.cors, aes(tmax_06, ppt_total.wy, color = PALEON))+geom_point()+geom_hline(yintercept = 0, color = "grey")+geom_vline(xintercept = 0, color = "grey")+theme_bw()+ylab("correlation with water year precipitation")+xlab("correlation with July Tmax")+theme(panel.grid = element_blank())
+  
+  
+
+png(height = 8, width = 13, units = "in", res = 300, "outputs/ITRDB/ITRDB_ppt_06Tmax_clusters.png")
+plot_grid(biplot.2, biplot.3, biplot.4, biplot.5, biplot.6, ncol = 3, align = "hv")
+dev.off()
+
+
+
+TMAX.by.PaLEON <- ggplot(k6.melt[k6.melt$variable %in% c("tmax_01", "tmax_02", "tmax_03", "tmax_04","tmax_05", "tmax_06","tmax_07", "tmax_08",     
+                                       "tmax_09",  "tmax_10" ,"tmax_11","tmax_12"),], aes(variable, value , fill = PALEON))+geom_boxplot()+theme_bw()+
+  theme(axis.text = element_text(angle = 45, hjust = 1), panel.grid = element_blank())+ylab("Correlation Coefficient")+xlab("Climate Variable")+geom_hline(yintercept = 0, color = "grey", linetype = "dashed")+facet_wrap(~PALEON)
+
+
+precip.by.PaLEON <- ggplot(k6.melt[k6.melt$variable %in% c("ppt_01","ppt_02",       "ppt_03",      "ppt_04",      
+                                                           "ppt_05",       "ppt_06",       "ppt_07",       "ppt_08",       "ppt_09",       "ppt_10",       "ppt_11",       "ppt_12",      
+                                                            "ppt_total",    "ppt_total.wy"),], aes(variable, value , fill = PALEON))+geom_boxplot()+theme_bw()+
+  theme(axis.text = element_text(angle = 45, hjust = 1), panel.grid = element_blank())+ylab("Correlation Coefficient")+xlab("Climate Variable")+geom_hline(yintercept = 0, color = "grey", linetype = "dashed")+facet_wrap(~PALEON)
+
+png(height = 8, width = 13, units = "in", res = 300, "outputs/ITRDB/ITRDB_ppt_corrs_by_paleon_taxa.png")
+precip.by.PaLEON
+dev.off()
+
+png(height = 8, width = 13, units = "in", res = 300, "outputs/ITRDB/ITRDB_TMAX_corrs_by_paleon_taxa.png")
+TMAX.by.PaLEON
+dev.off()
 
 
 # 5. Site level correlations of detrended data with multiple climate parameters & do cluster analysis on the corelation output

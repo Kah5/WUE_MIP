@@ -135,8 +135,10 @@ saveRDS(tmax.sites.only, paste0("Data/ITRDB/PRISM/tmax/Tmax_1895_2016_extracted_
 tmax.month <- tmax.sites.only %>% select("Longitude", "Latitude","Tmax", "year", "month", "studyCode", "SPEC.CODE") %>% spread(key = month, value = Tmax)
 tmax.month$year <- as.numeric(tmax.month$year)
 
-ggplot(tmax.sites.only[tmax.sites.only$year %in% "1895",], aes(month, Tmax))+geom_point()
 
-ggplot(tmax.month, aes(year, `07`, color = SPEC.CODE))+geom_point()
+# join tmax.month with itrdb dataframe:
+rwl.itrdb <- rwl.age.ll[,c("Longitude", "Latitude","SPEC.CODE", "studyCode", "ID", "year", "Age", "RWI", "ageclass", "RWI_1", "RWI_2", "RWI_2")]
+rwl.itrdb.nona <- rwl.itrdb[!is.na(rwl.itrdb$RWI),]
+rwl.itrdb.clim <- left_join(rwl.itrdb.nona, tmax.month, by = c("Longitude", "Latitude"))
 
 # 5. Site level correlations of detrended data with multiple climate parameters & do cluster analysis on the corelation output

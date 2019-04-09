@@ -243,7 +243,6 @@ rwl.itrdb.clim.nona <- rwl.itrdb.clim[!is.na(rwl.itrdb.clim$`01`),]
 # get the total precip for this year (note that it should be for water year, but this is calendar year)
 rwl.itrdb.clim.nona$total <- rowSums(rwl.itrdb.clim.nona[,c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")])
 
-saveRDS(rwl.itrdb.clim.nona, "Data/ITRDB/rwl.itrdb.clim.nona.rds")
 
 correlate.ppt <- function(x){
   test.nona <- rwl.itrdb.clim.nona[rwl.itrdb.clim.nona$studyCode %in% x, ]
@@ -274,6 +273,12 @@ ppt.cors.df <- ppt.cors.df[!is.na(ppt.cors.df$coef),]
 ggplot(ppt.cors.df, aes(month, studyCode, fill = coef))+geom_tile()+scale_fill_distiller(palette = "Spectral")
 
 
+#---------------------------------Merge Tmax and precipitation----------------------------------
+
+colnames(rwl.itrdb.clim.nona)[13:26] <- paste0("ppt_",colnames(rwl.itrdb.clim.nona)[13:26])
+colnames(tmax.month)[6:17]<- paste0("tmax_", colnames(tmax.month)[6:17])
+full.clim <- left_join(rwl.itrdb.clim.nona, tmax.month, by = c("Longitude", "Latitude", "year", "studyCode", "SPEC.CODE"))
+saveRDS(full.clim, "Data/ITRDB/full.clim.prism.rds")
 
 # ----------cluster the correlation coeffients & plot tileplots by those clusters:--------------
 tmax.clusters <- tmax.cors.df %>% select("Longitude", "Latitude", "SPEC.CODE", "studyCode", "PALEON", "ED.PFT", "LPJ.GUESS.PFT", "LINKAGES", "month", "coef") %>% spread(key = month, value = coef)
@@ -285,6 +290,8 @@ colnames(tmax.clusters)[9:20] <- paste0("tmax_", colnames(tmax.clusters)[9:20])
 
 # join ppt & tmax cluster dfs:
 all.cors <- left_join(tmax.clusters, ppt.clusters, by = c("Longitude", "Latitude",  "SPEC.CODE", "studyCode"))
+
+saveRDS(rwl.itrdb.clim.nona, "Data/ITRDB/rwl.itrdb.clim.nona.rds")
 
 
 

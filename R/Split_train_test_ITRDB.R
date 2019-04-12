@@ -6,7 +6,7 @@ library(caTools)
 library(dplyr)
 library(nimble)
 # preliminary models of tree growth for ITRDB data:
-rwl.itrdb.clim.nona <- readRDS( paste0(getwd(),"/Data/full.clim.prism.rds"))
+rwl.itrdb.clim.nona <- readRDS( paste0(getwd(),"/Data/ITRDB/full.clim.prism.rds"))
 
 
 # split training and testing data:

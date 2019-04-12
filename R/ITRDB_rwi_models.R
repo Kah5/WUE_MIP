@@ -7,6 +7,7 @@ library(ggridges)
 library(tidyr)
 library(reshape2)
 library(dplyr)
+library(nimble)
 # preliminary models of tree growth for ITRDB data:
 
 rwl.itrdb.clim.nona <- readRDS( "Data/ITRDB/full.clim.prism.rds")
@@ -44,7 +45,7 @@ rwl.full$Age <- as.numeric(rwl.full$Age)
 # also get rid of 0 values??
 rwl.full <- rwl.full[!rwl.full$RWI == 0, ]
 
-QUMA <- rwl.full[rwl.full$SPEC.CODE %in% c("QUMA", "QUAL"),]
+QUMA <- rwl.full[rwl.full$SPEC.CODE %in% c("QUMA"),]
 
 QUMA$spec <- ifelse(QUMA$SPEC.CODE %in% "QUMA", 1, 2)
 
@@ -153,6 +154,171 @@ abline(a = 0, b = 1, col= "red")
 # basic lm with no re explais ~ 50 percent of variance
 
 # model gwbi as a function of Temp, Precip, CO2, with random slops for time period & site random intercept
+# nimble model:
+basic.site.reg <- nimbleCode({ 
+  
+  #alpha ~ dnorm(0, sd = 1000) 
+  beta1 ~ dnorm(0, sd = 1000) 
+  beta2 ~ dnorm(0, sd = 1000) 
+  beta3 ~ dnorm(0, sd = 1000) 
+  beta4 ~ dnorm(0, sd = 1000)
+  beta5 ~ dnorm(0, sd = 1000) 
+  mu_alpha ~ dunif(-2, 2)
+  inv_alpha ~ dgamma(0.001, 0.001)
+  sigma_alpha <- 1/sqrt(inv_alpha)
+  
+  
+  for(s in 1:S){
+    alpha[s] ~ dnorm(mu_alpha, inv_alpha)
+  
+    for(i in 1:N) {
+      predictedY[i] <- alpha[sites[i]] + beta1 * Precip.scaled[i] + beta2* Temp.jja.scaled[i]+ beta3*RWI_1[i] + beta4*RWI_2[i] + beta5*Age[i]
+      Y[i] ~ dnorm(predictedY[i], sigmaY)
+      sigmaY ~ dunif(0, 100)
+    }
+  }
+  
+  
+  
+  })
+
+
+
+params <- c("alpha",  "beta1", "beta2", "beta3", "beta4", "beta5", "sigmaY", "inv_alpha", "mu_alpha")
+
+
+# data:
+FAGR.data <- list(
+  
+  Y = train.FAGR$RWI_log, Precip.scaled = train.FAGR$Precip.scaled, Temp.jja.scaled = train.FAGR$Temp.jun.scaled, RWI_1 = train.FAGR$RWI_1, RWI_2 = train.FAGR$RWI_2, Age= train.FAGR$Age , 
+   sites = as.numeric(train.FAGR$site_num.FAGR) )#, np=length(test.FAGR$spec)
+#)
+FAGR.constants <- list( N=length(train.FAGR$RWI),
+                        S = length(unique(train.FAGR$site_num.FAGR)))
+
+
+# need to specify inits because sometimes it makes them NA values:
+initsFunction <- function() list(mu = rnorm(1,0,1), sigma = runif(1,0,10))
+
+FAGR.samples <- nimbleMCMC(
+  code = basic.site.reg,
+  constants = FAGR.constants,
+  data = FAGR.data, ## provide the combined data & constants as constants
+  #inits = inits,
+  monitors = params,
+  niter = 10000,
+  nburnin = 1000,
+  thin = 5, 
+  nchains = 3)
+
+#basic.site.reg$setData(list(Y = train.FAGR$RWI_log, N=length(train.FAGR$RWI), Precip.scaled = train.FAGR$Precip.scaled, Temp.jja.scaled = train.FAGR$Temp.jun.scaled, RWI_1 = train.FAGR$RWI_1, RWI_2 = train.FAGR$RWI_2, Age= train.FAGR$Age))
+library(coda)
+coda.samples <- as.mcmc(FAGR.samples[[3]])
+summary(coda.samples)
+
+traceplot(coda.samples)
+
+# save outputs:
+saveRDS(FAGR.samples, "outputs/ITRDB_models/ITRDB_site_species_re/samps_FAGR_nimble.rds")
+saveRDS(train.FAGR, "outputs/ITRDB_models/ITRDB_site_species_re/train_FAGR_nimble.rds")
+saveRDS(test.FAGR, "outputs/ITRDB_models/ITRDB_site_species_re/test_FAGR_nimble.rds")
+
+# -------------------run the model on bur oak---------------------
+# very slow!
+params <- c("alpha",  "beta1", "beta2", "beta3", "beta4", "beta5", "sigmaY", "inv_alpha", "mu_alpha")
+
+train.QUMA$RWI_log <- log(train.QUMA$RWI)
+# data:
+QUMA.data <- list(
+  
+  Y = train.QUMA$RWI_log, Precip.scaled = train.QUMA$Precip.scaled, Temp.jja.scaled = train.QUMA$Temp.jun.scaled, RWI_1 = train.QUMA$RWI_1, RWI_2 = train.QUMA$RWI_2, Age= train.QUMA$Age , 
+  sites = as.numeric(train.QUMA$site_num.QUMA) )#, np=length(test.QUMA$spec)
+#)
+QUMA.constants <- list( N=length(train.QUMA$RWI),
+                        S = length(unique(train.QUMA$site_num.QUMA)))
+
+
+# need to specify inits because sometimes it makes them NA values:
+initsFunction <- function() list(mu = rnorm(1,0,1), sigma = runif(1,0,10))
+
+QUMA.samples <- nimbleMCMC(
+  code = basic.site.reg,
+  constants = QUMA.constants,
+  data = QUMA.data, ## provide the combined data & constants as constants
+  #inits = inits,
+  monitors = params,
+  niter = 10000,
+  nburnin = 1000,
+  thin = 5, 
+  nchains = 3)
+
+#basic.site.reg$setData(list(Y = train.QUMA$RWI_log, N=length(train.QUMA$RWI), Precip.scaled = train.QUMA$Precip.scaled, Temp.jja.scaled = train.QUMA$Temp.jun.scaled, RWI_1 = train.QUMA$RWI_1, RWI_2 = train.QUMA$RWI_2, Age= train.QUMA$Age))
+library(coda)
+coda.samples <- as.mcmc(QUMA.samples[[3]])
+summary(coda.samples)
+
+traceplot(coda.samples)
+
+# save outputs:
+saveRDS(QUMA.samples, "outputs/ITRDB_models/ITRDB_site_species_re/samps_QUMA_nimble.rds")
+saveRDS(train.QUMA, "outputs/ITRDB_models/ITRDB_site_species_re/train_QUMA_nimble.rds")
+saveRDS(test.QUMA, "outputs/ITRDB_models/ITRDB_site_species_re/test_QUMA_nimble.rds")
+
+
+
+# -------------------run the model on hemlock---------------------
+# very slow!
+params <- c("alpha",  "beta1", "beta2", "beta3", "beta4", "beta5", "sigmaY", "inv_alpha", "mu_alpha")
+
+train.TSCA$RWI_log <- log(train.TSCA$RWI)
+# data:
+TSCA.data <- list(
+  
+  Y = train.TSCA$RWI_log, Precip.scaled = train.TSCA$Precip.scaled, Temp.jja.scaled = train.TSCA$Temp.jun.scaled, RWI_1 = train.TSCA$RWI_1, RWI_2 = train.TSCA$RWI_2, Age= train.TSCA$Age , 
+  sites = as.numeric(train.TSCA$site_num.TSCA) )#, np=length(test.TSCA$spec)
+#)
+TSCA.constants <- list( N=length(train.TSCA$RWI),
+                        S = length(unique(train.TSCA$site_num.TSCA)))
+
+
+# need to specify inits because sometimes it makes them NA values:
+initsFunction <- function() list(mu = rnorm(1,0,1), sigma = runif(1,0,10))
+
+TSCA.samples <- nimbleMCMC(
+  code = basic.site.reg,
+  constants = TSCA.constants,
+  data = TSCA.data, ## provide the combined data & constants as constants
+  #inits = inits,
+  monitors = params,
+  niter = 10000,
+  nburnin = 1000,
+  thin = 5, 
+  nchains = 3)
+
+#basic.site.reg$setData(list(Y = train.TSCA$RWI_log, N=length(train.TSCA$RWI), Precip.scaled = train.TSCA$Precip.scaled, Temp.jja.scaled = train.TSCA$Temp.jun.scaled, RWI_1 = train.TSCA$RWI_1, RWI_2 = train.TSCA$RWI_2, Age= train.TSCA$Age))
+library(coda)
+coda.samples <- as.mcmc(TSCA.samples[[3]])
+summary(coda.samples)
+
+traceplot(coda.samples)
+
+# save outputs:
+saveRDS(TSCA.samples, "outputs/ITRDB_models/ITRDB_site_species_re/samps_TSCA_nimble.rds")
+saveRDS(train.TSCA, "outputs/ITRDB_models/ITRDB_site_species_re/train_TSCA_nimble.rds")
+saveRDS(test.TSCA, "outputs/ITRDB_models/ITRDB_site_species_re/test_TSCA_nimble.rds")
+
+
+
+
+
+
+
+
+
+
+
+
+# jags models
 ITRDB_site_re_spec <- "model{
 
 # for each the overall population include re for sites:
@@ -326,6 +492,7 @@ samp.ITRDB.FAGR <- coda.samples(reg.ITRDB.by_spec,
                                 n.chains = 3, n.iter=5000, thin = 1)
 
 saveRDS(samp.ITRDB.FAGR, "outputs/ITRDB_models/ITRDB_site_species_re/samps_FAGR.rds")
+samp.ITRDB.FAGR <-readRDS( "outputs/ITRDB_models/ITRDB_site_species_re/samps_FAGR.rds")
 
 
 samp.ITRDB.FAGR <- coda.samples(reg.ITRDB.by_spec, 
@@ -356,7 +523,7 @@ Yp.summary <- Yp.m %>% group_by(variable) %>% dplyr::summarise(Predicted = mean(
 Yp.summary$Observed <- test.FAGR$RWI
 Yp.summary$SPEC.CODE <- test.FAGR$SPEC.CODE
 
-pred.obs <- summary(lm(colMeans(log(Yp.samps)) ~ test.FAGR$RWI))
+pred.obs <- summary(lm(colMeans(exp(Yp.samps)) ~ test.FAGR$RWI))
 
 p.o.plot <- ggplot(Yp.summary, aes(Observed, Predicted))+geom_point(color = "black", size = 0.5)+
   geom_errorbar(data = Yp.summary,aes(ymin=ci.lo, ymax=ci.hi), color = "grey", alpha = 0.5)+
@@ -371,8 +538,86 @@ dev.off()
 
 # calculate MSE & BIAS:
 
-MSE1   <- mean((colMeans(Yp.samps)-test.FAGR$RWI)^2)
-BIAS1  <- mean(colMeans(Yp.samps)-test.FAGR$RWI)
+MSE1   <- mean((colMeans(exp(Yp.samps))-test.FAGR$RWI)^2)
+BIAS1  <- mean(colMeans(exp(Yp.samps))-test.FAGR$RWI)
+
+# write model summary output to a file!
+
+model.summary <- data.frame(model = "mixed_effects_reg", 
+                            MSE = MSE1, 
+                            BIAS = BIAS1, 
+                            Rsq = pred.obs$r.squared)
+
+# ------------------------Run model with Hemlocks --------------------------------------------
+reg.ITRDB.by_spec <- jags.model(textConnection(ITRDB_site_re_spec), 
+                                data = list(Y = log(train.TSCA$RWI), n=length(train.TSCA$RWI), Precip.scaled = train.TSCA$Precip.scaled, Temp.jja.scaled = train.TSCA$Temp.jun.scaled, RWI_1 = train.TSCA$RWI_1, RWI_2 = train.TSCA$RWI_2, Age= train.TSCA$Age, 
+                                            spec = as.numeric(train.TSCA$spec), S = unique(train.TSCA$site_num.TSCA),  C = unique(train.TSCA$spec), sites = as.numeric(train.TSCA$site_num.TSCA), np=length(test.TSCA$spec), 
+                                            sites.p = test.TSCA$site_num.TSCA, Precip.scaled.p = test.TSCA$Precip.scaled, Temp.jja.scaled.p = test.TSCA$Temp.jun.scaled, RWI_1.p = test.TSCA$RWI_1, RWI_2.p = test.TSCA$RWI_2, 
+                                            spec.p = as.numeric(test.TSCA$spec), Age.p = test.TSCA$Age),
+                                
+                                # nprobe=length(probe.ED$struct.cohort.code), 
+                                # sites.probe = probe.ED$site_num, Precip.scaled.probe = probe.ED$DI.scaled, Temp.jja.scaled.probe = probe.ED$T.scaled, agbi_1.probe = probe.ED$RWI_1, agbi_2.probe = probe.ED$RWI_2, agbi_3.probe = probe.ED$RWI_3, agbi_4.probe = probe.ED$RWI_4,
+                                # spec.probe = as.numeric(probe.ED$struct.cohort.code)), 
+                                n.chains = 3, n.adapt = 100)
+
+
+update(reg.ITRDB.by_spec, 1000); # Burnin for 1000 samples to start, then go higher later
+
+#samp.ED.period <- coda.samples(reg.EDel.by_period, 
+#                           variable.names=c("alpha","beta1", "beta2","beta3","beta3","sigma","sigma_alpha", "sigma_beta1", "sigma_beta2","sigma_beta3", "sigma_beta4"), 
+#                          n.chains = 3, n.iter=2000, thin = 10)
+samp.ITRDB.TSCA <- coda.samples(reg.ITRDB.by_spec, 
+                                variable.names=c("alpha", "beta1", "beta2", "beta3", "beta4", "beta5"), 
+                                n.chains = 3, n.iter=5000, thin = 1)
+
+saveRDS(samp.ITRDB.TSCA, "outputs/ITRDB_models/ITRDB_site_species_re/samps_TSCA.rds")
+
+
+samp.ITRDB.TSCA <- coda.samples(reg.ITRDB.by_spec, 
+                                variable.names=c("alpha", "beta1", "beta2", "beta3", "beta4", "beta5"), 
+                                n.chains = 3, n.iter=5000, thin = 1)
+
+saveRDS(samp.ITRDB.TSCA, "outputs/ITRDB_models/ITRDB_site_species_re/samps_TSCA.rds")
+samp.ITRDB.TSCA <- readRDS( "outputs/ITRDB_models/ITRDB_site_species_re/samps_TSCA.rds")
+
+summary(samp.ITRDB.TSCA)
+samps.ITRDB <- samp.ITRDB.TSCA[[1]]
+
+traceplot(samps.ITRDB)
+
+ypred.ITRDB.TSCA <- coda.samples(reg.ITRDB.by_spec, 
+                                 variable.names=c("Ypred"), 
+                                 n.chains = 3, n.iter=500, thin = 1)
+
+saveRDS(ypred.ITRDB.TSCA, "outputs/ITRDB_models/ITRDB_site_species_re/Ypred_samps_TSCA.rds")
+
+
+Yp.samps <- ypred.ITRDB.TSCA[[1]]
+Yp.samps <- data.frame(Yp.samps) 
+Yp.m <- melt(Yp.samps)
+Yp.summary <- Yp.m %>% group_by(variable) %>% dplyr::summarise(Predicted = mean(exp(value)),
+                                                               ci.hi = quantile(exp(value),0.975),
+                                                               ci.lo = quantile(exp(value),0.025))
+Yp.summary$Observed <- test.TSCA$RWI
+Yp.summary$SPEC.CODE <- test.TSCA$SPEC.CODE
+
+pred.obs <- summary(lm(colMeans(exp(Yp.samps)) ~ test.TSCA$RWI))
+
+p.o.plot <- ggplot(Yp.summary, aes(Observed, Predicted))+geom_point(color = "black", size = 0.5)+
+  geom_errorbar(data = Yp.summary,aes(ymin=ci.lo, ymax=ci.hi), color = "grey", alpha = 0.5)+
+  geom_point(data = Yp.summary, aes(Observed, Predicted, color = SPEC.CODE), size = 0.5)+
+  geom_abline(aes(slope = 1, intercept = 0), color = "red", linetype = "dashed")+
+  geom_text(data=data.frame(pred.obs$r.squared), aes( label = paste("R^2: ", pred.obs$r.squared, sep="")),parse=T,x=1, y=7)+ylim(-0.5, 12)+xlim(-0.5, 12)
+
+# note poor model fit!
+png(width = 6, height = 5, units = "in", res = 300, "outputs/ITRDB_models/ITRDB_site_species_re/pred_vs_obs_TSCA_QUAL.png")
+p.o.plot
+dev.off()
+
+# calculate MSE & BIAS:
+
+MSE1   <- mean((colMeans(exp(Yp.samps))-test.TSCA$RWI)^2)
+BIAS1  <- mean(colMeans(exp(Yp.samps))-test.TSCA$RWI)
 
 # write model summary output to a file!
 

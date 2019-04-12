@@ -3,6 +3,7 @@ library(dplyr)
 library(tidyr)
 library(coda)
 library(reshape2)
+library(cowplot)
 
 # read in all the samples:
 filenames <- list.files(path = "outputs/ITRDB_models/ITRDB_species_no_re", pattern = "*.rds")
@@ -72,29 +73,29 @@ all.param.summary <- all.param.ests.m %>% group_by(species, variable) %>% dplyr:
 
 INTERCEPTS <- ggplot(all.param.summary[all.param.summary$variable %in% "alpha",], aes(species, mean))+geom_point()+
   geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
-  ylab("Species intercept Alpha Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank())
+  ylab("Species intercept Alpha Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 
 MAPS <- ggplot(all.param.summary[all.param.summary$variable %in% "beta1",], aes(species, mean))+geom_point()+
   geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
-  ylab("Precipitation Sensitivity(Beta1) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank())
+  ylab("Precipitation Sensitivity(Beta1) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 JUNTMAX <- ggplot(all.param.summary[all.param.summary$variable %in% "beta2",], aes(species, mean))+geom_point()+
   geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
-  ylab("Jun Tmax Sensitivity (Beta2) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank())
+  ylab("Jun Tmax Sensitivity (Beta2) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 
 PREVRWI_1 <- ggplot(all.param.summary[all.param.summary$variable %in% "beta3",], aes(species, mean))+geom_point()+
   geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
-  ylab("PrevRWI_1 (Beta3) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank())
+  ylab("PrevRWI_1 (Beta3) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 
 PREVRWI_2 <- ggplot(all.param.summary[all.param.summary$variable %in% "beta4",], aes(species, mean))+geom_point()+
   geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
-  ylab("PrevRWI_1 (Beta4) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank())
+  ylab("PrevRWI_1 (Beta4) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 
 AGE <- ggplot(all.param.summary[all.param.summary$variable %in% "beta5",], aes(species, mean))+geom_point()+
   geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
-  ylab("Age (Beta5) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank())
+  ylab("Age (Beta5) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 
-png(height = 10, width = 8, units = "in", res = 300, "outputs/ITRDB_models/ITRDB_site_species_re/All_spec_parameters.png")
-cowplot::plot_grid(INTERCEPTS, MAPS, JUNTMAX, PREVRWI_1, PREVRWI_2, AGE, align = "hv", labels = "AUTO")
+png(height = 18, width = 16, units = "in", res = 300, "outputs/ITRDB_models/ITRDB_species_no_re/All_spec_parameters.png")
+cowplot::plot_grid(INTERCEPTS, MAPS, JUNTMAX, PREVRWI_1, PREVRWI_2, AGE, align = "hv",ncol = 2, labels = "AUTO")
 dev.off()

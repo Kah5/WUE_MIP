@@ -28,11 +28,13 @@ for(i in 1:length(spec)){
   dev.off()
 }
 
-# save acfplots:
+# save acfplots:acfplots are based off of trellis, so it wont save yet
 for(i in 1:length(spec)){
-  png(height = 6, width = 12, units = "in", res = 200, paste0("outputs/ITRDB_models/ITRDB_species_time_re/acfplot_", spec[i],".png"))
-  acfplot(all.params.chain1[[i]])
-  dev.off()
+  #png(height = 6, width = 12, units = "in", res = 200, paste0("outputs/ITRDB_models/ITRDB_species_time_re/acfplot_", spec[i],".png"))
+  acf  <- acfplot(all.params.chain1[[i]])
+  ggsave(paste0("outputs/ITRDB_models/ITRDB_species_time_re/acfplot_", spec[i],".png"), plot = acf)
+ 
+  #dev.off()
 }
 
 
@@ -45,12 +47,12 @@ for(i in 1:length(spec)){
              Ci.high = apply(ests, 2, function(x){quantile(x, 0.975)}))
   
   ests.summary$params <- rownames(ests.summary)                                                                 
-  
- ggsave( paste0("outputs/ITRDB_models/ITRDB_species_time_re/parameter_ests_", spec[i],".png"))
-  ggplot(ests.summary[!ests.summary$params %in% "sigmaY",], aes(params, mean ))+
+  acf <- ggplot(ests.summary[!ests.summary$params %in% "sigmaY",], aes(params, mean ))+
     geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
-      ylab("Parameter Estimates")+xlab("parameter")+theme_bw(base_size = 15)+theme(panel.grid = element_blank())
-
+    ylab("Parameter Estimates")+xlab("parameter")+theme_bw(base_size = 15)+theme(panel.grid = element_blank())
+  
+ ggsave( paste0("outputs/ITRDB_models/ITRDB_species_time_re/parameter_ests_", spec[i],".png"), plot = acf)
+  
 
 }
 
@@ -68,34 +70,44 @@ all.param.summary <- all.param.ests.m %>% group_by(species, variable) %>% dplyr:
                                                                     Ci.low = quantile(value, 0.025), 
                                                                     Ci.high = quantile(value, 0.975))
 
-
+all.param.summary$time.cd <- substring(all.param.summary$variable, 7, 7)
+all.param.summary$timeclass <- ifelse(all.param.summary$time.cd %in% "1", "Past", 
+       ifelse(all.param.summary$time.cd %in% "2", "Modern", "No re"))
+all.param.summary$variable2 <- substring(all.param.summary$variable, 1,5)
 # still need to: assign colors based on Paleon species
 
 INTERCEPTS <- ggplot(all.param.summary[all.param.summary$variable %in% "alpha",], aes(species, mean))+geom_point()+
   geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("Species intercept Alpha Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 
-MAPS <- ggplot(all.param.summary[all.param.summary$variable %in% "beta1",], aes(species, mean))+geom_point()+
-  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+MAPS <- ggplot(all.param.summary[all.param.summary$variable2 %in% "beta1",], aes(species, mean, color = timeclass))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = timeclass), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("Precipitation Sensitivity(Beta1) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 
 
-JUNTMAX <- ggplot(all.param.summary[all.param.summary$variable %in% "beta2",], aes(species, mean))+geom_point()+
-  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+JUNTMAX <- ggplot(all.param.summary[all.param.summary$variable2 %in% "beta2",], aes(species, mean, color = timeclass))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = timeclass), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("Jun Tmax Sensitivity (Beta2) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 
-PREVRWI_1 <- ggplot(all.param.summary[all.param.summary$variable %in% "beta3",], aes(species, mean))+geom_point()+
-  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+PREVRWI_1 <- ggplot(all.param.summary[all.param.summary$variable2 %in% "beta3",], aes(species, mean, color = timeclass))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = timeclass), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("PrevRWI_1 (Beta3) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 
-PREVRWI_2 <- ggplot(all.param.summary[all.param.summary$variable %in% "beta4",], aes(species, mean))+geom_point()+
-  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+PREVRWI_2 <- ggplot(all.param.summary[all.param.summary$variable2 %in% "beta4",], aes(species, mean, color = timeclass))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = timeclass), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("PrevRWI_1 (Beta4) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 
-AGE <- ggplot(all.param.summary[all.param.summary$variable %in% "beta5",], aes(species, mean))+geom_point()+
-  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+AGE <- ggplot(all.param.summary[all.param.summary$variable2 %in% "beta5",], aes(species, mean, color = timeclass))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = timeclass), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("Age (Beta5) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 
-png(height = 18, width = 16, units = "in", res = 300, "outputs/ITRDB_models/ITRDB_species_time_re/All_spec_parameters.png")
+png(height = 18, width = 16, units = "in", res = 300, "outputs/ITRDB_models/ITRDB_species_time_re/All_spec_parameters_by_time.png")
 cowplot::plot_grid(INTERCEPTS, MAPS, JUNTMAX, PREVRWI_1, PREVRWI_2, AGE, align = "hv",ncol = 2, labels = "AUTO")
 dev.off()
+
+
+
+# ---------Plot predicted vs. observed for each test.dataset
+
+# ---------Plot posterior predictive response of each species to temperature & precipitation pre & post:
+

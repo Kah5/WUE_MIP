@@ -148,6 +148,8 @@ pred.get.rsq <- function(x){
       colnames(test.m) <- c("MCMC", "idval", "Ypred")
       full.pred <- left_join(test.m, meanMAP.sim, by = "idval")
       full.pred$RWI.pred <- exp(full.pred$Ypred)
+      saveRDS(full.pred, paste0("outputs/ITRDB_models/ITRDB_species_no_re/test_", unique(indiv.summary$SPEC.CODE),"_full_pred.rds"))
+      
       
       # indiv.summary <- full.pred %>% group_by(studyCode, year, ID) %>% dplyr::summarise(mean.pred = mean(RWI.pred, na.rm =TRUE),
       #                                                                              ci.low.pred=quantile(RWI.pred, 0.025, na.rm =TRUE),
@@ -174,7 +176,15 @@ pred.get.rsq <- function(x){
       site.model.fit
 }
 
-rsq.site <- lapply(test.list, pred.get.rsq)
+
+rsq.data <- pred.get.rsq.time(test.list[[1]])
+rsq.site <- lapply(test.list, pred.get.rsq.time)
+rsq.site.df <- do.call(rbind, rsq.site)
+saveRDS(rsq.site.df,"outputs/ITRDB_models/ITRDB_species_no_re/rsq.df.rds")
+
+
+
+
 #ggplot(indiv.summary , aes(mean.obs, mean.pred))+geom_point()+geom_abline(intercept = 0, 1, color = "red")+ylim(0,10)+xlim(0,7)+theme(legend.position = "none")+facet_wrap(~studyCode)
 
 # pred.obs.time <- ggplot(indiv.summary , aes(year, mean.pred))+geom_line()+geom_ribbon(aes(ymin = ci.low.pred, ymax = ci.high.pred, fill = site), alpha = 0.25, linetype = "dashed", colour = NA)+

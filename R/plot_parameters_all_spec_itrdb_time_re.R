@@ -110,4 +110,99 @@ dev.off()
 # ---------Plot predicted vs. observed for each test.dataset
 
 # ---------Plot posterior predictive response of each species to temperature & precipitation pre & post:
+# use apply to read in all the 
+test.data.names <- list.files(path = "outputs/ITRDB_models/train_test_data/", pattern = "*_nimble.rds")
+index.first <- substring(test.data.names, first = 1, last = 4)
+test.dfs <- test.data.names[index.first %in% "test"]
+test.dfs.full <- paste0("/Users/kah/Documents/WUE_MIP/WUE_MIP/outputs/ITRDB_models/train_test_data/", test.dfs)
+test.list <- lapply(test.dfs.full, readRDS)
+
+test.data.df <- do.call(rbind, test.list)
+
+
+
+# get predictions from the betas for each model:
+x <- test.list[[1]]
+
+pred.get.rsq.time <- function(x){
+  cat("*")
+  
+  x$timeclass <- ifelse(x$year <= 1945, "Pre-1945", "Post-1945" )
+  x$time_num <- ifelse(x$year <= 1945, 1,2)
+  meanMAP.sim <- x
+  
+  
+  int.mcmc <- as.mcmc(all.params.chain1[[1]])
+  int.mcmc.mat <- as.matrix(int.mcmc)
+  int.mcmc.dat <- data.frame(int.mcmc.mat)
+  
+  int.1 <- matrix(rep(NA, nrow(int.mcmc.dat)*length(meanMAP.sim$Temp.jun.scaled)), nrow = nrow(int.mcmc.dat))
+  
+  
+  # use betas to generate pp given a value for site, structure, dbh, rwi1, rwi2, and varying T and MAP:
+  for(i in 1:length(meanMAP.sim$Temp.jun.scaled)){
+    
+    
+    int.1[,i] <- int.mcmc.dat[,paste0("alpha")]+
+      int.mcmc.dat[,paste0("beta1.", meanMAP.sim[i,"time_num"], ".")]*meanMAP.sim[i,]$Precip.scaled+    
+      int.mcmc.dat[,paste0("beta2.", meanMAP.sim[i,"time_num"], ".")]*meanMAP.sim[i,]$Temp.jun.scaled + 
+      int.mcmc.dat[,paste0("beta3.", meanMAP.sim[i,"time_num"], ".")]*meanMAP.sim[i,]$RWI_1  + 
+      int.mcmc.dat[,paste0("beta4.", meanMAP.sim[i,"time_num"], ".")]*meanMAP.sim[i,]$RWI_2 +
+      int.mcmc.dat[,paste0("beta5.", meanMAP.sim[i,"time_num"], ".")]*meanMAP.sim[i,]$Age 
+    #int.mcmc.dat[,paste0("beta7.", meanMAP.sim[i,"struct.cohort.code"], ".")] * (meanMAP.sim[i,"MAP.scaled"] *meanMAP.sim[i,"T.scaled"])
+    
+    
+  }
+  
+  meanMAP.sim$idval <- 1:length(meanMAP.sim$Longitude)
+  
+  # rows are the mcmc values
+  colnames(int.1) <- 1:length(meanMAP.sim$Longitude)
+  test.m <- melt(int.1)
+  colnames(test.m) <- c("MCMC", "idval", "Ypred")
+  full.pred <- left_join(test.m, meanMAP.sim, by = "idval")
+  full.pred$RWI.pred <- exp(full.pred$Ypred)
+  
+  # indiv.summary <- full.pred %>% group_by(studyCode, year, ID) %>% dplyr::summarise(mean.pred = mean(RWI.pred, na.rm =TRUE),
+  #                                                                              ci.low.pred=quantile(RWI.pred, 0.025, na.rm =TRUE),
+  #                                                                              ci.high.pred=quantile(RWI.pred, 0.975, na.rm =TRUE),
+  #                                                                              mean.obs = mean(RWI, na.rm =TRUE), 
+  #                                                                              ci.low.obs=quantile(RWI, 0.025, na.rm =TRUE),
+  #                                                                              ci.high.obs=quantile(RWI, 0.975, na.rm =TRUE))
+  # 
+  # 
+  # 
+  indiv.summary <- full.pred %>% group_by( SPEC.CODE, year) %>% dplyr::summarise(mean.pred = mean(RWI.pred, na.rm =TRUE),
+                                                                                ci.low.pred=quantile(RWI.pred, 0.025, na.rm =TRUE),
+                                                                                ci.high.pred=quantile(RWI.pred, 0.975, na.rm =TRUE),
+                                                                                mean.obs = mean(RWI, na.rm =TRUE), 
+                                                                                ci.low.obs=quantile(RWI, 0.025, na.rm =TRUE),
+                                                                                ci.high.obs=quantile(RWI, 0.975, na.rm =TRUE))
+  
+  saveRDS(full.pred, paste0("outputs/ITRDB_models/ITRDB_species_time_re/test_", unique(indiv.summary$SPEC.CODE),"_full_pred.rds"))
+  summary.lm <- summary(lm(RWI.pred ~ RWI ,data = full.pred))
+  
+  site.model.fit <- data.frame(spec = unique(indiv.summary$SPEC.CODE),
+                               rsq = summary.lm$r.squared)
+  
+  site.model.fit
+}
+
+rsq.data <- pred.get.rsq.time(test.list[[1]])
+rsq.site <- lapply(test.list, pred.get.rsq.time)
+rsq.site.df <- do.call(rbind, rsq.site)
+saveRDS(rsq.site.df,"outputs/ITRDB_models/ITRDB_species_time_re/rsq.df.rds")
+
+
+
+#ggplot(indiv.summary , aes(mean.obs, mean.pred))+geom_point()+geom_abline(intercept = 0, 1, color = "red")+ylim(0,10)+xlim(0,7)+theme(legend.position = "none")+facet_wrap(~studyCode)
+
+# pred.obs.time <- ggplot(indiv.summary , aes(year, mean.pred))+geom_line()+geom_ribbon(aes(ymin = ci.low.pred, ymax = ci.high.pred, fill = site), alpha = 0.25, linetype = "dashed", colour = NA)+
+#   geom_point(data = indiv.summary , aes(year, mean.obs), color = "black", size = 0.05)+geom_line(data = indiv.summary , aes(year, mean.obs), color = "red", linetype = "dashed")+theme(legend.position = "none")+
+#   facet_wrap(~site, scales = "free_y")+ylab("Predicted Tree Growth (mm)")+xlab("Year")
+
+
+
+# ---------Plot posterior predictive response of each species to temperature & precipitation pre & post:
+
 

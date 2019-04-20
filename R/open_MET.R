@@ -1,5 +1,8 @@
 library(ncdf4)
 library(abind)
+library(dplyr)
+library(tidyr)
+library(reshape2)
 
 # script to read in daily met drivers and summarise them by month 
 # this is mostly to have met data to correlate with linkages, but we can also compare to outputs from guess & ed

@@ -8,7 +8,7 @@ library(nimble)
 library(coda)
 
 # get the unique spec.codes:
-#rwl.itrdb.clim.nona <- readRDS( paste0(getwd(),"/Data/ITRDB/full.clim.prism.rds"))
+rwl.itrdb.clim.nona <- readRDS( paste0(getwd(),"/Data/ITRDB/full.clim.prism.rds"))
 rwl.itrdb.clim.nona <- readRDS( paste0(getwd(),"/Data/full.clim.prism.rds"))
 rwl.full <- rwl.itrdb.clim.nona[!is.na(rwl.itrdb.clim.nona$RWI_1) & !is.na(rwl.itrdb.clim.nona$RWI_2)  ,]
 spec.list  <- as.character( unique(rwl.full$SPEC.CODE))
@@ -135,14 +135,18 @@ if(file.exists(paste0("outputs/ITRDB_models/ITRDB_species_time_re_tp_int/samps_"
 
 # test on a species with small # of data:
 
-# run.nimble.spec(spec = "PIVI", 
-#                 train.test.dir = "outputs/ITRDB_models/train_test_data/",
-#                 niter = 25000, burnin= 200, thin = 20, nchains = 3)
+ run.nimble.spec(spec = "PIVI", 
+                 train.test.dir = "outputs/ITRDB_models/train_test_data/",
+                 niter = 25000, burnin= 200, thin = 20, nchains = 3)
 # 
-# run.nimble.spec(spec = "FAGR", 
-#                 train.test.dir = "outputs/ITRDB_models/train_test_data/",
-#                 niter = 25000, burnin= 200, thin = 20, nchains = 3)
-# 
+ run.nimble.spec(spec = "FAGR", 
+                 train.test.dir = "outputs/ITRDB_models/train_test_data/",
+                 niter = 25000, burnin= 200, thin = 20, nchains = 3)
+ 
+ run.nimble.spec(spec = "QUPR", 
+                 train.test.dir = "outputs/ITRDB_models/train_test_data/",
+                 niter = 25000, burnin= 200, thin = 20, nchains = 3)
+ 
 # sessionInfo()
 
 for(i in 1:length(spec.list)){

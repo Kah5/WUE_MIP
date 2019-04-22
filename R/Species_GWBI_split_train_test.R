@@ -260,3 +260,163 @@ png(height = 6, width = 10, units = "in", res = 300, "outputs/gwbi_model/GUESS_s
 precip
 dev.off()
 
+
+#---------------- now plot correlations by time period:-----------------------
+correlate.tmax.time.period <- function(x, min.yr, max.yr){
+  test.nona <- guess.gwbi.clim.nona[guess.gwbi.clim.nona$Site %in% x, ]
+  cat(x)
+  test.nona$GWBI <- as.numeric(test.nona$GWBI)
+  #corM <- cor(test.nona$GWBI, test.nona[, c("tair_max_1", "tair_max_2", "tair_max_3", "tair_max_4", "tair_max_5", "tair_max_6", "tair_max_7", "tair_max_8", "tair_max_9", "tair_max_10", "tair_max_11", "tair_max_12")], use = "pairwise.complete")
+  PFTS <- unique(test.nona$PFT)
+  dataframe.cor <- test.nona[test.nona$Year >= min.yr & test.nona$Year <= max.yr, ]
+  
+  cor.mat.site <- lapply(PFTS, function(a){
+    
+    test.PFT <-  dataframe.cor[dataframe.cor$PFT %in% a,]
+    if(length(test.PFT$Year) <= 4){
+      cor.mat.df <- data.frame(PFT = a,
+                               month = colnames(test.PFT)[10:length(test.PFT)],
+                               coef = NA, 
+                               p = NA)
+    }else{
+      cor.mat <- rcorr( as.matrix(test.PFT[, c("GWBI", colnames(test.PFT)[10:length(test.PFT)])]), type="pearson") 
+      cor.mat.df <- data.frame(PFT = a,
+                               month = colnames(test.PFT)[10:length(test.PFT)] ,
+                               coef = cor.mat$r[2:53,1], 
+                               p = cor.mat$P[2:53,1])
+    }
+    cat(a)
+    cor.mat.df
+  })
+  cor.mat.site.df <- do.call(rbind, cor.mat.site)
+  cor.mat.site.df
+}
+
+names <- as.list(as.character(unique(guess.gwbi.clim.nona$Site))) # get names to apply function over
+
+# For 1900-2000
+system.time(tmax.cors.1900.2011 <- lapply(names, correlate.tmax.time.period, min.yr = 1900, max.yr = 2011))
+names(tmax.cors.1900.2011) <- unique(guess.gwbi.clim.nona$Site)
+
+tmax.cors.df.1900.2011 <- do.call(rbind,tmax.cors.1900.2011) # takes a minute
+tmax.cors.df.1900.2011$Site <- rep(names(tmax.cors.1900.2011), sapply(tmax.cors.1900.2011, nrow)) # add the site names
+tmax.cors.df.1900.2011$Timeperiod <- "1900-2011"
+
+# for 1800- 1899
+system.time(tmax.cors.1800.1899 <- lapply(names, correlate.tmax.time.period, min.yr = 1800, max.yr = 1899))
+names(tmax.cors.1800.1899) <- unique(guess.gwbi.clim.nona$Site)
+
+tmax.cors.df.1800.1899 <- do.call(rbind,tmax.cors.1800.1899) # takes a minute
+tmax.cors.df.1800.1899$Site <- rep(names(tmax.cors.1800.1899), sapply(tmax.cors.1800.1899, nrow)) # add the site names
+tmax.cors.df.1800.1899$Timeperiod <- "1800-1899"
+
+# for 850 to 1799
+system.time(tmax.cors.850.1799 <- lapply(names, correlate.tmax.time.period, min.yr = 850, max.yr = 1799))
+names(tmax.cors.850.1799) <- unique(guess.gwbi.clim.nona$Site)
+
+tmax.cors.df.850.1799 <- do.call(rbind,tmax.cors.850.1799) # takes a minute
+tmax.cors.df.850.1799$Site <- rep(names(tmax.cors.850.1799), sapply(tmax.cors.850.1799, nrow)) # add the site names
+tmax.cors.df.850.1799$Timeperiod <- "850-1799"
+
+tmax.recent <- rbind(tmax.cors.df.1800.1899, tmax.cors.df.1900.2011)
+tmax.recent <- tmax.recent[!is.na(tmax.recent$coef),]
+
+tmax <- ggplot(tmax.recent[tmax.recent$month %in% col.tmax,], aes(month, coef, fill = Timeperiod))+geom_boxplot(outlier.size = 0.05, outlier.color = "grey")+
+  geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT, ncol = 4)+theme_bw()+theme(axis.text.x = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
+
+tmean <- ggplot(tmax.recent[tmax.recent$month %in% col.tmean,], aes(month, coef, fill = Timeperiod))+geom_boxplot(outlier.size = 0.05, outlier.color = "grey")+
+  geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT, ncol = 4)+theme_bw()+theme(axis.text.x = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
+
+tmin <- ggplot(tmax.recent[tmax.recent$month %in% col.tmin,], aes(month, coef, fill = Timeperiod))+geom_boxplot(outlier.size = 0.05, outlier.color = "grey")+
+  geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT, ncol = 4)+theme_bw()+theme(axis.text.x = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
+
+precip <- ggplot(tmax.recent[tmax.recent$month %in% col.precip,], aes(month, coef, fill = Timeperiod))+geom_boxplot(outlier.size = 0.05, outlier.color = "grey")+
+  geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT, ncol = 4)+theme_bw()+theme(axis.text.x = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
+
+
+png(height = 6, width = 10, units = "in", res = 300, "outputs/gwbi_model/GUESS_species_tmax_responses_by_time.png")
+tmax
+dev.off()
+
+png(height = 6, width = 10, units = "in", res = 300, "outputs/gwbi_model/GUESS_species_tmean_responses_by_time.png")
+tmean
+dev.off()
+
+png(height = 6, width = 10, units = "in", res = 300, "outputs/gwbi_model/GUESS_species_tmin_responses_by_time.png")
+tmin
+dev.off()
+
+png(height = 6, width = 10, units = "in", res = 300, "outputs/gwbi_model/GUESS_species_precip_responses_by_time.png")
+precip
+dev.off()
+
+
+
+# -----------------finally split LPJ-GUESS test & training:-------------------
+
+# split training and testing data:
+
+
+guess.gwbi.clim.nona$Precip.scaled = as.vector(scale(guess.gwbi.clim.nona$precip_total_wtr_yr.mm, center = TRUE, scale = TRUE))
+guess.gwbi.clim.nona.Precip.scaled = scale(guess.gwbi.clim.nona$precip_total_wtr_yr.mm, center = TRUE, scale = TRUE)
+
+guess.gwbi.clim.nona$Temp.jun.scaled = as.vector(scale(guess.gwbi.clim.nona$tair_max_6, center = TRUE, scale = TRUE))
+guess.gwbi.clim.nona.jun.scaled = scale(guess.gwbi.clim.nona$tair_max_6, center = TRUE, scale = TRUE)
+
+
+#splits <- unlist(strsplit(unique(ED.sort_lag$Site), "X"))
+covert_site_codes <- data.frame(site_num = 1:length(unique(guess.gwbi.clim.nona$Site)),
+                                Site = unique(guess.gwbi.clim.nona$Site))
+
+covert_spec_codes <- data.frame(spec = 1:length(unique(guess.gwbi.clim.nona$PFT)),
+                                PFT = unique(guess.gwbi.clim.nona$PFT))
+
+
+guess.gwbi.clim.nona <- left_join(guess.gwbi.clim.nona, covert_site_codes, by = "Site")
+guess.gwbi.clim.nona <- left_join(guess.gwbi.clim.nona, covert_spec_codes, by = "PFT")
+
+
+# clean up the data and split testing and training:
+rwl.full <- guess.gwbi.clim.nona[!is.na(guess.gwbi.clim.nona$GWBI_1) & !is.na(guess.gwbi.clim.nona$GWBI_2)  ,]
+rwl.full$GWBI <- as.numeric(rwl.full$GWBI)
+rwl.full$GWBI_1 <- as.numeric(rwl.full$GWBI_1)
+rwl.full$GWBI_2 <- as.numeric(rwl.full$GWBI_2)
+#rwl.full$Age <- as.numeric(rwl.full$Age)
+
+# also get rid of 0 values??
+rwl.full <- rwl.full[!rwl.full$GWBI == 0, ]
+
+
+# develop function to split testing and training datasets by species:
+split.test.train.spec <- function( spec){
+  
+  spec.full <- rwl.full[rwl.full$PFT %in% spec,]
+  
+  spec.full$spec <- ifelse(spec.full$PFT %in% spec, 1, 2)
+  
+  covert_site_codes.spec <- data.frame(site_num.spec = 1:length(unique(spec.full$Site)),
+                                       Site = unique(spec.full$Site))
+  
+  spec.df <- left_join(spec.full, covert_site_codes.spec, by = "Site")
+  
+  msk <- caTools::sample.split( spec.df, SplitRatio = 3/4, group = NULL )
+  
+  train.spec <- spec.df[msk,]
+  test.spec <- spec.df[!msk,]
+  
+  
+  saveRDS(test.spec, paste0("outputs/gwbi_model/train_test_data/train_LPJ", spec, "_nimble.rds"))
+  saveRDS(test.spec, paste0("outputs/gwbi_model/train_test_data/test_LPJ", spec, "_nimble.rds"))
+  
+  cat(spec)
+}
+
+
+spec.list  <- as.character( unique(rwl.full$PFT))
+
+
+for(i in 1:length(spec.list)){
+  split.test.train.spec(spec.list[i])
+}
+
+

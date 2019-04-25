@@ -87,6 +87,7 @@ ggplot(GUESS.all, aes( tair_mean_6, precip_total.mm, color = BNS.gwbi))+geom_poi
 
 # now need to filter out grid cells/times where fcomp does not include the taxa of choice:
 
+GUESS.all <- readRDS( paste0(getwd(),"/outputs/data/GUESS/GUESS.gwbi.pft.all.met.rds"))
 
 GUESS.fcomp.pft <- readRDS("Data/GUESS.Fcomp.pft.rds")
 GUESS.fcomp.pft.spread <- GUESS.fcomp.pft %>% group_by(Year, Site) %>% spread(PFT, Fcomp)
@@ -112,15 +113,38 @@ GUESS.df[GUESS.df$C3G.fcomp == 0,]$C3G.gwbi <- NA
 GUESS.df[GUESS.df$C4G.fcomp == 0,]$C4G.gwbi <- NA
 
 
+
+# need to relativize tree growth by mean for each site (& species)
 ggplot(GUESS.df, aes( tair_mean_6, precip_total.mm, color = BIBS.gwbi))+geom_point()
 
 # -----------------------------get gwbi-1 and gwbi-2:----------------------------------
 # calculate lagged gwbi:
 GUESS.df.slim <- GUESS.df %>% select(num:Total.gwbi) %>% group_by(num, lon, lat, Year, Site) %>% gather(key = PFT, value = GWBI,BNE.gwbi:Total.gwbi)
 
+min.totals <- GUESS.df.slim %>% group_by(Site, PFT) %>% summarise(min.gwbi = min(GWBI, na.rm = TRUE), 
+                                                          mean.gwbi = mean(GWBI, na.rm = TRUE))
+GWBI.GUESS.mins <- merge(GUESS.df.slim, min.totals, by = c("Site", "PFT"))
+rel.guess.gwbi <- GWBI.GUESS.mins #%>% group_by(lon, lat, Site, num,Year, PFT) %>% dplyr::summarise(rel.gwbi = GWBI - (min.gwbi-0.15),
+                                   
+#                                      rel.gwbi.raw = GWBI - (min.gwbi), 
+ #                                                                        mean.diff = GWBI - mean.gwbi)
+rel.guess.gwbi$rel.gwbi.raw <- rel.guess.gwbi$GWBI - rel.guess.gwbi$min.gwbi
+rel.guess.gwbi$rel.gwbi <- rel.guess.gwbi$GWBI - (rel.guess.gwbi$min.gwbi-0.015)
+rel.guess.gwbi$mean.diff <- rel.guess.gwbi$GWBI - rel.guess.gwbi$mean.gwbi
+hist(as.numeric(rel.guess.gwbi$rel.gwbi.raw), breaks = 100)
+hist(as.numeric(rel.guess.gwbi$mean.diff), breaks = 100)
+hist(as.numeric(rel.guess.gwbi$GWBI), breaks = 100)
+
+
+ggplot(rel.guess.gwbi[rel.guess.gwbi$Site %in% "4",], aes( Year , rel.gwbi, color = PFT))+geom_line()
+
+head(rel.guess.gwbi)
+GUESS.df.slim <- rel.guess.gwbi[,c("num", "lon", "lat", "Year", "Site", "PFT", "rel.gwbi")]
+colnames(GUESS.df.slim)[7] <- "GWBI" 
 # get previous years growth for GUESS.df
 PFT.groups <- as.list(unique(GUESS.df.slim$PFT))
-PFT.group<- "BNE.gwbi"
+PFT.group <- "BNE.gwbi"
+
 get_prev_gwbi <- function(PFT.group){
   cat(PFT.group)
       x <- GUESS.df.slim[GUESS.df.slim$PFT %in% PFT.group,]
@@ -231,6 +255,7 @@ col.tmin <- unique(tmax.cors.df$month)[unique(tmax.cors.df$month) %like% "tair_m
 col.precip <- unique(tmax.cors.df$month)[unique(tmax.cors.df$month) %like% "precip"]
 
 
+
 tmax <- ggplot(tmax.cors.df[tmax.cors.df$month %in% col.tmax,], aes(month, coef, fill = PFT))+geom_boxplot(outlier.size = 0.05, outlier.color = "grey")+
   geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT, ncol = 4)+theme_bw()+theme(axis.text.x = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
 
@@ -244,21 +269,42 @@ precip <- ggplot(tmax.cors.df[tmax.cors.df$month %in% col.precip,], aes(month, c
   geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT, ncol = 4)+theme_bw()+theme(axis.text.x = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
 
 
-png(height = 6, width = 10, units = "in", res = 300, "outputs/gwbi_model/GUESS_species_tmax_responses.png")
+png(height = 6, width = 10, units = "in", res = 300, "outputs/gwbi_model/GUESS_species_tmax_responses_rel.png")
 tmax
 dev.off()
 
-png(height = 6, width = 10, units = "in", res = 300, "outputs/gwbi_model/GUESS_species_tmean_responses.png")
+png(height = 6, width = 10, units = "in", res = 300, "outputs/gwbi_model/GUESS_species_tmean_responses_rel.png")
 tmean
 dev.off()
 
-png(height = 6, width = 10, units = "in", res = 300, "outputs/gwbi_model/GUESS_species_tmin_responses.png")
+png(height = 6, width = 10, units = "in", res = 300, "outputs/gwbi_model/GUESS_species_tmin_responses_rel.png")
 tmin
 dev.off()
 
-png(height = 6, width = 10, units = "in", res = 300, "outputs/gwbi_model/GUESS_species_precip_responses.png")
+png(height = 6, width = 10, units = "in", res = 300, "outputs/gwbi_model/GUESS_species_precip_responses_rel.png")
 precip
 dev.off()
+
+
+
+# cluster the coeffeicent temperature responses:
+guess.grid <- unique(guess.gwbi.clim.nona[,c("lon", "lat", "Site")])
+tmax.cors.df.ll <- left_join(tmax.cors.df, guess.grid, by = "Site")
+tmax.clusters <- tmax.cors.df.ll %>% select("lon", "lat", "PFT", "Site", "month", "coef") %>% spread(key = month, value = coef)
+
+k3 <- cluster::pam(tmax.clusters[,col.tmax], k = 3, diss = FALSE)
+tmax.clusters$k3 <- as.character(k3$clustering)
+
+k4 <- cluster::pam(tmax.clusters[,col.tmax], k = 4, diss = FALSE)
+tmax.clusters$k4 <- as.character(k4$clustering)
+
+k5 <- cluster::pam(tmax.clusters[,col.tmax], k = 5, diss = FALSE)
+tmax.clusters$k5 <- as.character(k5$clustering)
+
+ggplot(tmax.clusters, aes(lon, lat, color = k3))+geom_point()+facet_wrap(~PFT)
+ggplot(tmax.clusters, aes(lon, lat, color = k4))+geom_point()+facet_wrap(~PFT)
+ggplot(tmax.clusters, aes(lon, lat, color = k5))+geom_point()+facet_wrap(~PFT)
+
 
 
 #---------------- now plot correlations by time period:-----------------------
@@ -363,7 +409,7 @@ guess.gwbi.clim.nona.Precip.scaled = scale(guess.gwbi.clim.nona$precip_total_wtr
 guess.gwbi.clim.nona$Temp.jun.scaled = as.vector(scale(guess.gwbi.clim.nona$tair_max_6, center = TRUE, scale = TRUE))
 guess.gwbi.clim.nona.jun.scaled = scale(guess.gwbi.clim.nona$tair_max_6, center = TRUE, scale = TRUE)
 
-
+saveRDS(guess.gwbi.clim.nona, "Data/GUESS_gwbi_pft_clim.rds")
 #splits <- unlist(strsplit(unique(ED.sort_lag$Site), "X"))
 covert_site_codes <- data.frame(site_num = 1:length(unique(guess.gwbi.clim.nona$Site)),
                                 Site = unique(guess.gwbi.clim.nona$Site))
@@ -388,7 +434,7 @@ rwl.full <- rwl.full[!rwl.full$GWBI == 0, ]
 
 
 # develop function to split testing and training datasets by species:
-split.test.train.spec <- function( spec){
+split.test.train.spec <- function( spec ){
   
   spec.full <- rwl.full[rwl.full$PFT %in% spec,]
   
@@ -419,4 +465,39 @@ for(i in 1:length(spec.list)){
   split.test.train.spec(spec.list[i])
 }
 
+
+
+# do the same for period 1800-2011:
+rwl.recent <- rwl.full[rwl.full$Year >= 1800 & rwl.full$Year <= 2011,]
+
+split.test.train.spec.recent <- function( spec ){
+  
+  spec.full <- rwl.recent[rwl.recent$PFT %in% spec,]
+  
+  spec.full$spec <- ifelse(spec.full$PFT %in% spec, 1, 2)
+  
+  covert_site_codes.spec <- data.frame(site_num.spec = 1:length(unique(spec.full$Site)),
+                                       Site = unique(spec.full$Site))
+  
+  spec.df <- left_join(spec.full, covert_site_codes.spec, by = "Site")
+  
+  msk <- caTools::sample.split( spec.df, SplitRatio = 3/4, group = NULL )
+  
+  train.spec <- spec.df[msk,]
+  test.spec <- spec.df[!msk,]
+  
+  
+  saveRDS(test.spec, paste0("outputs/gwbi_model/train_test_data/train_LPJ_recent", spec, "_nimble.rds"))
+  saveRDS(test.spec, paste0("outputs/gwbi_model/train_test_data/test_LPJ_recent", spec, "_nimble.rds"))
+  
+  cat(spec)
+}
+
+
+spec.list  <- as.character( unique(rwl.recent$PFT))
+
+
+for(i in 1:length(spec.list)){
+  split.test.train.spec.recent(spec.list[i])
+}
 

@@ -186,6 +186,7 @@ by.fcomp <- ED2.fcomp.ll %>% group_by( Year, Site, PFT ) %>% dplyr::summarise(Fc
                                                                              Fcomp.sd = sd(Fcomp))
 
 by.fcomp2 <-  by.fcomp %>% dplyr::select(Year, Site, PFT, Fcompy) %>% group_by(Year, Site ) %>% spread(key = PFT, value = Fcompy)
+saveRDS(by.fcomp2, "outputs/data/ED2/ED2_mean_yearly_fcomp.rds")
 highest.fcomp <- by.fcomp %>% dplyr::select(Year, Site, PFT, Fcompy) %>% group_by(Year, Site) %>% filter(Fcompy == max(Fcompy))
 
 # get latlon again

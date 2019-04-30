@@ -198,6 +198,8 @@ ggplot(gwbi.clim, aes(tair_mean_6, GWBI))+geom_point()+stat_smooth(method = "lm"
 guess.gwbi <- gwbi.clim #[,c("lon", "lat","PFT", "Site", "Year",  "GWBI", "GWBI_1", "GWBI_2")]
 guess.gwbi.clim.nona <- guess.gwbi[!is.na(guess.gwbi$GWBI),]
 
+# omit C3G and TrlBE because they haveno trees:
+guess.gwbi.clim.nona <- guess.gwbi.clim.nona[!guess.gwbi.clim.nona$PFT %in% c("C3G.gwbi", "TrlBE.gwbi"),]
 #guess.gwbi.clim <- left_join(guess.gwbi.nona, tmax.month, by = c("Longitude", "Latitude","SPEC.CODE", "studyCode", "year"))
 
 x <- names[[1]]
@@ -287,9 +289,13 @@ dev.off()
 
 
 
+
 # cluster the coeffeicent temperature responses:
 guess.grid <- unique(guess.gwbi.clim.nona[,c("lon", "lat", "Site")])
 tmax.cors.df.ll <- left_join(tmax.cors.df, guess.grid, by = "Site")
+
+
+
 tmax.clusters <- tmax.cors.df.ll %>% select("lon", "lat", "PFT", "Site", "month", "coef") %>% spread(key = month, value = coef)
 
 k3 <- cluster::pam(tmax.clusters[,col.tmax], k = 3, diss = FALSE)
@@ -303,7 +309,7 @@ tmax.clusters$k5 <- as.character(k5$clustering)
 
 ggplot(tmax.clusters, aes(lon, lat, color = k3))+geom_point()+facet_wrap(~PFT)
 ggplot(tmax.clusters, aes(lon, lat, color = k4))+geom_point()+facet_wrap(~PFT)
-ggplot(tmax.clusters, aes(lon, lat, color = k5))+geom_point()+facet_wrap(~PFT)
+ggplot(tmax.clusters, aes(lon, lat, color = precip_total_wtr_yr))+geom_point()+facet_wrap(~PFT)
 
 
 

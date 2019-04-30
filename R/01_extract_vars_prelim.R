@@ -46,7 +46,7 @@ ED2.bai <- extract.paleon.site(model = mod, model.dir = mdir, vars = "BAI", xmin
 saveRDS(ED2.bai, file = "Data/ED_monthly_BAI.RDS")
 
 
-fdsfED2.gwbi <- extract.paleon.site(model = mod, model.dir = mdir, vars = "GWBI", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
+ED2.gwbi <- extract.paleon.site(model = mod, model.dir = mdir, vars = "GWBI", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)
 saveRDS(ED2.gwbi, file = "Data/ED_montly_gwbi.RDS")
 
 #ED2.pft <- extract.paleon.site(model = mod, model.dir = mdir, vars = "PFT", xmin=-100, xmax=-60, ymin=35, ymax=50, yrmin=850, yrmax=2010)

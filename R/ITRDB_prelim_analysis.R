@@ -131,7 +131,7 @@ saveRDS(tmax.sites.only, paste0("Data/ITRDB/PRISM/tmax/Tmax_1895_2016_extracted_
 
 # get data reformatted to have months in columns & merge with sites:
 
-tmax.month <- tmax.sites.only %>% select("Longitude", "Latitude","Tmax", "year", "month", "studyCode", "SPEC.CODE") %>% spread(key = month, value = Tmax)
+tmax.month <- tmax.sites.only %>% dplyr::select("Longitude", "Latitude","Tmax", "year", "month", "studyCode", "SPEC.CODE") %>% spread(key = month, value = Tmax)
 tmax.month$year <- as.numeric(tmax.month$year)
 
 
@@ -177,7 +177,7 @@ ggplot(tmax.cors.df[tmax.cors.df$PALEON %in% "Pine",], aes(month, studyCode, fil
 
 
 # cluster the coeffeicent temperature responses:
-tmax.clusters <- tmax.cors.df %>% select("Longitude", "Latitude", "SPEC.CODE", "studyCode", "PALEON", "ED.PFT", "LPJ.GUESS.PFT", "LINKAGES", "month", "coef") %>% spread(key = month, value = coef)
+tmax.clusters <- tmax.cors.df %>% dplyr::select("Longitude", "Latitude", "SPEC.CODE", "studyCode", "PALEON", "ED.PFT", "LPJ.GUESS.PFT", "LINKAGES", "month", "coef") %>% spread(key = month, value = coef)
 
 k3 <- cluster::pam(tmax.clusters[,c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")], k = 3, diss = FALSE)
 tmax.clusters$k3 <- as.character(k3$clustering)
@@ -221,13 +221,13 @@ wtr_yr <- function(df, start_month=9) {
 ppt.sites.only$wtr.year <- wtr_yr(ppt.sites.only)
 
 # get total precipitation for each water year:
-long.prism.wy.MAP <- ppt.sites.only %>% group_by(studyCode, wtr.year) %>% summarise(MAP.wy = sum(ppt, na.rm=TRUE) )
+long.prism.wy.MAP <- ppt.sites.only %>% group_by(studyCode, wtr.year) %>% dplyr::summarise(MAP.wy = sum(ppt, na.rm=TRUE) )
 colnames(long.prism.wy.MAP) <- c("studyCode", "year", "MAP.wy")
 ppt.sites.only$year <- as.numeric(ppt.sites.only$year)
 
 ppt.sites.only <- left_join(ppt.sites.only, long.prism.wy.MAP, by = c("studyCode", "year"))
 
-ppt.month <- ppt.sites.only %>% select("Longitude", "Latitude","ppt", "year", "month", "studyCode", "SPEC.CODE") %>% spread(key = month, value = ppt)
+ppt.month <- ppt.sites.only %>% dplyr::select("Longitude", "Latitude","ppt", "year", "month", "studyCode", "SPEC.CODE") %>% spread(key = month, value = ppt)
 ppt.month$year <- as.numeric(ppt.month$year)
 
 ppt.month <- left_join(ppt.month, long.prism.wy.MAP, by = c("studyCode", "year"))
@@ -281,8 +281,8 @@ full.clim <- left_join(rwl.itrdb.clim.nona, tmax.month, by = c("Longitude", "Lat
 saveRDS(full.clim, "Data/ITRDB/full.clim.prism.rds")
 
 # ----------cluster the correlation coeffients & plot tileplots by those clusters:--------------
-tmax.clusters <- tmax.cors.df %>% select("Longitude", "Latitude", "SPEC.CODE", "studyCode", "PALEON", "ED.PFT", "LPJ.GUESS.PFT", "LINKAGES", "month", "coef") %>% spread(key = month, value = coef)
-ppt.clusters <- ppt.cors.df %>% select("Longitude", "Latitude", "SPEC.CODE", "studyCode", "month", "coef") %>% spread(key = month, value = coef)
+tmax.clusters <- tmax.cors.df %>% dplyr::select("Longitude", "Latitude", "SPEC.CODE", "studyCode", "PALEON", "ED.PFT", "LPJ.GUESS.PFT", "LINKAGES", "month", "coef") %>% spread(key = month, value = coef)
+ppt.clusters <- ppt.cors.df %>% dplyr::select("Longitude", "Latitude", "SPEC.CODE", "studyCode", "month", "coef") %>% spread(key = month, value = coef)
 
 # rename the temp and precip column names...This is clunky but it will do for now
 colnames(ppt.clusters)[5:18] <- paste0("ppt_", colnames(ppt.clusters)[5:18])
@@ -290,6 +290,8 @@ colnames(tmax.clusters)[9:20] <- paste0("tmax_", colnames(tmax.clusters)[9:20])
 
 # join ppt & tmax cluster dfs:
 all.cors <- left_join(tmax.clusters, ppt.clusters, by = c("Longitude", "Latitude",  "SPEC.CODE", "studyCode"))
+saveRDS(all.cors, "Data/ITRDB/rwl.itrdb.clim.correlations.rds")
+
 
 saveRDS(rwl.itrdb.clim.nona, "Data/ITRDB/rwl.itrdb.clim.nona.rds")
 

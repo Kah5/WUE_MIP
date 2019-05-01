@@ -76,6 +76,7 @@ all.met$precip_total.mm <- all.met$precip_total*convert2mm
 # save all the met:
 saveRDS(all.met, paste0(getwd(),"/Data/MET/all.met.summary.rds"))
 
+all.met<- readRDS(paste0(getwd(),"/Data/MET/all.met.summary.rds"))
 
 # merge climate and growth for GUESS:
 colnames(all.met)[3] <- "Year"
@@ -119,9 +120,9 @@ ggplot(GUESS.df, aes( tair_mean_6, precip_total.mm, color = BIBS.gwbi))+geom_poi
 
 # -----------------------------get gwbi-1 and gwbi-2:----------------------------------
 # calculate lagged gwbi:
-GUESS.df.slim <- GUESS.df %>% select(num:Total.gwbi) %>% group_by(num, lon, lat, Year, Site) %>% gather(key = PFT, value = GWBI,BNE.gwbi:Total.gwbi)
+GUESS.df.slim <- GUESS.df %>% dplyr::select(num:Total.gwbi) %>% group_by(num, lon, lat, Year, Site) %>% gather(key = PFT, value = GWBI,BNE.gwbi:Total.gwbi)
 
-min.totals <- GUESS.df.slim %>% group_by(Site, PFT) %>% summarise(min.gwbi = min(GWBI, na.rm = TRUE), 
+min.totals <- GUESS.df.slim %>% dplyr::group_by(Site, PFT) %>% summarise(min.gwbi = min(GWBI, na.rm = TRUE), 
                                                           mean.gwbi = mean(GWBI, na.rm = TRUE))
 GWBI.GUESS.mins <- merge(GUESS.df.slim, min.totals, by = c("Site", "PFT"))
 rel.guess.gwbi <- GWBI.GUESS.mins #%>% group_by(lon, lat, Site, num,Year, PFT) %>% dplyr::summarise(rel.gwbi = GWBI - (min.gwbi-0.15),
@@ -187,7 +188,7 @@ prev.gwbi <- do.call(rbind, list.of.prev.gwbi)
 head(prev.gwbi)
 
 # -------------------join with climate data again---------------
-climate.only <- GUESS.df %>% select(num:Year, precip_1:precip_total.mm)
+climate.only <- GUESS.df %>% dplyr::select(num:Year, precip_1:precip_total.mm)
 climate.only$Site <- as.character(climate.only$num)
 
 gwbi.clim <- left_join(prev.gwbi, climate.only, by =c("Site", "Year"))
@@ -245,6 +246,9 @@ tmax.cors.df$Site <- rep(names(tmax.cors), sapply(tmax.cors, nrow)) # add the si
 tmax.cors.df<- tmax.cors.df[!is.na(tmax.cors.df$coef),]
 
 ggplot(tmax.cors.df, aes(month, coef))+geom_boxplot()+facet_wrap(~PFT)
+
+# save the correlation coefficients for each site:
+saveRDS(tmax.cors.df, "outputs/gwbi_model/GUESS_gwbi_correlation_coefs_by_pft.rds")
 
 
 # make separate ggplots for tmean, tmax, and tmin, precip, 

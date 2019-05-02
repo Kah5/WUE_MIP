@@ -233,22 +233,22 @@ ED.map.cor.bymap <- ggplot(ITRDB.cors.site.subset.pft[ITRDB.cors.site.subset.pft
 
 png(height = 5, width = 8, units = "in", res = 300, 
     "outputs/itrdb_model_compare/ED_itrdb_tmax_cor_by_tmax.png")
-ED.tmax.cor.bytmax
+ED.tmax.cor.bytmax+theme(axis.text.x=element_text(hjust = 1, angle = 45))
 dev.off()
 
 png(height = 5, width = 8, units = "in", res = 300, 
     "outputs/itrdb_model_compare/ED_itrdb_tmax_cor_by_map.png")
-ED.tmax.cor.bymap
+ED.tmax.cor.bymap+theme(axis.text.x=element_text(hjust = 1, angle = 45))
 dev.off()
 
 png(height = 5, width = 8, units = "in", res = 300, 
     "outputs/itrdb_model_compare/ED_itrdb_map_cor_by_tmax.png")
-ED.map.cor.bytmax
+ED.map.cor.bytmax+theme(axis.text.x=element_text(hjust = 1, angle = 45))
 dev.off()
 
 png(height = 5, width = 8, units = "in", res = 300, 
     "outputs/itrdb_model_compare/ED_itrdb_map_cor_by_map.png")
-ED.map.cor.bymap
+ED.map.cor.bymap+theme(axis.text.x=element_text(hjust = 1, angle = 45))
 dev.off()
 
 
@@ -297,24 +297,126 @@ GUESS.map.cor.bymap <- ggplot(ITRDB.cors.site.subset.pft[ITRDB.cors.site.subset.
 
 png(height = 5, width = 8, units = "in", res = 300, 
     "outputs/itrdb_model_compare/guess_itrdb_tmax_cor_by_tmax.png")
-GUESS.tmax.cor.bytmax
+GUESS.tmax.cor.bytmax+theme(axis.text.x=element_text(hjust = 1, angle = 45))
 dev.off()
 
 png(height = 5, width = 8, units = "in", res = 300, 
     "outputs/itrdb_model_compare/guess_itrdb_tmax_cor_by_map.png")
-GUESS.tmax.cor.bymap
+GUESS.tmax.cor.bymap+theme(axis.text.x=element_text(hjust = 1, angle = 45))
 dev.off()
 
 png(height = 5, width = 8, units = "in", res = 300, 
     "outputs/itrdb_model_compare/guess_itrdb_map_cor_by_tmax.png")
-GUESS.map.cor.bytmax
+GUESS.map.cor.bytmax+theme(axis.text.x=element_text(hjust = 1, angle = 45))
 dev.off()
 
 png(height = 5, width = 8, units = "in", res = 300, 
     "outputs/itrdb_model_compare/guess_itrdb_map_cor_by_map.png")
-GUESS.map.cor.bymap
+GUESS.map.cor.bymap+theme(axis.text.x=element_text(hjust = 1, angle = 45))
 dev.off()
 
+#---------------Directly compare the boxplots of monthly correlation coefficients-----------
+col.tmax <- unique(ITRDB.cors.site.subset.pft$month)[unique(ITRDB.cors.site.subset.pft$month) %like% "tmax"]
+col.tmean <- unique(ITRDB.cors.site.subset.pft$month)[unique(ITRDB.cors.site.subset.pft$month) %like% "tmean"]
+col.tmin <- unique(ITRDB.cors.site.subset.pft$month)[unique(ITRDB.cors.site.subset.pft$month) %like%  "tmin"]
+col.precip <- unique(ITRDB.cors.site.subset.pft$month)[unique(ITRDB.cors.site.subset.pft$month) %like%  "ppt"]
+col.precip.tot <- unique(ITRDB.cors.site.subset.pft$month)[unique(ITRDB.cors.site.subset.pft$month) %like%  "ppt_total"]
 
+
+ITRDB.cors.site.subset.pft$month2 <- ifelse(ITRDB.cors.site.subset.pft$month %in% col.tmax, paste0("tair_max_",as.numeric(substring( ITRDB.cors.site.subset.pft$month, 6))), 
+                                            ifelse(ITRDB.cors.site.subset.pft$month %in% col.precip & !ITRDB.cors.site.subset.pft$month %in% col.precip.tot, paste0("precip_", as.numeric(substring( ITRDB.cors.site.subset.pft$month, 5))),
+                                                  ifelse(ITRDB.cors.site.subset.pft$month %in% "ppt_total.wy", "precip_total_wtr_yr.mm",
+                                                         ifelse(ITRDB.cors.site.subset.pft$month %in% "ppt_total", "precip_total.mm", NA)) ))
+
+
+# get dataframes with ITRDB, and GUESS, and ITRDB & ED2:
+# for LPJ GUESS
+ITRDB.cors.lpj.pft <- ITRDB.cors.site.subset.pft %>% dplyr::select(Longitude, Latitude, LPJ.GUESS.PFT, month2, coef)
+colnames(ITRDB.cors.lpj.pft) <- c("lon", "lat", "LPJ.GUESS.PFT", "month", "coef")
+ITRDB.cors.lpj.pft$type <- "ITRDB"
+GUESS.cors.lpj.pft <- GUESS.cors.compare %>% dplyr::select(lon, lat, LPJ.GUESS.PFT, month, coef)
+GUESS.cors.lpj.pft$type <- "LPJ.GUESS"
+ITRDB.GUESS <- rbind(ITRDB.cors.lpj.pft, GUESS.cors.lpj.pft)
+
+
+
+col.tmax <- unique(ITRDB.GUESS$month)[unique(ITRDB.GUESS$month) %like% "tair_max"]
+col.tmean <- unique(ITRDB.GUESS$month)[unique(ITRDB.GUESS$month) %like% "tair_mean"]
+col.tmin <- unique(ITRDB.GUESS$month)[unique(ITRDB.GUESS$month) %like%  "tair_min"]
+col.precip <- unique(ITRDB.GUESS$month)[unique(ITRDB.GUESS$month) %like%  "precip"]
+
+# reorder factors:
+col.tmax <- col.tmax[ c(4, 2,7,  3,  9, 10,  5, 12, 11,8,  6,  1)] # reorder
+ITRDB.GUESS.tmax <- ITRDB.GUESS[ITRDB.GUESS$month %in% col.tmax,]
+ITRDB.GUESS.tmax$month <- factor(ITRDB.GUESS.tmax$month,levels = col.tmax)
+
+col.precip <- col.precip[ c(5, 8,4, 11, 13,  3, 10,  7,  6,   12,  2, 14, 1,  9)] # reorder
+ITRDB.GUESS.precip <- ITRDB.GUESS[ITRDB.GUESS$month %in% col.precip,]
+ITRDB.GUESS.precip$month <- factor(ITRDB.GUESS.precip$month,levels = col.precip)
+
+
+
+tmax.itrdb.guess <- ggplot(ITRDB.GUESS.tmax, aes(month, coef, fill = type))+geom_boxplot(outlier.size = 0.05, outlier.color = "grey")+scale_fill_manual(name=" ", values=c("LPJ.GUESS"="#1b9e77", "ITRDB"="#d95f02"))+
+  geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~LPJ.GUESS.PFT, ncol = 4, labeller = label_wrap_gen(width=35))+theme_bw()+theme(axis.text.x = element_text(angle = 90, hjust = 0.5), panel.grid = element_blank())
+
+
+precip.itrdb.guess <- ggplot(ITRDB.GUESS.precip, aes(month, coef, fill = type))+geom_boxplot(outlier.size = 0.05, outlier.color = "grey")+scale_fill_manual(name=" ", values=c("LPJ.GUESS"="#1b9e77", "ITRDB"="#d95f02"))+
+  geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~LPJ.GUESS.PFT, ncol = 4,labeller = label_wrap_gen(width=35))+theme_bw()+theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), panel.grid = element_blank())
+
+
+png(height = 5, width = 8, units = "in", res = 300, 
+    "outputs/itrdb_model_compare/guess_itrdb_tmax_cors.png")
+tmax.itrdb.guess
+dev.off()
+
+png(height = 5, width = 8, units = "in", res = 300, 
+    "outputs/itrdb_model_compare/guess_itrdb_precip_cors.png")
+precip.itrdb.guess
+dev.off()
+
+# for ED2:
+ITRDB.cors.ed.pft <- ITRDB.cors.site.subset.pft %>% dplyr::select(Longitude, Latitude, ED.PFT, month2, coef)
+colnames(ITRDB.cors.ed.pft) <- c("lon", "lat", "ED.PFT", "month", "coef")
+ITRDB.cors.ed.pft$type <- "ITRDB"
+ED.cors.ED.pft <- ED2.cors.compare %>% dplyr::select(lon, lat, ED.PFT, month, coef)
+ED.cors.ED.pft$type <- "ED2"
+ITRDB.ED <- rbind(ITRDB.cors.ed.pft, ED.cors.ED.pft)
+
+
+
+col.tmax <- unique(ITRDB.ED$month)[unique(ITRDB.ED$month) %like% "tair_max"]
+col.tmean <- unique(ITRDB.ED$month)[unique(ITRDB.ED$month) %like% "tair_mean"]
+col.tmin <- unique(ITRDB.ED$month)[unique(ITRDB.ED$month) %like%  "tair_min"]
+col.precip <- unique(ITRDB.ED$month)[unique(ITRDB.ED$month) %like%  "precip"]
+
+# reorder factors:
+col.tmax <- col.tmax[ c(4, 2,7,  3,  9, 10,  5, 12, 11,8,  6,  1)] # reorder
+ITRDB.ED.tmax <- ITRDB.ED[ITRDB.ED$month %in% col.tmax,]
+ITRDB.ED.tmax$month <- factor(ITRDB.ED.tmax$month,levels = col.tmax)
+
+col.precip <- col.precip[ c(5, 8,4, 11, 13,  3, 10,  7,  6,   12,  2, 14, 1,  9)] # reorder
+ITRDB.ED.precip <- ITRDB.ED[ITRDB.ED$month %in% col.precip,]
+ITRDB.ED.precip$month <- factor(ITRDB.ED.precip$month,levels = col.precip)
+
+
+
+tmax.itrdb.ED <- ggplot(ITRDB.ED.tmax, aes(month, coef, fill = type))+geom_boxplot(outlier.size = 0.05, outlier.color = "grey")+scale_fill_manual(name=" ", values=c("ED2"="#7570b3", "ITRDB"="#d95f02"))+
+  geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~ED.PFT, ncol = 4, labeller = label_wrap_gen(width=35))+theme_bw()+theme(axis.text.x = element_text(angle = 90, hjust = 0.5), panel.grid = element_blank())
+
+
+precip.itrdb.ED <- ggplot(ITRDB.ED.precip, aes(month, coef, fill = type))+geom_boxplot(outlier.size = 0.05, outlier.color = "grey")+scale_fill_manual(name=" ", values=c("ED2"="#7570b3", "ITRDB"="#d95f02"))+
+  geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~ED.PFT, ncol = 4,labeller = label_wrap_gen(width=35))+theme_bw()+theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), panel.grid = element_blank())
+
+
+
+png(height = 5, width = 8, units = "in", res = 300, 
+    "outputs/itrdb_model_compare/ED_itrdb_tmax_cors.png")
+tmax.itrdb.ED
+dev.off()
+
+png(height = 5, width = 8, units = "in", res = 300, 
+    "outputs/itrdb_model_compare/ED_itrdb_precip_cors.png")
+precip.itrdb.ED
+dev.off()
 # compare autocorrelation in the itmeseries of MIP MET and PRISM
 

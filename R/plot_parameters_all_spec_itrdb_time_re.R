@@ -6,7 +6,7 @@ library(reshape2)
 library(cowplot)
 
 # read in all the samples:
-filenames <- list.files(path = "outputs/ITRDB_models/ITRDB_species_time_re", pattern = "*.rds")
+filenames <- list.files(path = "outputs/ITRDB_models/ITRDB_species_time_re", pattern = "*thin.rds")
 full.filenames <- paste0("outputs/ITRDB_models/ITRDB_species_time_re/", filenames)
 
 spec <- substring(filenames, 7, 10)
@@ -57,11 +57,22 @@ for(i in 1:length(spec)){
 }
 
 # now save and plot all the paramter estimates together to compare across species:
+all.param.ests1 <- do.call(rbind, all.params.chain1[1:30])
 
-all.param.ests <- do.call(rbind, all.params.chain1)
+all.param.ests1 <- data.frame(all.param.ests1)
+all.param.ests1$species <- rep(names(all.params.chain1[1:30]), sapply(all.params.chain1[1:30], nrow)) # add the species code names
 
-all.param.ests <- data.frame(all.param.ests)
-all.param.ests$species <- rep(names(all.params.chain1), sapply(all.params.chain1, nrow)) # add the species code names
+all.param.ests2 <- do.call(rbind, all.params.chain1[32:37])
+
+all.param.ests2 <- data.frame(all.param.ests2)
+all.param.ests2$species <- rep(names(all.params.chain1[32:37]), sapply(all.params.chain1[32:37], nrow)) # add the species code names
+
+all.param.ests <- rbind(all.param.ests1, all.param.ests2)
+
+# all.param.ests <- do.call(rbind, all.params.chain1)
+# 
+# all.param.ests <- data.frame(all.param.ests)
+# all.param.ests$species <- rep(names(all.params.chain1), sapply(all.params.chain1, nrow)) # add the species code names
 
 
 # then make boxplots or 95% quantile plots of the parameter estimates
@@ -74,6 +85,9 @@ all.param.summary$time.cd <- substring(all.param.summary$variable, 7, 7)
 all.param.summary$timeclass <- ifelse(all.param.summary$time.cd %in% "1", "Past", 
        ifelse(all.param.summary$time.cd %in% "2", "Modern", "No re"))
 all.param.summary$variable2 <- substring(all.param.summary$variable, 1,5)
+
+write.csv(all.param.summary, "outputs/ITRDB_models/ITRDB_species_time_re/all_parameter_mean_CI.csv", row.names=FALSE)
+
 # still need to: assign colors based on Paleon species
 
 INTERCEPTS <- ggplot(all.param.summary[all.param.summary$variable %in% "alpha",], aes(species, mean))+geom_point()+

@@ -6,10 +6,12 @@ library(reshape2)
 library(cowplot)
 
 # read in all the samples:
-filenames <- list.files(path = "outputs/gwbi_model/LPJ_GUESS_time_re/", pattern = "*.rds")
+filenames <- list.files(path = "outputs/gwbi_model/LPJ_GUESS_time_re/", pattern = "*thin.rds")
 full.filenames <- paste0("/Users/kah/Documents/WUE_MIP/WUE_MIP/outputs/gwbi_model/LPJ_GUESS_time_re/", filenames)
 
 spec <- substring(filenames, 7, 10)
+
+#test<- readRDS(full.filenames[[1]])
 # use lapply to read in the rds files:
 all.params <- lapply(full.filenames, readRDS)
 
@@ -17,12 +19,12 @@ all.params <- lapply(full.filenames, readRDS)
 all.params.chain1 <- lapply(all.params, function(x){as.mcmc(x[[1]])})
 all.summaries <- lapply(all.params.chain1, summary)
 
-names(all.params.chain1) <- spec
+names(all.params.chain1) <-c("BeIBS.gwbi", "BIBS.gwbi","BINE.gwbi", "BINE.gwbi", "TeBE.gwbi", "TeBS.gwbi", "Total.gwbi") #spec #spec
 
 # save traceplots
 for(i in 1:length(spec)){
   png(height = 6, width = 12, units = "in", res = 200, paste0("outputs/gwbi_model/LPJ_GUESS_time_re/traceplot_", spec[i],".png"))
-  par(mfrow = c(3,4))
+  par(mfrow = c(4,4))
   traceplot(all.params.chain1[[i]])
   dev.off()
 }
@@ -73,6 +75,9 @@ all.param.summary$time.cd <- substring(all.param.summary$variable, 7, 7)
 all.param.summary$timeclass <- ifelse(all.param.summary$time.cd %in% "1", "Past", 
        ifelse(all.param.summary$time.cd %in% "2", "Modern", "No re"))
 all.param.summary$variable2 <- substring(all.param.summary$variable, 1,5)
+
+write.csv(all.param.summary, "outputs/gwbi_model/LPJ_GUESS_time_re/all_parameter_mean_CI.csv")
+
 # still need to: assign colors based on Paleon species
 
 INTERCEPTS <- ggplot(all.param.summary[all.param.summary$variable %in% "alpha",], aes(species, mean))+geom_point()+

@@ -1,5 +1,7 @@
 # script to find grid cells and ITRDB sites with similar mean annual climate spaces:
-
+library(tidyr)
+library(dplyr)
+library(ggplot2)
 all.met <- readRDS( paste0(getwd(),"/Data/MET/all.met.summary.rds"))
 # merge climate and growth for ED2:
 colnames(all.met)[3] <- "Year"
@@ -316,6 +318,7 @@ GUESS.map.cor.bymap+theme(axis.text.x=element_text(hjust = 1, angle = 45))
 dev.off()
 
 #---------------Directly compare the boxplots of monthly correlation coefficients-----------
+library(data.table)
 col.tmax <- unique(ITRDB.cors.site.subset.pft$month)[unique(ITRDB.cors.site.subset.pft$month) %like% "tmax"]
 col.tmean <- unique(ITRDB.cors.site.subset.pft$month)[unique(ITRDB.cors.site.subset.pft$month) %like% "tmean"]
 col.tmin <- unique(ITRDB.cors.site.subset.pft$month)[unique(ITRDB.cors.site.subset.pft$month) %like%  "tmin"]
@@ -418,5 +421,145 @@ png(height = 5, width = 8, units = "in", res = 300,
     "outputs/itrdb_model_compare/ED_itrdb_precip_cors.png")
 precip.itrdb.ED
 dev.off()
+
+
+# next plot the same correlation coefficiencts, but by ageclass:
+
+#----------Lets plot the basic model parameters for ITRDB, ED, and GUESS together----------
+ITRDB.params <-read.csv("outputs/ITRDB_models/ITRDB_species_no_re/all_parameter_mean_CI.csv")
+ED.params <-read.csv("outputs/gwbi_model/ED2_no_re/all_parameter_mean_CI.csv")
+GUESS.params <-read.csv("outputs/gwbi_model/LPJ_GUESS_no_re/all_parameter_mean_CI.csv")
+ED.params$PFT <- ED.params$species
+GUESS.params$PFT <- GUESS.params$species
+
+
+species.num.trans <- read.csv( file = "Data/ITRDB/SPEC.CODE.TAXA.TRANSLATION.csv")
+ITRDB.params.pft <- merge(species.num.trans, ITRDB.params, by.x = "SPEC.CODE", by.y = "species")
+
+ITRDB.pft.ED <- ITRDB.params.pft %>% select(SPEC.CODE, ED.PFT, variable, mean, Ci.low, Ci.high)
+colnames(ITRDB.pft.ED) <- c("species", "PFT", "parameter", "mean", "Ci.low", "Ci.high")
+ITRDB.pft.ED$type <- "ITRDB"
+
+ED.params <- ED.params %>% select(species, PFT, variable, mean, Ci.low, Ci.high)
+colnames(ED.params) <- c("species", "PFT", "parameter", "mean", "Ci.low", "Ci.high")
+ED.params$type <- "ED2"
+
+ED.ITRDB.summary <- rbind(ITRDB.pft.ED, ED.params)
+
+
+
+INTERCEPTS <- ggplot(ED.ITRDB.summary[ED.ITRDB.summary$parameter %in% "alpha" & !ED.ITRDB.summary$PFT %in% "mean.gwbi" ,], aes(species, mean, color = type))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = type), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+scale_colour_manual(name=" ", values=c("ED2"="#7570b3", "ITRDB"="#d95f02"))+
+  ylab("Species intercept Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~PFT, scales = "free_x", ncol = 5)
+
+MAPS <- ggplot(ED.ITRDB.summary[ED.ITRDB.summary$parameter %in% "beta1" & !ED.ITRDB.summary$PFT %in% "mean.gwbi" ,], aes(species, mean, color = type))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = type), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+scale_colour_manual(name=" ", values=c("ED2"="#7570b3", "ITRDB"="#d95f02"))+
+  ylab("Precipitation Sensitivity \n (Beta1) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~PFT, scales = "free_x", ncol = 5)
+
+
+JUNTMAX <- ggplot(ED.ITRDB.summary[ED.ITRDB.summary$parameter %in% "beta2" & !ED.ITRDB.summary$PFT %in% "mean.gwbi" ,], aes(species, mean, color = type))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+scale_colour_manual(name=" ", values=c("ED2"="#7570b3", "ITRDB"="#d95f02"))+
+  ylab("Jun Tmax Sensitivity \n (Beta2) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~PFT, scales = "free_x", ncol = 5)
+
+PREVRWI_1 <- ggplot(ED.ITRDB.summary[ED.ITRDB.summary$parameter %in% "beta3"& !ED.ITRDB.summary$PFT %in% "mean.gwbi" ,], aes(species, mean, color = type))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+scale_colour_manual(name=" ", values=c("ED2"="#7570b3", "ITRDB"="#d95f02"))+
+  ylab("PrevRWI_1 \n (Beta3) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~PFT, scales = "free_x", ncol = 5)
+
+PREVRWI_2 <- ggplot(ED.ITRDB.summary[ED.ITRDB.summary$parameter %in% "beta4"& !ED.ITRDB.summary$PFT %in% "mean.gwbi" ,], aes(species, mean,color = type))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+scale_colour_manual(name=" ", values=c("ED2"="#7570b3", "ITRDB"="#d95f02"))+
+  ylab("PrevRWI_1 \n (Beta4) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~PFT, scales = "free_x", ncol = 5)
+
+AGE <- ggplot(ED.ITRDB.summary[ED.ITRDB.summary$parameter %in% "beta5"& !ED.ITRDB.summary$PFT %in% "mean.gwbi" ,], aes(species, mean, color = type))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+scale_colour_manual(name=" ", values=c("ED2"="#7570b3", "ITRDB"="#d95f02"))+
+  ylab("Age (Beta5) \n Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~PFT, scales = "free_x", ncol = 5)
+
+
+png(height = 4, width = 12, units = "in", res = 300, "outputs/itrdb_model_compare/ED_itrdb_alpha_no_re.png")
+INTERCEPTS
+dev.off()
+
+png(height = 4, width = 12, units = "in", res = 300, "outputs/itrdb_model_compare/ED_itrdb_MAP_no_re.png")
+MAPS
+dev.off()
+
+png(height = 4, width = 12, units = "in", res = 300, "outputs/itrdb_model_compare/ED_itrdb_JUNTMAX_no_re.png")
+JUNTMAX
+dev.off()
+
+png(height = 4, width = 12, units = "in", res = 300, "outputs/itrdb_model_compare/ED_itrdb_prevRWI1_no_re.png")
+PREVRWI_1
+dev.off()
+
+png(height = 4, width = 12, units = "in", res = 300, "outputs/itrdb_model_compare/ED_itrdb_prevRWI2_no_re.png")
+PREVRWI_2
+dev.off()
+
+
+# do the same for GUESS:
+
+ITRDB.pft.GUESS <- ITRDB.params.pft %>% select(SPEC.CODE, LPJ.GUESS.PFT, variable, mean, Ci.low, Ci.high)
+colnames(ITRDB.pft.GUESS) <- c("species", "PFT", "parameter", "mean", "Ci.low", "Ci.high")
+ITRDB.pft.GUESS$type <- "ITRDB"
+
+GUESS.params.full <- merge(GUESS.params, guess.trans, by.x = "species", by.y ="gwbi.pft" )
+GUESS.params.df <- GUESS.params.full %>% select(LPJ.short, LPJ.GUESS.PFT, variable, mean, Ci.low, Ci.high)
+colnames(GUESS.params.df) <- c("species", "PFT", "parameter", "mean", "Ci.low", "Ci.high")
+GUESS.params.df$type <- "LPJ.GUESS"
+
+GUESS.ITRDB.summary <- rbind(ITRDB.pft.GUESS, GUESS.params.df)
+
+
+
+INTERCEPTS <- ggplot(GUESS.ITRDB.summary[GUESS.ITRDB.summary$parameter %in% "alpha"& !GUESS.ITRDB.summary$PFT %in% "Total" ,], aes(species, mean, color = type))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = type), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+scale_colour_manual(name=" ", values=c("LPJ.GUESS"="#7570b3", "ITRDB"="#d95f02"))+
+  ylab("Species intercept Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~PFT, scales = "free_x", ncol = 3, labeller = label_wrap_gen(width=35))
+
+MAPS <- ggplot(GUESS.ITRDB.summary[GUESS.ITRDB.summary$parameter %in% "beta1" & !GUESS.ITRDB.summary$PFT %in% "Total" ,], aes(species, mean, color = type))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = type), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+scale_colour_manual(name=" ", values=c("LPJ.GUESS"="#7570b3", "ITRDB"="#d95f02"))+
+  ylab("Precipitation Sensitivity \n (Beta1) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~PFT, scales = "free_x", ncol = 3, labeller = label_wrap_gen(width=35))
+
+
+JUNTMAX <- ggplot(GUESS.ITRDB.summary[GUESS.ITRDB.summary$parameter %in% "beta2" & !GUESS.ITRDB.summary$PFT %in% "Total" ,], aes(species, mean, color = type))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+scale_colour_manual(name=" ", values=c("LPJ.GUESS"="#7570b3", "ITRDB"="#d95f02"))+
+  ylab("Jun Tmax Sensitivity \n (Beta2) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~PFT, scales = "free_x", ncol = 3, labeller = label_wrap_gen(width=35))
+
+PREVRWI_1 <- ggplot(GUESS.ITRDB.summary[GUESS.ITRDB.summary$parameter %in% "beta3"& !GUESS.ITRDB.summary$PFT %in% "Total" ,], aes(species, mean, color = type))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+scale_colour_manual(name=" ", values=c("LPJ.GUESS"="#7570b3", "ITRDB"="#d95f02"))+
+  ylab("PrevRWI_1 \n (Beta3) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~PFT, scales = "free_x", ncol = 3, labeller = label_wrap_gen(width=35))
+
+PREVRWI_2 <- ggplot(GUESS.ITRDB.summary[GUESS.ITRDB.summary$parameter %in% "beta4"& !GUESS.ITRDB.summary$PFT %in% "Total" ,], aes(species, mean,color = type))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+scale_colour_manual(name=" ", values=c("LPJ.GUESS"="#7570b3", "ITRDB"="#d95f02"))+
+  ylab("PrevRWI_1 \n (Beta4) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~PFT, scales = "free_x", ncol = 3, labeller = label_wrap_gen(width=35))
+
+AGE <- ggplot(GUESS.ITRDB.summary[GUESS.ITRDB.summary$parameter %in% "beta5"& !GUESS.ITRDB.summary$PFT %in% "Total" ,], aes(species, mean, color = type))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+scale_colour_manual(name=" ", values=c("LPJ.GUESS"="#7570b3", "ITRDB"="#d95f02"))+
+  ylab("Age (Beta5) \n Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~PFT, scales = "free_x", ncol = 3, labeller = label_wrap_gen(width=35))
+
+
+
+
+png(height = 4, width = 12, units = "in", res = 300, "outputs/itrdb_model_compare/GUESS_itrdb_alpha_no_re.png")
+INTERCEPTS
+dev.off()
+
+png(height = 4, width = 12, units = "in", res = 300, "outputs/itrdb_model_compare/GUESS_itrdb_MAP_no_re.png")
+MAPS
+dev.off()
+
+png(height = 4, width = 12, units = "in", res = 300, "outputs/itrdb_model_compare/GUESS_itrdb_JUNTMAX_no_re.png")
+JUNTMAX
+dev.off()
+
+png(height = 4, width = 12, units = "in", res = 300, "outputs/itrdb_model_compare/GUESS_itrdb_prevRWI1_no_re.png")
+PREVRWI_1
+dev.off()
+
+png(height = 4, width = 12, units = "in", res = 300, "outputs/itrdb_model_compare/GUESS_itrdb_prevRWI2_no_re.png")
+PREVRWI_2
+dev.off()
+
+
+
+
 # compare autocorrelation in the itmeseries of MIP MET and PRISM
 

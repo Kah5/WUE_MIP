@@ -6,7 +6,7 @@ library(reshape2)
 library(cowplot)
 
 # read in all the samples:
-filenames <- list.files(path = "outputs/gwbi_model/LPJ_GUESS_no_re/", pattern = "*.rds")
+filenames <- list.files(path = "outputs/gwbi_model/LPJ_GUESS_no_re/", pattern = "*thin.rds")
 full.filenames <- paste0("outputs/gwbi_model/LPJ_GUESS_no_re/", filenames)
 
 spec <- substring(filenames, 7, 10)
@@ -18,7 +18,7 @@ all.params <- lapply(full.filenames, readRDS)
 all.params.chain1 <- lapply(all.params, function(x){as.mcmc(x[[1]])})
 all.summaries <- lapply(all.params.chain1, summary)
 
-names(all.params.chain1) <- spec
+names(all.params.chain1) <- c("BeIBS.gwbi", "BIBS.gwbi","BINE.gwbi", "BINE.gwbi", "TeBE.gwbi", "TeBS.gwbi", "Total.gwbi") #spec
 
 # save traceplots
 for(i in 1:length(spec)){
@@ -96,9 +96,11 @@ AGE <- ggplot(all.param.summary[all.param.summary$variable %in% "beta5",], aes(s
   geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("Age (Beta5) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 
-png(height = 18, width = 16, units = "in", res = 300, "outputs/ITRDB_models/ITRDB_species_no_re/All_spec_parameters.png")
+png(height = 18, width = 16, units = "in", res = 300, "outputs/gwbi_model/LPJ_GUESS_no_re/All_spec_parameters.png")
 cowplot::plot_grid(INTERCEPTS, MAPS, JUNTMAX, PREVRWI_1, PREVRWI_2, AGE, align = "hv",ncol = 2, labels = "AUTO")
 dev.off()
+
+write.csv(all.param.summary, "outputs/gwbi_model/LPJ_GUESS_no_re/all_parameter_mean_CI.csv", row.names = FALSE)
 
 
 # ----------------------Plot predicted vs. observed for each test.dataset----------------------------------

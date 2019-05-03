@@ -56,11 +56,17 @@ for(i in 1:length(spec)){
 
 # now save and plot all the paramter estimates together to compare across species:
 
-all.param.ests <- do.call(rbind, all.params.chain1)
+all.param.ests1 <- do.call(rbind, all.params.chain1[1:18])
 
-all.param.ests <- data.frame(all.param.ests)
-all.param.ests$species <- rep(names(all.params.chain1), sapply(all.params.chain1, nrow)) # add the species code names
+all.param.ests1 <- data.frame(all.param.ests1)
+all.param.ests1$species <- rep(names(all.params.chain1[1:18]), sapply(all.params.chain1[1:18], nrow)) # add the species code names
 
+all.param.ests2 <- do.call(rbind, all.params.chain1[20:33])
+
+all.param.ests2 <- data.frame(all.param.ests2)
+all.param.ests2$species <- rep(names(all.params.chain1[20:33]), sapply(all.params.chain1[20:33], nrow)) # add the species code names
+
+all.param.ests <- rbind(all.param.ests1, all.param.ests2)
 
 # then make boxplots or 95% quantile plots of the parameter estimates
 all.param.ests.m <- melt(all.param.ests)
@@ -100,6 +106,10 @@ png(height = 18, width = 16, units = "in", res = 300, "outputs/ITRDB_models/ITRD
 cowplot::plot_grid(INTERCEPTS, MAPS, JUNTMAX, PREVRWI_1, PREVRWI_2, AGE, align = "hv",ncol = 2, labels = "AUTO")
 dev.off()
 
+
+# save the all paramter estimate summaries:
+
+write.csv(all.param.summary, "outputs/ITRDB_models/ITRDB_species_no_re/all_parameter_mean_CI.csv", row.names = FALSE)
 
 # ----------------------Plot predicted vs. observed for each test.dataset----------------------------------
 # use apply to read in all the 

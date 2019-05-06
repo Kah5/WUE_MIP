@@ -138,7 +138,7 @@ ggplot(ED2.df, aes( tair_mean_6, precip_total.mm, color = temp.decid.early))+geo
 
 # -----------------------------get gwbi-1 and gwbi-2:----------------------------------
 # calculate lagged gwbi:
-ED2.df.slim <- ED2.df %>% select(num:Araucaria) %>% group_by(num, lon, lat, Year, Site) %>% gather(key = PFT, value = GWBI, mean.gwbi:Araucaria)
+ED2.df.slim <- ED2.df %>% dplyr::select(num:Araucaria) %>% group_by(num, lon, lat, Year, Site) %>% gather(key = PFT, value = GWBI, mean.gwbi:Araucaria)
 
 min.totals <- ED2.df.slim %>% group_by(Site, PFT) %>% summarise(min.gwbi = min(GWBI, na.rm = TRUE), 
                                                           mean.gwbi = mean(GWBI, na.rm = TRUE))
@@ -211,7 +211,7 @@ prev.gwbi <- do.call(rbind, list.of.prev.gwbi)
 head(prev.gwbi)
 
 # -------------------join with climate data again---------------
-climate.only <- ED2.df %>% select(num:Year, precip_1:precip_total.mm)
+climate.only <- ED2.df %>% dplyr::select(num:Year, precip_1:precip_total.mm)
 climate.only$Site <- as.character(climate.only$num)
 
 gwbi.clim <- left_join(prev.gwbi, climate.only, by =c("Site", "Year"))
@@ -322,7 +322,7 @@ tmax.cors.df.ll <- left_join(tmax.cors.df, ED2.grid, by = "Site")
 
 
 
-tmax.clusters <- tmax.cors.df.ll %>% select("lon", "lat", "PFT", "Site", "month", "coef") %>% spread(key = month, value = coef)
+tmax.clusters <- tmax.cors.df.ll %>% dplyr::select("lon", "lat", "PFT", "Site", "month", "coef") %>% spread(key = month, value = coef)
 
 k3 <- cluster::pam(tmax.clusters[,col.tmax], k = 3, diss = FALSE)
 tmax.clusters$k3 <- as.character(k3$clustering)
@@ -430,7 +430,7 @@ dev.off()
 
 
 
-# -----------------finally split LPJ-ED2 test & training:-------------------
+# -----------------finally split ED2 test & training:-------------------
 
 # split training and testing data:
 

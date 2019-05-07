@@ -1226,7 +1226,12 @@ ED.precip <- readRDS("Data/ED2/ED2.precipf.rds")
 ED.IWUE <- readRDS("Data/ED2/ED2.IWUE.rds")
 ED.WUEi <- readRDS("Data/ED2/ED2.WUEi.rds")
 ED.WUEt <- readRDS("Data/ED2/ED2.WUEt.rds")
+ED.WUEet <- readRDS("Data/ED2/ED2.WUEet.rds")
 ED.CO2 <- readRDS("Data/ED2/ED2.CO2.rds")
+ED.GPP <- readRDS("Data/ED2/ED2.GPP.rds")
+ED.Evap <- readRDS("Data/ED2/ED2.Evap.rds")
+ED.Transp <- readRDS("Data/ED2/ED2.transp.rds")
+ED.ET <- ED.Evap + ED.Transp
 
 # get the mean relative density (not sure if this is right--double check)
 sec2yr <- 1*60*60*24*365.25
@@ -1242,13 +1247,21 @@ IWUE.y <- get.yrmeans(ED.IWUE, "IWUE")
 WUEi.y <- get.yrmeans(ED.WUEi, "WUEi")
 WUEt.y <- get.yrmeans(ED.WUEt, "WUEt")
 CO2.y <- get.yrmeans(ED.CO2, "CO2")
+GPP.y <- get.yrmeans(ED.GPP, "GPP")
+evap.y <- get.yrmeans(ED.Evap, "Evap")
+transp.y <- get.yrmeans(ED.Transp, "Transp")
+ET.y <- get.yrmeans(ED.ET, "ET")
+
+# use rGUESSuce to merge these all together
+all.y <- Reduce(function(x, y) merge(x, y, by = c("Year", "Site"),all=TRUE), list(reldens.y, IWUE.y, WUEt.y, WUEet.y,CO2.y,
+                                                                                  tair.y, precipf.y, ET.y, transp.y, evap.y, GPP.y))
 
 
 # use reduce to merge these all together
-all.y <- Reduce(function(x, y) merge(x, y, by = c("Year", "Site"),all=TRUE), list(reldens.y, IWUE.y, WUEi.y, WUEt.y, CO2.y,
-                                                                 tair.y, precipf.y))
-
-# save the all.y
+# all.y <- Reduce(function(x, y) merge(x, y, by = c("Year", "Site"),all=TRUE), list(reldens.y, IWUE.y, WUEi.y, WUEt.y, CO2.y,
+#                                                                  tair.y, precipf.y))
+# 
+# # save the all.y
 saveRDS(all.y, "outputs/data/ED2/ED2.alldat.yrmeans.rds")
 
 
@@ -1367,8 +1380,12 @@ GUESS.reldens <- readRDS("outputs/data/GUESS/GUESS.RelDens.rds")
 GUESS.tair <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.tair.rds")
 GUESS.precip <- readRDS("Data/LPJ-GUESS/lpj-guess.precipf.rds")
 GUESS.IWUE <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.IWUE.rds")
-GUESS.WUEt <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.IWUEet.rds")
-#GUESS.WUEt <- readRDS("Data/LPJ-GUESS/GUESS.WUEt.rds")
+GUESS.WUEt <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.IWUEt.rds")
+GUESS.WUEet <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.IWUEet.rds")
+GUESS.GPP <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.GPP.rds")
+GUESS.Evap <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.Evap.rds")
+GUESS.Transp <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.Transp.rds")
+GUESS.ET <- GUESS.Evap + GUESS.Transp
 GUESS.CO2 <- ED2.CO2
 
 # get the mean relative density (not sure if this is right--double check)
@@ -1384,12 +1401,20 @@ precipf.y$precip.mm <- precipf.y$precip*sec2yr # convert to mm
 IWUE.y <- get.yrmeans(GUESS.IWUE, "IWUE")
 WUEi.y <- get.yrmeans(GUESS.WUEi, "WUEi")
 WUEt.y <- get.yrmeans(GUESS.WUEt, "WUEt")
+WUEet.y <- get.yrmeans(GUESS.WUEet, "WUEet")
 CO2.y <- get.yrmeans(GUESS.CO2, "CO2")
-
+GPP.y <- get.yrmeans(GUESS.GPP, "GPP")
+evap.y <- get.yrmeans(GUESS.Evap, "Evap")
+transp.y <- get.yrmeans(GUESS.Transp, "Transp")
+ET.y <- get.yrmeans(GUESS.ET, "ET")
 
 # use rGUESSuce to merge these all together
-all.y <- Reduce(function(x, y) merge(x, y, by = c("Year", "Site"),all=TRUE), list(reldens.y, IWUE.y, WUEt.y, CO2.y,
-                                                                                  tair.y, precipf.y))
+all.y <- Reduce(function(x, y) merge(x, y, by = c("Year", "Site"),all=TRUE), list(reldens.y, IWUE.y, WUEt.y, WUEet.y,CO2.y,
+                                                                                  tair.y, precipf.y, ET.y, transp.y, evap.y))
+
+ggplot(all.y, aes(ET, Transp, color = Site))+geom_point()+theme(legend.position = "none")
+ggplot(all.y, aes(IWUE, Transp, color = Site))+geom_point()+theme(legend.position = "none")
+ggplot(all.y, aes(Evap, Transp, color = IWUE))+geom_point()+theme(legend.position = "none")
 
 # save the all.y
 saveRDS(all.y, "outputs/data/GUESS/GUESS.alldat.yrmeans.rds")
@@ -1425,6 +1450,7 @@ ED.precip <- readRDS("Data/ED2/ED2.precipf.rds")
 ED.IWUE <- readRDS("Data/ED2/ED2.IWUE.rds")
 ED.WUEi <- readRDS("Data/ED2/ED2.WUEi.rds")
 ED.WUEt <- readRDS("Data/ED2/ED2.WUEt.rds")
+ED.WUEet <- readRDS("Data/ED2/ED2.WUEet.rds")
 ED.CO2 <- readRDS("Data/ED2/ED2.CO2.rds")
 
 # get the mean relative density (not sure if this is right--double check)

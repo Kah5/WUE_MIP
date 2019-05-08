@@ -101,7 +101,7 @@ calc.WUE <- function(model){
         IWUE[,s] <- GPP[,s]*1000/(transp[,s])*(VPD[,s])
         WUEt[,s] <- GPP[,s]*1000/(transp[,s])
         WUEi[,s] <- GPP[,s]*1000/Gc[,s] # convert to kg/m2/s
-        WUEet[,s] <- GPP[,s]*1000/(transp[,s]+evap[,s])
+        WUEet[,s] <- GPP[,s]*1000/(transp[,s]-evap[,s])
       }
       
       saveRDS(IWUE, "Data/ED2/ED2.IWUE.rds")

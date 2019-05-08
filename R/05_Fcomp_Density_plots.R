@@ -1379,8 +1379,8 @@ saveRDS(all.df, "outputs/data/ED2/dens_agbi_climate_ED2.rds")
 GUESS.reldens <- readRDS("outputs/data/GUESS/GUESS.RelDens.rds")
 GUESS.tair <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.tair.rds")
 GUESS.precip <- readRDS("Data/LPJ-GUESS/lpj-guess.precipf.rds")
-GUESS.IWUE <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.IWUE.rds")
-GUESS.WUEt <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.IWUEt.rds")
+#GUESS.IWUE <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.IWUE.rds")
+GUESS.WUEt <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.WUEt.rds")
 GUESS.WUEet <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.IWUEet.rds")
 GUESS.GPP <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.GPP.rds")
 GUESS.Evap <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.Evap.rds")
@@ -1398,8 +1398,8 @@ tair.y$Tair.C <- tair.y$Tair - 273.15
 precipf.y <- get.yrmeans(GUESS.precip, "precip")
 precipf.y$precip.mm <- precipf.y$precip*sec2yr # convert to mm
 
-IWUE.y <- get.yrmeans(GUESS.IWUE, "IWUE")
-WUEi.y <- get.yrmeans(GUESS.WUEi, "WUEi")
+#IWUE.y <- get.yrmeans(GUESS.IWUE, "IWUE")
+#WUEi.y <- get.yrmeans(GUESS.WUEi, "WUEi")
 WUEt.y <- get.yrmeans(GUESS.WUEt, "WUEt")
 WUEet.y <- get.yrmeans(GUESS.WUEet, "WUEet")
 CO2.y <- get.yrmeans(GUESS.CO2, "CO2")
@@ -1409,8 +1409,8 @@ transp.y <- get.yrmeans(GUESS.Transp, "Transp")
 ET.y <- get.yrmeans(GUESS.ET, "ET")
 
 # use rGUESSuce to merge these all together
-all.y <- Reduce(function(x, y) merge(x, y, by = c("Year", "Site"),all=TRUE), list(reldens.y, IWUE.y, WUEt.y, WUEet.y,CO2.y,
-                                                                                  tair.y, precipf.y, ET.y, transp.y, evap.y))
+all.y <- Reduce(function(x, y) merge(x, y, by = c("Year", "Site"),all=TRUE), list(reldens.y,  WUEt.y, WUEet.y,CO2.y,
+                                                                                  tair.y, precipf.y, ET.y, transp.y, evap.y, GPP.y))
 
 ggplot(all.y, aes(ET, Transp, color = Site))+geom_point()+theme(legend.position = "none")
 ggplot(all.y, aes(IWUE, Transp, color = Site))+geom_point()+theme(legend.position = "none")

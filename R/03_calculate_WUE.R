@@ -90,21 +90,24 @@ calc.WUE <- function(model){
     colnames(CO2) <- paleon$num
     site.list <- colnames(CO2)
     transp <- readRDS("Data/ED2/ED2.Transp.rds")
+    evap <- readRDS("Data/ED2/ED2.Evap.rds")
     LAI <- readRDS("Data/ED2/ED2.LAI.rds")
     # calculate WUE using loop
-    IWUE <- WUEt <- WUEi <- CO2
+    WUEet <- IWUE <- WUEt <- WUEi <- CO2
+    
     if(model == "ED2"){
       sec2mo <- 60*60*24*30
       for (s in 1:length(site.list)){
         IWUE[,s] <- GPP[,s]*1000/(transp[,s])*(VPD[,s])
         WUEt[,s] <- GPP[,s]*1000/(transp[,s])
         WUEi[,s] <- GPP[,s]*1000/Gc[,s] # convert to kg/m2/s
+        WUEet[,s] <- GPP[,s]*1000/(transp[,s]+evap[,s])
       }
       
       saveRDS(IWUE, "Data/ED2/ED2.IWUE.rds")
       saveRDS(WUEt, "Data/ED2/ED2.WUEt.rds")
       saveRDS(WUEi, "Data/ED2/ED2.WUEi.rds")
-      
+      saveRDS(WUEet, "Data/ED2/ED2.WUEet.rds")
     }else{
      
       # for LPJGUESS
@@ -116,6 +119,7 @@ calc.WUE <- function(model){
       colnames(CO2) <- paleon$num
       site.list <- colnames(CO2)
       transp <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.Transp.rds")
+      evap <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.Evap.rds")
       LAI <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.LAI.rds")
       
       # calculate a VPD list
@@ -137,11 +141,13 @@ calc.WUE <- function(model){
       for (s in 1:length(site.list)){
         #IWUE[,s] <- GPP[,s]*1000/transp[,s]*(VPD2[,s])
         WUEt[,s] <- GPP[,s]*1000/(transp[,s])
+        WUEet[,s] <- GPP[,s]*1000/(transp[,s]+evap[,s])
         #WUEi[,s] <- GPP[,s]*1000/Gc[,s] # convert to kg/m2/s
       }
       
       #saveRDS(IWUE, "Data/ED2/ED2.IWUE.rds")
       saveRDS(WUEt, "Data/LPJ-GUESS/LPJ-GUESS.WUEt.rds")
+      saveRDS(WUEet, "Data/LPJ-GUESS/LPJ-GUESS.WUEet.rds")
       #saveRDS(WUEi, "Data/ED2/ED2.WUEi.rds")
     }
     
@@ -161,8 +167,10 @@ calc.WUE ("LPJ-GUESS")
 ED2.WUEi <- readRDS("Data/ED2/ED2.WUEi.rds")
 ED2.WUEt <- readRDS("Data/ED2/ED2.WUEt.rds")
 ED2.IWUE <- readRDS("Data/ED2/ED2.IWUE.rds")
+ED2.WUEet <- readRDS("Data/ED2/ED2.IWUEet.rds")
 
 GUESS.WUEt <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.WUEt.rds")
+GUESS.WUEet <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.WUEt.rds")
 
 # make plots similar to the rest of the variables
 plot.yrmean.ts <- function(df, name){
@@ -183,7 +191,10 @@ plot.yrmean.ts <- function(df, name){
 plot.yrmean.ts(ED2.IWUE, "ED2_IWUE")
 plot.yrmean.ts(ED2.WUEi, "ED2_WUEi")
 plot.yrmean.ts(ED2.WUEt, "ED2_WUEt")
+plot.yrmean.ts(ED2.WUEet, "ED2_WUEet")
+
 plot.yrmean.ts(GUESS.WUEt, "LPJ-GUESS_WUEt")
+plot.yrmean.ts(GUESS.WUEet, "LPJ-GUESS_WUEet")
 
 # plot seasonal cycles
 plot.seasonal <- function(df, name){
@@ -196,14 +207,17 @@ plot.seasonal <- function(df, name){
   png(height = 12, width = 12, units= "in", res = 100, file = paste0(getwd(),"/outputs/preliminaryplots/", name, "_seasonal_site.png"))
   m <- melt(df, id.vars=c("year", "month"))
   m<- m[complete.cases(m),]
-  print(ggplot(data = m[1:100000,], aes(x = month, y = value, color = variable))+geom_point())
+  print(ggplot(data = m[1:100000,], aes(x = month, y = value, color = month))+geom_point())
   dev.off()
 }
 
-plot.seasonal(ED2.IWUE, "ED2_IWUE")
+plot.seasonal(df = ED2.IWUE, name = "ED2_IWUE")
 plot.seasonal(ED2.WUEi, "ED2_WUEi")
 plot.seasonal(ED2.WUEt, "ED2_IWUEt")
+plot.seasonal(df = ED2.WUEet, name = "ED2_WUEet")
+
 plot.seasonal(GUESS.WUEt, "GUESS_IWUEt")
+plot.seasonal(GUESS.WUEet, "LPJ-GUESS_WUEet")
 
 # plot june july auguest means
 plot.JJA.ts <- function(df, name){
@@ -225,7 +239,10 @@ plot.JJA.ts <- function(df, name){
 plot.JJA.ts (ED2.IWUE, "ED2_IWUE")
 plot.JJA.ts (ED2.WUEi, "ED2_WUEi")
 plot.JJA.ts (ED2.WUEt, "ED2_WUEt")
+plot.JJA.ts (ED2.WUEet, "ED2_WUEet")
+
 plot.JJA.ts (GUESS.WUEt, "LPJ.GUESS_WUEt")
+plot.JJA.ts (GUESS.WUEet, "LPJ.GUESS_WUEet")
 
 
 # save the WUE values as RDS files
@@ -304,5 +321,7 @@ slope.WUE.inc <- function(data ,model, wue){
 slope.WUE.inc(ED2.IWUE, "ED2", "IWUE")
 slope.WUE.inc(ED2.WUEi, "ED2", "WUEi")
 slope.WUE.inc(ED2.WUEt, "ED2", "WUEt")
+slope.WUE.inc(ED2.WUEet, "ED2", "WUEet")
 
 slope.WUE.inc(GUESS.WUEt, "GUESS", "WUEt")
+slope.WUE.inc(GUESS.WUEet, "GUESS", "WUEet")

@@ -15,10 +15,10 @@ library(tidyr)
 #lai <- readRDS( paste0(getwd(),"/Data/extracted/ED_monthly_lai.RDS"))
 
 # load the pft specific data:
-ED2.Dens <- readRDS("D:/Kelly/WUE_MIP/Data/ED2/ED2.Dens.rds")
-ED2.Fcomp <- readRDS("D:/Kelly/WUE_MIP/Data/ED2/ED2.Fcomp.RDS")
+ED2.Dens <- readRDS("Data/ED2/ED2.Dens.rds")
+ED2.Fcomp <- readRDS("Data/ED2/ED2.Fcomp.RDS")
 
-load("D:/Kelly/WUE_MIP/Data/PalEON_siteInfo_all.RData")
+load("Data/PalEON_siteInfo_all.RData")
 
 timevec <- 1:13932
 month <- rep(1:12, 1161)
@@ -133,9 +133,10 @@ Dens.df <- merge(Dens.df, datain[,c('lat','lon','ID','site.name')], by = c('lat'
 
 #-------------------get dataframes aggregated to yearly timestep---------
 WUEt <- readRDS(paste0(getwd(), "/Data/ED2/ED2.WUEt.rds"))
+WUEet <- readRDS(paste0(getwd(), "/Data/ED2/ED2.WUEet.rds"))
 WUEi <- readRDS(paste0(getwd(), "/Data/ED2/ED2.WUEi.rds"))
 IWUE <- readRDS(paste0(getwd(), "/Data/ED2/ED2.IWUE.rds"))
-
+GPP <- readRDS(paste0(getwd(), "/Data/ED2/ED2.GPP.rds"))
 
 # we may need to rethink this function, but it is a start
 get.yrmeans <- function(df, var){
@@ -156,12 +157,13 @@ get.yrmeans <- function(df, var){
 IWUE.y <- get.yrmeans(IWUE, "IWUE")
 WUEi.y <- get.yrmeans(WUEi, "WUEi")
 WUEt.y <- get.yrmeans(WUEt, "WUEt")
+WUEet.y <- get.yrmeans(WUEet, "WUEet")
 precip.y <- get.yrmeans(ED2.precipf, "precip")
 CO2.y <- get.yrmeans(ED2.CO2, "CO2")
 lai.y <- get.yrmeans(ED2.LAI, "LAI")
 gwbi.y <- get.yrmeans(ED2.GWBI, "GWBI")
 tair.y <- get.yrmeans(ED2.tair, "Tair")
-
+GPP.y <- get.yrmeans(ED2.GPP, "GPP")
 # use reduce to merge all these into one dataframe
 all.y <- Reduce(function(x, y) merge(x, y, by = ,all=TRUE), list(IWUE.y, WUEi.y, WUEt.y, CO2.y,
                                                        gwbi.y,tair.y, precip.y, lai.y))

@@ -949,6 +949,91 @@ summary(lm(IWUE.change ~ GPP.change + ET.change + Transp.change + Evap.change + 
 summary(lm(WUEet.change ~ GPP.change + ET.change + Transp.change + Evap.change + Mean_MAP.wy+ tmax6_change, data = pct))
 summary(lm(WUEt.change ~ GPP.change + ET.change + Transp.change + Evap.change + Mean_MAP.wy+ tmax6_change, data = pct))
 
+# add better maps as background
+
+library(maps)
+library(sp)
+library(rgeos)
+
+all_states <- map_data("state")
+states <- subset(all_states, region %in% c(  'minnesota','wisconsin','michigan',"illinois",  'indiana') )
+coordinates(all_states)<-~long+lat
+class(all_states)
+
+ca = map_data("world", "Canada")
+coordinates(ca)<-~long+lat
+ca.data <- data.frame(ca)
+mapdata <- data.frame(all_states)
+
+library(rnaturalearth)
+#  is all downloaded from <a href=>http://www.naturalearthdata.com/downloads/</a> using the
+#  1:50m "Medium" scale data.
+
+# lakes
+ne_lakes <- ne_download(scale = 50, type = 'lakes', category = 'physical')
+sp::plot(ne_lakes, col = 'blue')
+quick.subset <- function(x, longlat){
+  
+  # longlat should be a vector of four values: c(xmin, xmax, ymin, ymax)
+  x@data$id <- rownames(x@data)
+  
+  x.f = fortify(x, region="id")
+  x.join = plyr::join(x.f, x@data, by="id")
+  
+  x.subset <- subset(x.join, x.join$long > longlat[1] & x.join$long < longlat[2] &
+                       x.join$lat > longlat[3] & x.join$lat < longlat[4])
+  
+  x.subset
+}
+
+
+domain <- c(-100,-61, 35, 49)
+lakes.subset <- quick.subset(ne_lakes, domain)
+
+ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct, aes(lon, lat, fill = IWUE.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct, aes(lon, lat, fill = WUEet.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct, aes(lon, lat, fill = WUEt.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct, aes(lon, lat, fill = precip.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct, aes(lon, lat, fill = GPP.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct, aes(lon, lat, fill = Evap.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct, aes(lon, lat, fill = ET.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct, aes(lon, lat, fill = Transp.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+
+ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct.change, aes(lon, lat, fill = Fcomp.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))+facet_wrap(~PFT)
+
+
+ggplot(pct.change, aes(GPP.change, Transp.change))+geom_point()
+ggplot(pct.change, aes(GPP.change, Evap.change))+geom_point()
+ggplot(pct.change, aes(GPP.change, ET.change))+geom_point()
+ggplot(pct.change, aes(GPP.change, Fcomp.change, color = PFT))+geom_point()
+ggplot(pct.change, aes(GPP.change, GWBI.change, color = PFT))+geom_point()+facet_wrap(~PFT)
+ggplot(pct.change, aes(GPP.change, ET.change))+geom_point()
 
 
 #--------------------Run the same analyses for GUESS---------------------------------

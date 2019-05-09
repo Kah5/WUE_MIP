@@ -1049,9 +1049,22 @@ WUE.dens.dfs$Site <- substring(WUE.dens.dfs$Site, 2)
 GUESS <- left_join(WUE.dens.dfs, GUESS.gwbi.clim.nona, by = c("Site", "Year"))
 
 hist(GUESS$WUEet)
+
+# read in Fcomp for ED2:
+GUESS.fcomp <- readRDS( "Data/GUESS.Fcomp.pft.rds")
+GUESS.fcomp$PFT <- paste0(GUESS.fcomp$PFT, ".gwbi")
+#ED2.fcomp.yr <-  ED2.fcomp.yr %>% filter(PFT %in% unique(ED2.gwbi.clim.nona$PFT))
+GUESS.fcomp$Site <- as.character(GUESS.fcomp$Site)
+
+GUESS.full <- left_join(GUESS, GUESS.fcomp, by = c("Year", "Site", "PFT"))
+
+
+# remove the outliers:
+GUESS.rm <- GUESS.full[GUESS.full$WUEet <= 500, ]
+
 # remove the outliers:
 # remove the outliers:
-GUESS.rm <- GUESS[GUESS$WUEet <= 500, ]
+#GUESS.rm <- GUESS[GUESS$WUEet <= 500, ]
 #GUESS.rm <- GUESS
 ggplot(GUESS.rm, aes(Tair.C, WUEet))+geom_point()
 
@@ -1106,15 +1119,15 @@ all.met.summary <- all.met %>% group_by(lon, lat) %>% summarise(Mean_MAP = mean(
                                                                 Mean_tair_max_11 = mean(tair_max_11, na.rm=TRUE),
                                                                 Mean_tair_max_12 = mean(tair_max_12, na.rm=TRUE))
 
-ggplot(all.met.summary, aes(lon, lat, fill = Mean_MAP.wy))+geom_raster()
-ggplot(all.met.summary, aes(lon, lat, fill = Mean_tair_max_6))+geom_raster()
+#ggplot(all.met.summary, aes(lon, lat, fill = Mean_MAP.wy))+geom_raster()
+#ggplot(all.met.summary, aes(lon, lat, fill = Mean_tair_max_6))+geom_raster()
 
 
 # join the site means to the sites:
 
 GUESS.rm.site <- left_join(all.met.summary, GUESS.rm , by = c("lon", "lat"))
 
-ggplot(GUESS.rm.site[GUESS.rm.site$Site %in% "1",], aes(Year, WUEet, color = Mean_tair_max_6))+geom_point()+geom_line()+stat_smooth()
+#ggplot(GUESS.rm.site[GUESS.rm.site$Site %in% "1",], aes(Year, WUEet, color = Mean_tair_max_6))+geom_point()+geom_line()+stat_smooth()
 
 # get the change in %WUE over between 850-1850 and 1950-present
 mean.850.1850 <- GUESS.rm.site %>% group_by(lat, lon, Site, PFT) %>% filter(Year >= 1849) %>% summarise(#WUEet.850.1850 = mean(WUEet, na.rm=TRUE),
@@ -1126,7 +1139,8 @@ mean.850.1850 <- GUESS.rm.site %>% group_by(lat, lon, Site, PFT) %>% filter(Year
                                                                                                       GPP.850.1850 = mean (GPP, na.rm=TRUE),
                                                                                                       ET.850.1850 = mean (ET, na.rm=TRUE),
                                                                                                       Transp.850.1850 = mean (Transp, na.rm=TRUE),
-                                                                                                      Evap.850.1850 = mean (Evap, na.rm=TRUE))
+                                                                                                      Evap.850.1850 = mean (Evap, na.rm=TRUE),
+                                                                                                      Fcomp.850.1850 = mean(Fcomp, na.rm = TRUE))
 
 
 
@@ -1140,7 +1154,8 @@ mean.1690.1850 <- GUESS.rm.site %>% group_by(lat, lon, Site, PFT) %>% filter(Yea
                                                                                                                       GPP.1690.1850 = mean (GPP, na.rm=TRUE),
                                                                                                                       ET.1690.1850 = mean (ET, na.rm=TRUE),
                                                                                                                       Transp.1690.1850 = mean (Transp, na.rm=TRUE),
-                                                                                                                      Evap.1690.1850 = mean (Evap, na.rm=TRUE))
+                                                                                                                      Evap.1690.1850 = mean (Evap, na.rm=TRUE),
+                                                                                                                      Fcomp.1690.1850 = mean(Fcomp, na.rm = TRUE))
 
 
 
@@ -1155,7 +1170,8 @@ mean.1850.2011 <- GUESS.rm.site %>% group_by(lat, lon, Site, PFT) %>% filter(Yea
                                                                                                        GPP.1850.2011 = mean (GPP, na.rm=TRUE),
                                                                                                        ET.1850.2011 = mean (ET, na.rm=TRUE),
                                                                                                        Transp.1850.2011 = mean (Transp, na.rm=TRUE),
-                                                                                                       Evap.1850.2011 = mean (Evap, na.rm=TRUE))
+                                                                                                       Evap.1850.2011 = mean (Evap, na.rm=TRUE),
+                                                                                                       Fcomp.1850.2011 = mean(Fcomp, na.rm = TRUE))
 
 
 
@@ -1169,7 +1185,8 @@ mean.1950.2011 <- GUESS.rm.site %>% group_by(lat, lon, Site, PFT) %>% filter(Yea
                                                                                                        GPP.1950.2011 = mean (GPP, na.rm=TRUE),
                                                                                                        ET.1950.2011 = mean (ET, na.rm=TRUE),
                                                                                                        Transp.1950.2011 = mean (Transp, na.rm=TRUE),
-                                                                                                       Evap.1950.2011 = mean (Evap, na.rm=TRUE))
+                                                                                                       Evap.1950.2011 = mean (Evap, na.rm=TRUE),
+                                                                                                       Fcomp.1950.2011 = mean(Fcomp, na.rm = TRUE))
 
 
 
@@ -1192,7 +1209,8 @@ pct.change <- time.periods %>% group_by(lat, lon, Site, PFT) %>% summarise(#WUEe
                                                                            GPP.change = mean(((GPP.1950.2011 - GPP.850.1850)/GPP.850.1850)*100, na.rm=TRUE),
                                                                            ET.change = mean(((ET.1950.2011 - ET.850.1850)/ET.850.1850)*100, na.rm=TRUE),
                                                                            Transp.change = mean(((Transp.1950.2011 - Transp.850.1850)/Transp.850.1850)*100, na.rm=TRUE), 
-                                                                           Evap.change = mean(((Evap.1950.2011 - Evap.850.1850)/Evap.850.1850)*100, na.rm=TRUE))
+                                                                           Evap.change = mean(((Evap.1950.2011 - Evap.850.1850)/Evap.850.1850)*100, na.rm=TRUE),
+                                                                           Fcomp.change = mean(((Fcomp.1950.2011 - Fcomp.850.1850)/Fcomp.850.1850)*100, na.rm=TRUE))
 
 
 #GWBI.WUE.change <- ggplot(pct.change, aes(WUEet.change, GWBI.change, color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())
@@ -1206,6 +1224,10 @@ WUE.t.precip.change <- ggplot(pct.change, aes(WUEt.change, precip.change, color 
 #WUEet.temp.change <- ggplot(pct.change, aes(WUEet.change, tmax6_change, color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())
 WUE.et.temp.change <- ggplot(pct.change, aes(WUEet.change, tmax6_change, color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())
 WUE.t.temp.change <- ggplot(pct.change, aes(WUEt.change, tmax6_change, color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())
+
+#Fcomp.WUE.change <- ggplot(pct.change, aes(IWUE.change, Fcomp.change, color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())
+Fcomp.WUEet.change <- ggplot(pct.change, aes(WUEet.change, Fcomp.change, color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())
+Fcomp.WUEt.change <- ggplot(pct.change, aes(WUEt.change, Fcomp.change, color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())
 
 
 GWBI.temp.change <- ggplot(pct.change, aes( tmax6_change, GWBI.change,color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())+xlab( "Change in Summer Maximum temperatures (degC)")+ylab("% change in GWBI")
@@ -1277,24 +1299,124 @@ GWBI.WUEet.change.prec
 dev.off()
 
 # WUEt GWBI correlations
-p.vals.WUEett = sapply(unique(pct.change.site$PFT), function(i) {
+p.vals.WUEt = sapply(unique(pct.change.site$PFT), function(i) {
   round(coef(summary(lm(GWBI.change ~ WUEt.change, data=pct.change.site[pct.change.site$PFT==i, ])))[2,4], 4)
 })
 
-p.vals.WUEett.m <- melt(p.vals.WUEett)
-p.vals.WUEett.m$PFT <- rownames(p.vals.WUEett.m)
-p.vals.WUEett.m$sig <- ifelse(p.vals.WUEett.m$value <= 0.05, "*", "N.S" )
-p.vals.WUEett.m$value <- ifelse(p.vals.WUEett.m$value <= 0.0001, "0.00001", p.vals.WUEett.m$value )
+p.vals.WUEt.m <- melt(p.vals.WUEt)
+p.vals.WUEt.m$PFT <- rownames(p.vals.WUEt.m)
+p.vals.WUEt.m$sig <- ifelse(p.vals.WUEt.m$value <= 0.05, "*", "N.S" )
+p.vals.WUEt.m$value <- ifelse(p.vals.WUEt.m$value <= 0.0001, "0.00001", p.vals.WUEt.m$value )
 
 
 GWBI.WUEt.change.prec <- ggplot(pct.change.site, aes( WUEt.change, GWBI.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
-  geom_text(data = p.vals.WUEett.m , aes(label = paste("p =", value, sig), x = 10, y = -75), color = "black")+
+  geom_text(data = p.vals.WUEt.m , aes(label = paste("p =", value, sig), x = 10, y = -75), color = "black")+
   facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in WUEett")+ylab("% change in GWBI")
 
 png(height = 4, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_delta_WUEt_gwbi_by_pft_850_1850_compared1950_2011.png")
 GWBI.WUEt.change.prec
 dev.off()
+
+# plot relationships between Fcomp and climate with significance.
+pct.change.site.fcomp <- pct.change.site[!pct.change.site$PFT %in% c("Total.gwbi", "BeIBS.gwbi", "TrIBE.gwbi"),]
+
+p.vals.precip = sapply(unique(pct.change.site.fcomp$PFT), function(i) {
+  round(coef(summary(lm(Fcomp.change ~ precip.change, data=pct.change.site.fcomp[pct.change.site.fcomp$PFT==i, ])))[2,4], 4)
+})
+
+p.vals.precip.m <- melt(p.vals.precip)
+p.vals.precip.m$PFT <- rownames(p.vals.precip.m)
+p.vals.precip.m$sig <- ifelse(p.vals.precip.m$value <= 0.05, "*", "N.S" )
+
+Fcomp.precip.change.prec <- ggplot(pct.change.site.fcomp, aes( precip.change, Fcomp.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+geom_text(data = p.vals.precip.m , aes(label = paste("p = ", value, " ", sig), x = 3, y = -75), color = "black")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())+
+  scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in precipitation")+ylab("% change in Fcomp")
+
+png(height = 4, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_delta_precip_Fcomp_by_pft_850_1850_compared1950_2011.png")
+Fcomp.precip.change.prec
+dev.off()
+
+# # WUE Fcomp correlations
+# p.vals.IWUE = sapply(unique(pct.change.site.fcomp$PFT), function(i) {
+#   round(coef(summary(lm(Fcomp.change ~ IWUE.change, data=pct.change.site.fcomp[pct.change.site.fcomp$PFT==i, ])))[2,4], 4)
+# })
+# 
+# p.vals.IWUE.m <- melt(p.vals.IWUE)
+# p.vals.IWUE.m$PFT <- rownames(p.vals.IWUE.m)
+# p.vals.IWUE.m$sig <- ifelse(p.vals.IWUE.m$value <= 0.05, "*", "N.S" )
+# p.vals.IWUE.m$value <- ifelse(p.vals.IWUE.m$value <= 0.0001, "0.00001", p.vals.IWUE.m$value )
+# 
+# 
+# Fcomp.WUE.change.prec <- ggplot(pct.change.site.fcomp, aes( IWUE.change, Fcomp.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+#   geom_text(data = p.vals.IWUE.m , aes(label = paste("p =", value, sig), x = 10, y = -75), color = "black")+
+#   facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())+
+#   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in IWUE")+ylab("% change in Fcomp")
+# 
+# png(height = 4, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_delta_wue_Fcomp_by_pft_850_1850_compared1950_2011.png")
+# Fcomp.WUE.change.prec
+# dev.off()
+
+
+# WUEet Fcomp correlations
+p.vals.IWUEet = sapply(unique(pct.change.site.fcomp$PFT), function(i) {
+  round(coef(summary(lm(Fcomp.change ~ WUEet.change, data=pct.change.site.fcomp[pct.change.site.fcomp$PFT==i, ])))[2,4], 4)
+})
+
+p.vals.IWUEet.m <- melt(p.vals.IWUEet)
+p.vals.IWUEet.m$PFT <- rownames(p.vals.IWUEet.m)
+p.vals.IWUEet.m$sig <- ifelse(p.vals.IWUEet.m$value <= 0.05, "*", "N.S" )
+p.vals.IWUEet.m$value <- ifelse(p.vals.IWUEet.m$value <= 0.0001, "0.00001", p.vals.IWUEet.m$value )
+
+
+Fcomp.WUEet.change.prec <- ggplot(pct.change.site.fcomp, aes( WUEet.change, Fcomp.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+  geom_text(data = p.vals.IWUEet.m , aes(label = paste("p =", value, sig), x = 10, y = -75), color = "black")+
+  facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())+
+  scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in IWUEet")+ylab("% change in Fcomp")
+
+png(height = 4, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_delta_WUEet_Fcomp_by_pft_850_1850_compared1950_2011.png")
+Fcomp.WUEet.change.prec
+dev.off()
+
+# WUEt Fcomp correlations
+p.vals.IWUEt = sapply(unique(pct.change.site.fcomp$PFT), function(i) {
+  round(coef(summary(lm(Fcomp.change ~ WUEt.change, data=pct.change.site.fcomp[pct.change.site.fcomp$PFT==i, ])))[2,4], 4)
+})
+
+p.vals.IWUEt.m <- melt(p.vals.IWUEt)
+p.vals.IWUEt.m$PFT <- rownames(p.vals.IWUEt.m)
+p.vals.IWUEt.m$sig <- ifelse(p.vals.IWUEt.m$value <= 0.05, "*", "N.S" )
+p.vals.IWUEt.m$value <- ifelse(p.vals.IWUEt.m$value <= 0.0001, "0.00001", p.vals.IWUEt.m$value )
+
+
+Fcomp.WUEt.change.prec <- ggplot(pct.change.site.fcomp, aes( WUEt.change, Fcomp.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+  geom_text(data = p.vals.IWUEt.m , aes(label = paste("p =", value, sig), x = 10, y = -75), color = "black")+
+  facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())+
+  scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in IWUEt")+ylab("% change in Fcomp")
+
+png(height = 4, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_delta_WUEt_Fcomp_by_pft_850_1850_compared1950_2011.png")
+Fcomp.WUEt.change.prec
+dev.off()
+
+# tmax Fcomp correlations
+p.vals.tmax6 = sapply(unique(pct.change.site.fcomp$PFT), function(i) {
+  round(coef(summary(lm(Fcomp.change ~ tmax6_change, data=pct.change.site.fcomp[pct.change.site.fcomp$PFT==i, ])))[2,4], 4)
+})
+
+p.vals.tmax6.m <- melt(p.vals.tmax6)
+p.vals.tmax6.m$PFT <- rownames(p.vals.tmax6.m)
+p.vals.tmax6.m$sig <- ifelse(p.vals.tmax6.m$value <= 0.05, "*", "N.S" )
+p.vals.tmax6.m$value <- ifelse(p.vals.tmax6.m$value <= 0.0001, "0.00001", p.vals.tmax6.m$value )
+
+Fcomp.tmax.change.prec <- ggplot(pct.change.site.fcomp, aes( tmax6_change, Fcomp.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+  geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
+  facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())+
+  scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("Change in Temperature DegC")+ylab("% change in Fcomp")
+
+png(height = 4, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_delta_tmax_Fcomp_by_pft_850_1850_compared1950_2011.png")
+Fcomp.tmax.change.prec
+dev.off()
+
+
 
 # tmax GWBI correlations
 p.vals.tmax6 = sapply(unique(pct.change.site$PFT), function(i) {
@@ -1482,7 +1604,7 @@ library(car)
 library(rgl)
 
 # 1. changes in WUE vs temperature and precip, colored by mean MAP
-pct <- pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]
+pct <- pct.change.site[pct.change.site$PFT %in% "BIBS.gwbi",]
 #rgl::plot3d( pct$precip.change, pct$WUEet.change,  pct$tmax6_change,)
 
 
@@ -1859,3 +1981,126 @@ for(i in 1:length(PFT.list)){
   dev.off()
   
 }
+
+pct <- pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]
+
+# fit linear models to see what explains the delta WUE best, changes in GPP, or changes in ET
+#summary(lm(IWUE.change ~ GPP.change + ET.change + Transp.change + Evap.change + Mean_MAP.wy + tmax6_change, data = pct))
+summary(lm(WUEet.change ~ GPP.change + ET.change + Transp.change + Evap.change + Mean_MAP.wy+ tmax6_change, data = pct))
+summary(lm(WUEt.change ~ GPP.change + ET.change + Transp.change + Evap.change + Mean_MAP.wy+ tmax6_change, data = pct))
+
+# add better maps as background
+
+library(maps)
+library(sp)
+library(rgeos)
+
+all_states <- map_data("state")
+states <- subset(all_states, region %in% c(  'minnesota','wisconsin','michigan',"illinois",  'indiana') )
+coordinates(all_states)<-~long+lat
+class(all_states)
+
+ca = map_data("world", "Canada")
+coordinates(ca)<-~long+lat
+ca.data <- data.frame(ca)
+mapdata <- data.frame(all_states)
+
+library(rnaturalearth)
+#  is all downloaded from <a href=>http://www.naturalearthdata.com/downloads/</a> using the
+#  1:50m "Medium" scale data.
+
+# lakes
+ne_lakes <- ne_download(scale = 50, type = 'lakes', category = 'physical')
+sp::plot(ne_lakes, col = 'blue')
+quick.subset <- function(x, longlat){
+  
+  # longlat should be a vector of four values: c(xmin, xmax, ymin, ymax)
+  x@data$id <- rownames(x@data)
+  
+  x.f = fortify(x, region="id")
+  x.join = plyr::join(x.f, x@data, by="id")
+  
+  x.subset <- subset(x.join, x.join$long > longlat[1] & x.join$long < longlat[2] &
+                       x.join$lat > longlat[3] & x.join$lat < longlat[4])
+  
+  x.subset
+}
+
+
+domain <- c(-100,-61, 35, 49)
+lakes.subset <- quick.subset(ne_lakes, domain)
+
+# ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+#   geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+#   geom_raster(data = pct, aes(lon, lat, fill = IWUE.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+delta.WUEet.change <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct, aes(lon, lat, fill = WUEet.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+png(height = 4, width = 7, units = "in", res= 300,"outputs/preliminaryplots/GUESS_WUEet_change_map.png")
+delta.WUEet.change
+dev.off()
+
+deltaWUEt.change <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct, aes(lon, lat, fill = WUEt.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+png(height = 4, width = 7, units = "in", res= 300,"outputs/preliminaryplots/GUESS_WUEt_change_map.png")
+delta.WUEt.change
+dev.off()
+
+delta.precip.change <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct, aes(lon, lat, fill = precip.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+png(height = 4, width = 7, units = "in", res= 300,"outputs/preliminaryplots/GUESS_precip_change_map.png")
+delta.precip.change
+dev.off()
+
+delta.GPP.change <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct, aes(lon, lat, fill = GPP.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+png(height = 4, width = 7, units = "in", res= 300,"outputs/preliminaryplots/GUESS_GPP_change_map.png")
+delta.GPP.change 
+dev.off()
+
+delta.Evap.change <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct, aes(lon, lat, fill = Evap.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+png(height = 4, width = 7, units = "in", res= 300,"outputs/preliminaryplots/GUESS_Evap_change_map.png")
+delta.Evap.change
+dev.off()
+
+delta.ET.change <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct, aes(lon, lat, fill = ET.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+png(height = 4, width = 7, units = "in", res= 300,"outputs/preliminaryplots/GUESS_ET_change_map.png")
+delta.ET.change
+dev.off()
+
+delta.transp.change <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct, aes(lon, lat, fill = Transp.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+png(height = 4, width = 7, units = "in", res= 300,"outputs/preliminaryplots/GUESS_Transp_change_map.png")
+delta.Transp.change
+dev.off()
+
+delta.fcomp.change <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct.change[!pct.change$PFT %in% c("BeIBS.gwbi", "TrIBE.gwbi"),], aes(lon, lat, fill = Fcomp.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))+facet_wrap(~PFT, ncol = 2)
+
+png(height = 10, width = 7, units = "in", res= 300,"outputs/preliminaryplots/GUESS_Fcomp_PFT_change_map.png")
+delta.fcomp.change 
+dev.off()
+
+ggplot(pct.change, aes(GPP.change, Transp.change))+geom_point()+stat_smooth(method = "lm")
+ggplot(pct.change, aes(GPP.change, Evap.change))+geom_point()+stat_smooth(method = "lm")
+ggplot(pct.change, aes(GPP.change, ET.change))+geom_point()+stat_smooth(method = "lm")
+ggplot(pct.change, aes(GPP.change, Fcomp.change, color = PFT))+geom_point()+stat_smooth(method = "lm")
+ggplot(pct.change, aes(GPP.change, GWBI.change, color = PFT))+geom_point()+facet_wrap(~PFT)+stat_smooth(method = "lm")
+

@@ -949,6 +949,16 @@ summary(lm(IWUE.change ~ GPP.change + ET.change + Transp.change + Evap.change + 
 summary(lm(WUEet.change ~ GPP.change + ET.change + Transp.change + Evap.change + Mean_MAP.wy+ tmax6_change, data = pct))
 summary(lm(WUEt.change ~ GPP.change + ET.change + Transp.change + Evap.change + Mean_MAP.wy+ tmax6_change, data = pct))
 
+hist(pct.change$GPP.change - pct.change$ET.change) # GPP increases more than ET at most sites
+hist(pct.change$GPP.change - pct.change$Transp.change) # GPP increases more than TRansp at most sites
+hist(pct.change$GPP.change - pct.change$Evap.change) # GPP increases more than Evap at ~ half the sites
+hist(pct.change$Transp.change - pct.change$Evap.change) # Evap increases more than Transp at ~ half the sites
+
+summary(pct.change$GPP.change - pct.change$ET.change) 
+hist(pct.change$GPP.change - pct.change$ET.change) 
+
+ED2.pct.change <- pct.change
+
 # add better maps as background
 
 library(maps)
@@ -1989,6 +1999,15 @@ pct <- pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]
 summary(lm(WUEet.change ~ GPP.change + ET.change + Transp.change + Evap.change + Mean_MAP.wy+ tmax6_change, data = pct))
 summary(lm(WUEt.change ~ GPP.change + ET.change + Transp.change + Evap.change + Mean_MAP.wy+ tmax6_change, data = pct))
 
+hist(pct.change$GPP.change - pct.change$ET.change) # GPP increases more than ET at most sites
+hist(pct.change$GPP.change - pct.change$Transp.change) # GPP increases more than TRansp at most sites
+hist(pct.change$GPP.change - pct.change$Evap.change) # GPP increases more than Evap at ~ half the sites
+hist(pct.change$Transp.change - pct.change$Evap.change) # Evap increases more than Transp at ~ half the sites
+
+summary(pct.change$GPP.change - pct.change$ET.change) 
+
+LPJ.GUESS.pct.change <- pct.change
+
 # add better maps as background
 
 library(maps)
@@ -2098,9 +2117,158 @@ png(height = 10, width = 7, units = "in", res= 300,"outputs/preliminaryplots/GUE
 delta.fcomp.change 
 dev.off()
 
+
+png(height = 20, width = 25, units = "in", res= 300,"outputs/preliminaryplots/GUESS_all_changes_map.png")
+plot_grid(delta.WUEet.change, 
+          deltaWUEt.change,
+          delta.GPP.change,
+          delta.transp.change, 
+          delta.precip.change, 
+          delta.Evap.change, 
+          delta.ET.change,
+          ncol = 23)
+dev.off()
+
+
 ggplot(pct.change, aes(GPP.change, Transp.change))+geom_point()+stat_smooth(method = "lm")
 ggplot(pct.change, aes(GPP.change, Evap.change))+geom_point()+stat_smooth(method = "lm")
 ggplot(pct.change, aes(GPP.change, ET.change))+geom_point()+stat_smooth(method = "lm")
 ggplot(pct.change, aes(GPP.change, Fcomp.change, color = PFT))+geom_point()+stat_smooth(method = "lm")
 ggplot(pct.change, aes(GPP.change, GWBI.change, color = PFT))+geom_point()+facet_wrap(~PFT)+stat_smooth(method = "lm")
 
+
+
+#-----------------------Plot deltaGPP-deltaET to see where GPP or ET is driving increased WUE--------------
+GUESS.850.1850<- GUESS.rm.site %>%  group_by(lat, lon, Site, PFT) %>% filter(Year >= 1849) %>% summarise(#WUEet.850.1850 = mean(WUEet, na.rm=TRUE),
+  WUE.et.850.1850 = mean(WUEet, na.rm=TRUE),
+  WUE.t.850.1850 = mean(WUEt, na.rm=TRUE),
+  GWBI.850.1850 = mean(GWBI, na.rm=TRUE),
+  MAP.wy.850.1850 = mean (precip_total_wtr_yr.mm, na.rm = TRUE), 
+  Tmax_6.850.1850 = mean(tair_max_6, na.rm =TRUE),
+  GPP.850.1850 = mean (GPP*1000, na.rm=TRUE),
+  ET.850.1850 = mean (ET, na.rm=TRUE),
+  Transp.850.1850 = mean (Transp, na.rm=TRUE),
+  Evap.850.1850 = mean (Evap, na.rm=TRUE),
+  Fcomp.850.1850 = mean(Fcomp, na.rm = TRUE))
+
+GUESS.1950.2011<- GUESS.rm.site %>%  group_by(lat, lon, Site, PFT) %>% filter(Year >= 1950) %>% summarise(#WUEet.850.1850 = mean(WUEet, na.rm=TRUE),
+  WUE.et.1950.2011 = mean(WUEet, na.rm=TRUE),
+  WUE.t.1950.2011 = mean(WUEt, na.rm=TRUE),
+  GWBI.1950.2011 = mean(GWBI, na.rm=TRUE),
+  MAP.wy.1950.2011 = mean (precip_total_wtr_yr.mm, na.rm = TRUE), 
+  Tmax_6.1950.2011 = mean(tair_max_6, na.rm =TRUE),
+  GPP.1950.2011 = mean (GPP*1000, na.rm=TRUE),
+  ET.1950.2011 = mean (ET, na.rm=TRUE),
+  Transp.1950.2011 = mean (Transp, na.rm=TRUE),
+  Evap.1950.2011 = mean (Evap, na.rm=TRUE),
+  Fcomp.1950.2011 = mean(Fcomp, na.rm = TRUE))
+
+guess.time.periods <- left_join(GUESS.1950.2011, GUESS.850.1850, by = c("lat", "lon", "Site", "PFT"))
+
+guess.mean.diff.change <- guess.time.periods %>% group_by(lat, lon, Site, PFT) %>% summarise(#WUEet.change = mean(((WUEet.1950.2011 - WUEet.850.1850)/WUEet.850.1850)*100, na.rm=TRUE),
+  WUEet.change = mean(((WUE.et.1950.2011 - WUE.et.850.1850)), na.rm=TRUE),
+  WUEt.change = mean(((WUE.t.1950.2011 - WUE.t.850.1850)), na.rm=TRUE),
+  precip.change = mean(((MAP.wy.1950.2011 - MAP.wy.850.1850)), na.rm=TRUE),
+  tmax6_change = mean((Tmax_6.1950.2011 - Tmax_6.850.1850), na.rm=TRUE),
+  GWBI.change = mean(((GWBI.1950.2011 - GWBI.850.1850)), na.rm=TRUE),
+  GPP.change = mean(((GPP.1950.2011 - GPP.850.1850)), na.rm=TRUE),
+  ET.change = mean(((ET.1950.2011 - ET.850.1850)), na.rm=TRUE),
+  Transp.change = mean(((Transp.1950.2011 - Transp.850.1850)), na.rm=TRUE), 
+  Evap.change = mean(((Evap.1950.2011 - Evap.850.1850)), na.rm=TRUE),
+  Fcomp.change = mean(((Fcomp.1950.2011 - Fcomp.850.1850)), na.rm=TRUE))
+
+
+
+ED2.850.1850<- ED2.rm.site %>%  group_by(lat, lon, Site, PFT) %>% filter(Year >= 1849) %>% summarise(#WUEet.850.1850 = mean(WUEet, na.rm=TRUE),
+  WUE.et.850.1850 = mean(WUEet, na.rm=TRUE),
+  WUE.t.850.1850 = mean(WUEt, na.rm=TRUE),
+  GWBI.850.1850 = mean(GWBI, na.rm=TRUE),
+  MAP.wy.850.1850 = mean (precip_total_wtr_yr.mm, na.rm = TRUE), 
+  Tmax_6.850.1850 = mean(tair_max_6, na.rm =TRUE),
+  GPP.850.1850 = mean (GPP*1000, na.rm=TRUE),
+  ET.850.1850 = mean (ET*-1, na.rm=TRUE),
+  Transp.850.1850 = mean (Transp, na.rm=TRUE),
+  Evap.850.1850 = mean (Evap, na.rm=TRUE),
+  Fcomp.850.1850 = mean(Fcomp, na.rm = TRUE))
+
+ED2.1950.2011<- ED2.rm.site %>%  group_by(lat, lon, Site, PFT) %>% filter(Year >= 1950) %>% summarise(#WUEet.850.1850 = mean(WUEet, na.rm=TRUE),
+  WUE.et.1950.2011 = mean(WUEet, na.rm=TRUE),
+  WUE.t.1950.2011 = mean(WUEt, na.rm=TRUE),
+  GWBI.1950.2011 = mean(GWBI, na.rm=TRUE),
+  MAP.wy.1950.2011 = mean (precip_total_wtr_yr.mm, na.rm = TRUE), 
+  Tmax_6.1950.2011 = mean(tair_max_6, na.rm =TRUE),
+  GPP.1950.2011 = mean (GPP*1000, na.rm=TRUE), # GPP in gC/m2/s
+  ET.1950.2011 = mean (ET, na.rm=TRUE),  # ET in kgC/m2/s
+  Transp.1950.2011 = mean (Transp, na.rm=TRUE),
+  Evap.1950.2011 = mean (Evap, na.rm=TRUE),
+  Fcomp.1950.2011 = mean(Fcomp, na.rm = TRUE))
+
+ED2.time.periods <- left_join(ED2.1950.2011, ED2.850.1850, by = c("lat", "lon", "Site", "PFT"))
+
+ED2.mean.diff.change <- ED2.time.periods %>% group_by(lat, lon, Site, PFT) %>% summarise(#WUEet.change = mean(((WUEet.1950.2011 - WUEet.850.1850)/WUEet.850.1850)*100, na.rm=TRUE),
+  WUEet.change = mean(((WUE.et.1950.2011 - WUE.et.850.1850)), na.rm=TRUE),
+  WUEt.change = mean(((WUE.t.1950.2011 - WUE.t.850.1850)), na.rm=TRUE),
+  precip.change = mean(((MAP.wy.1950.2011 - MAP.wy.850.1850)), na.rm=TRUE),
+  tmax6_change = mean((Tmax_6.1950.2011 - Tmax_6.850.1850), na.rm=TRUE),
+  GWBI.change = mean(((GWBI.1950.2011 - GWBI.850.1850)), na.rm=TRUE),
+  GPP.change = mean(((GPP.1950.2011 - GPP.850.1850)), na.rm=TRUE),
+  ET.change = mean(((ET.1950.2011 - ET.850.1850)), na.rm=TRUE),
+  Transp.change = mean(((Transp.1950.2011 - Transp.850.1850)), na.rm=TRUE), 
+  Evap.change = mean(((Evap.1950.2011 - Evap.850.1850)), na.rm=TRUE),
+  Fcomp.change = mean(((Fcomp.1950.2011 - Fcomp.850.1850)), na.rm=TRUE),
+  GPP.ET.diff = mean(GPP.1950.2011 - GPP.850.1850))
+
+ggplot()+geom_histogram(data = ED2.mean.diff.change, aes(ET.change), fill = "blue")+
+  geom_histogram(data = ED2.mean.diff.change, aes(GPP.change), fill = "red")+geom_vline(aes(xintercept = 0), color = "grey", linetype = "dashed")
+
+ggplot()+geom_histogram(data = guess.mean.diff.change, aes(ET.change), fill = "blue")+
+  geom_histogram(data = guess.mean.diff.change, aes(GPP.change), fill = "red")+geom_vline(aes(xintercept = 0), color = "grey", linetype = "dashed")
+
+hist(ED2.mean.diff.change$GPP.change, xlim= c(-0.00001,0.00001))
+hist(ED2.mean.diff.change$GPP.change,xlim= c(-0.00000001,0.00000002))
+hist(ED2.mean.diff.change$ET.change, xlim= c(-0.00001,0.00001))
+
+hist(guess.mean.diff.change$GPP.change,xlim= c(-0.00000001,0.00000002))
+hist(guess.mean.diff.change$ET.change, xlim= c(-0.00001,0.00001))
+
+hist(abs(guess.mean.diff.change$GPP.change)/abs(guess.mean.diff.change$ET.change))
+summary(abs(ED2.mean.diff.change$GPP.change)/abs(ED2.mean.diff.change$ET.change))
+summary(abs(guess.mean.diff.change$GPP.change)/abs(guess.mean.diff.change$ET.change))
+
+hist(abs(guess.mean.diff.change$GPP.change)-abs(guess.mean.diff.change$ET.change))
+hist(ED2.mean.diff.change$GPP.change+ED2.mean.diff.change$ET.change)
+
+
+# what we want to compare is the mean change in GPP vs ET 
+
+ED2.uni <- ED2.pct.change %>% dplyr::select(-PFT, -Fcomp.change)
+ED2.unique <- unique(ED2.uni)
+ED2.unique$GPP.ET.diff <- ED2.unique$GPP.change - ED2.unique$ET.change
+ED2.unique$model <- "ED2"
+
+GUESS.uni <- LPJ.GUESS.pct.change %>% dplyr::select(-PFT, -Fcomp.change)
+GUESS.unique <- unique(GUESS.uni)
+GUESS.unique$GPP.ET.diff <- GUESS.unique$GPP.change - GUESS.unique$ET.change
+GUESS.unique$model <- "LPJ-GUESS"
+
+model.unique <- rbind(ED2.unique, GUESS.unique)
+ggplot()+geom_density(data = model.unique, aes(GPP.ET.diff, fill = model), binwidth = 5, alpha = 0.5)+theme_bw()+
+  geom_vline(aes(xintercept = 0), color = "grey", linetype = "dashed")+coord_flip()
+
+ggplot()+geom_density(data = model.unique, aes(ET.change, fill = model), binwidth = 5, alpha = 0.5)+theme_bw()+
+  geom_vline(aes(xintercept = 0), color = "grey", linetype = "dashed")+coord_flip()
+
+
+GPP.ET.mod <- ggplot(model.unique, aes(x=GPP.ET.diff, y=model, fill = model,adjust = 10, height = ..density..)) +
+  geom_density_ridges(
+    jittered_points = TRUE,
+    position = position_points_jitter(width = 0.05, height = 0),
+    point_shape = '|', point_size = 1, point_alpha = 1, stat = "density", bw = 4,
+  color = "cornsilk4")+geom_vline(aes(xintercept = 0), color = "black", linetype = "dashed")+
+  scale_fill_manual(name=" ", values=c("LPJ-GUESS"="#d95f02", "ED2"="#7570b3"))+
+  coord_flip()+ylab("")+xlab(expression("%"~Delta~GPP ~ - ~"%"~Delta~ET))+
+  theme_bw(base_size = 20)+theme(panel.grid = element_blank(), legend.position = c(0.75,0.2))
+
+png(height = 5, width = 5, units = "in", res = 300, "outputs/preliminaryplots/change_GPP_change_ET_mods.png")
+GPP.ET.mod
+dev.off()

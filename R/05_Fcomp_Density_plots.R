@@ -1231,7 +1231,7 @@ ED.CO2 <- readRDS("Data/ED2/ED2.CO2.rds")
 ED.GPP <- readRDS("Data/ED2/ED2.GPP.rds")
 ED.Evap <- readRDS("Data/ED2/ED2.Evap.rds")
 ED.Transp <- readRDS("Data/ED2/ED2.transp.rds")
-ED.ET <- ED.Evap + ED.Transp
+ED.ET <-  ED.Transp - ED.Evap
 
 # get the mean relative density (not sure if this is right--double check)
 sec2yr <- 1*60*60*24*365.25

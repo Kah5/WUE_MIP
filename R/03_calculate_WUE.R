@@ -98,10 +98,10 @@ calc.WUE <- function(model){
     if(model == "ED2"){
       sec2mo <- 60*60*24*30
       for (s in 1:length(site.list)){
-        IWUE[,s] <- GPP[,s]*1000/(transp[,s])*(VPD[,s])
-        WUEt[,s] <- GPP[,s]*1000/(transp[,s])
-        WUEi[,s] <- GPP[,s]*1000/Gc[,s] # convert to kg/m2/s
-        WUEet[,s] <- GPP[,s]*1000/(transp[,s]-evap[,s])
+        IWUE[,s] <- GPP[,s]*1000/(transp[,s])*(VPD[,s]) # convert GPP to to g/m2/s
+        WUEt[,s] <- GPP[,s]*1000/(transp[,s]) #  convert GPP to to g/m2/s
+        WUEi[,s] <- GPP[,s]*1000/Gc[,s] #  convert GPP to to g/m2/s
+        WUEet[,s] <- GPP[,s]*1000/(transp[,s]-evap[,s]) #  convert GPP to to g/m2/s
       }
       
       saveRDS(IWUE, "Data/ED2/ED2.IWUE.rds")
@@ -140,9 +140,9 @@ calc.WUE <- function(model){
       
       for (s in 1:length(site.list)){
         #IWUE[,s] <- GPP[,s]*1000/transp[,s]*(VPD2[,s])
-        WUEt[,s] <- GPP[,s]*1000/(transp[,s])
-        WUEet[,s] <- GPP[,s]*1000/(transp[,s]+evap[,s])
-        #WUEi[,s] <- GPP[,s]*1000/Gc[,s] # convert to kg/m2/s
+        WUEt[,s] <- GPP[,s]*1000/(transp[,s])  #convert GPP to to g/m2/s
+        WUEet[,s] <- GPP[,s]*1000/(transp[,s]+evap[,s]) #  convert GPP to to g/m2/s
+        #WUEi[,s] <- GPP[,s]*1000/Gc[,s] 
       }
       
       #saveRDS(IWUE, "Data/ED2/ED2.IWUE.rds")

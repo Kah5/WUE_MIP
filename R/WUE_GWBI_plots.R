@@ -19,6 +19,10 @@ ED2.fcomp.yr <- ED2.fcomp %>% group_by(Year, Site) %>% gather(key = "PFT", value
 #ED2.fcomp.yr <-  ED2.fcomp.yr %>% filter(PFT %in% unique(ED2.gwbi.clim.nona$PFT))
 ED2.fcomp.yr$Site <- as.character(ED2.fcomp.yr$Site)
 
+ png(height = 26, width = 16, units = "in", res = 300, "outputs/preliminaryplots/ED2_GPP_vs_ET.png")
+ ggplot(na.omit(ED2), aes(GPP, ET, color = Year))+geom_point()+stat_smooth()+facet_wrap(~Site)#+xlim(0,0.0075)+ylim(0,0.000075)#
+ dev.off()
+
 ED2.full <- left_join(ED2, ED2.fcomp.yr, by = c("Year", "Site", "PFT"))
 
 
@@ -2315,7 +2319,7 @@ GPP.ET.differences <- ggplot(GPP.ET.diff.unique, aes(x=GPP.ET.diff, y=model, fil
     position = position_points_jitter(width = 0.05, height = 0), bw = 0.0000009,
     point_shape = '|', point_size = 1, point_alpha = 1, stat = "density",
     color = "cornsilk4")+geom_vline(aes(xintercept = 0), color = "black", linetype = "dashed")+
-  scale_fill_manual(name=" ", values=c("LPJ-GUESS"="#d95f02", "ED2"="#7570b3"))+
+  scale_fill_manual(name=" ", values=c("LPJ-GUESS"="#d95f02", "ED2"="#1b9e77"))+
   coord_flip()+ylab("")+xlab(expression(Delta~GPP ~ - ~Delta~ET))+
   theme_bw(base_size = 20)+theme(panel.grid = element_blank(), legend.position = c(0.75,0.2))
 
@@ -2331,9 +2335,45 @@ ggplot(data = GPP.ET.diff.unique, aes(GPP.ET.class, tmax6_change, fill = model))
 ggplot()+geom_histogram(data = guess.mean.diff.change, aes(ET.change), fill = "blue", alpha = 0.5)+
   geom_histogram(data = guess.mean.diff.change, aes(GPP.change), fill = "red", alpha = 0.5)+geom_vline(aes(xintercept = 0), color = "grey", linetype = "dashed")
 
+ED2.time.periods$model <- "ED2"
+guess.time.periods$model <- "LPJ-GUESS"
+time.periods.both <- rbind(ED2.time.periods, guess.time.periods)
 
-hist(guess.mean.diff.change$GPP.change,xlim= c(-0.00000001,0.00000002))
-hist(guess.mean.diff.change$ET.change, xlim= c(-0.00001,0.00001))
+
+time.periods.both $model <- as.factor(time.periods.both$model)
+
+# reformat to plot with geom_density ridges:
+time.periods.gpp.et.mean <- time.periods.both %>% select(model, lon, lat, Site,ET.1950.2011, ET.850.1850, GPP.1950.2011, GPP.850.1850)%>%group_by(model, lon, lat, Site) %>%
+  gather(key = "timeperiod", value = "ET.GPP", ET.1950.2011:GPP.850.1850 )
+time.periods.both <- time.periods.gpp.et.mean %>% separate(timeperiod, c("variable", "timestart", "timeend")) %>% unite(period, c(timestart, timeend), sep = "-")
+
+ggplot()+geom_histogram(data = time.periods.both, aes(ET.GPP, fill = period), alpha = 0.5)+facet_grid(~model+variable)
+
+
+ET.means<- ggplot(time.periods.both[time.periods.both$variable %in% "ET",], aes(x=ET.GPP, y=model, fill = period, adjust = 10, height = ..density..)) +
+  geom_density_ridges(
+    jittered_points = TRUE,
+    position = position_points_jitter(width = 0.05, height = 0),alpha = 0.75,
+    point_shape = '|', point_size = 1, point_alpha = 1, stat = "density", #bw = 4,
+    color = "cornsilk4")+geom_vline(aes(xintercept = 0), color = "black", linetype = "dashed")+
+  scale_fill_manual(name=" ", values=c("1950-2011"="#b2182b", "850-1850"="#2166ac"))+
+  coord_flip()+ylab("")+xlab("Mean ET (kg/m2/s)")+
+  theme_bw(base_size = 20)+theme(panel.grid = element_blank(), legend.position = c(0.75,0.75))
+
+
+GPP.means <- ggplot(time.periods.both[time.periods.both$variable %in% "GPP",], aes(x=ET.GPP, y=model, fill = period, adjust = 10, height = ..density..)) +
+  geom_density_ridges(
+    jittered_points = TRUE,
+    position = position_points_jitter(width = 0.05, height = 0),alpha = 0.75,
+    point_shape = '|', point_size = 1, point_alpha = 1, stat = "density", #bw = 4,
+    color = "cornsilk4")+geom_vline(aes(xintercept = 0), color = "black", linetype = "dashed")+
+  scale_fill_manual(name=" ", values=c("1950-2011"="#b2182b", "850-1850"="#2166ac"))+
+  coord_flip()+ylab("")+xlab("Mean GPP (g/m2/s)")+
+  theme_bw(base_size = 20)+theme(panel.grid = element_blank(), legend.position = c(0.75,0.75))
+
+png(height = 15, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GPP.ET.means_GPP.ET.change.png")
+plot_grid(GPP.means, ET.means, GPP.ET.differences, ncol = 1, align = "hv", labels = "AUTO")
+dev.off()
 
 hist(abs(guess.mean.diff.change$GPP.change)/abs(guess.mean.diff.change$ET.change))
 summary(abs(ED2.mean.diff.change$GPP.change)/abs(ED2.mean.diff.change$ET.change))
@@ -2369,7 +2409,7 @@ GPP.ET.mod <- ggplot(model.unique, aes(x=GPP.ET.diff, y=model, fill = model,adju
     position = position_points_jitter(width = 0.05, height = 0),
     point_shape = '|', point_size = 1, point_alpha = 1, stat = "density", bw = 4,
   color = "cornsilk4")+geom_vline(aes(xintercept = 0), color = "black", linetype = "dashed")+
-  scale_fill_manual(name=" ", values=c("LPJ-GUESS"="#d95f02", "ED2"="#7570b3"))+
+  scale_fill_manual(name=" ", values=c("LPJ-GUESS"="#d95f02", "ED2"="#1b9e77"))+
   coord_flip()+ylab("")+xlab(expression("%"~Delta~GPP ~ - ~"%"~Delta~ET))+
   theme_bw(base_size = 20)+theme(panel.grid = element_blank(), legend.position = c(0.75,0.2))
 

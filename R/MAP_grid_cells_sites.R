@@ -69,10 +69,12 @@ lakes.subset <- quick.subset(ne_lakes, domain)
 all.itrdb.tr.sites <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+
   geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="white", fill = "grey")+
   geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = 'steelblue2')+ 
-  geom_raster(data = paleon, aes(lon, lat), fill = "grey10", alpha = 0.9)+
-  geom_point(data = TR.locs, aes(x = longitude, y = latitude), color = "red", fill = "red", shape = 24, size = 5)+
-  geom_point(data = rwl.age.ll.unique, aes(x = Longitude, y = Latitude), color = "blue", fill = "blue", shape = 24, size = 5)+
-  coord_cartesian(ylim = c(35.5, 49), xlim= c(-99,-66))+theme_bw(base_size = 22)+ylab("")+xlab("")
+  geom_raster(data = paleon, aes(lon, lat), alpha = 0.9,  fill = "grey10")+
+  geom_point(data = TR.locs, aes(x = longitude, y = latitude,fill = "ECOLOGICAL"), color = "red",  shape = 24, size = 5)+
+  geom_point(data = rwl.age.ll.unique, aes(x = Longitude, y = Latitude, fill = "ITRDB"), color = "blue", shape = 24, size = 5)+
+  scale_fill_manual(name=" ", values=c("ITRDB"="blue", "ECOLOGICAL"="red"))+
+  coord_cartesian(ylim = c(35.5, 49), xlim= c(-99,-66))+theme_bw(base_size = 22)+ylab("")+xlab("")+
+  theme(legend.position = c(0.8,0.1), legend.background = element_blank())
 
 
 png(height = 12, width = 18, units = 'in', res=500,"outputs/PALEON_MODEL_MAP_with_ITRDB.png")

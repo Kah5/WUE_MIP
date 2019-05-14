@@ -2294,6 +2294,12 @@ ggplot(data = mean.diff.change, aes(lon, lat, fill = GPP.ET.diff))+geom_raster()
                                                                                                                           high="red", space ="Lab" )
 
 
+mean.diff.change.summmary <- mean.diff.change %>% filter(PFT %in% c("mean.gwbi", "Total.gwbi")) %>% group_by(model) %>% summarise(mean = mean(GWBI.change),
+                                                                                                                                  Ci.low = quantile(GWBI.change, 0.025),
+                                                                                                                                  Ci.high = quantile(GWBI.change, 0.975))
+ggplot(data = mean.diff.change.summmary , aes( x = model,y=mean, fill = model))+geom_bar(stat = "identity")+
+  geom_errorbar(aes(x = model, ymin = Ci.low, ymax = Ci.high), width = 0.1)+ylab("Mean change in Stem growth \n between past and modern")
+                                                                                                                                  
 
 delta.GPP.ET.change <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
   geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
@@ -2326,6 +2332,8 @@ GPP.ET.differences <- ggplot(GPP.ET.diff.unique, aes(x=GPP.ET.diff, y=model, fil
 png(height = 5, width = 5, units = "in", res = 300, "outputs/preliminaryplots/change_GPP_change_mean_ET_mods.png")
 GPP.ET.differences
 dev.off()
+
+
 
 GPP.ET.diff.unique$GPP.ET.class <- ifelse(GPP.ET.diff.unique$GPP.ET.diff >=0, "GPP", "ET")
 

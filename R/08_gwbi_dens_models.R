@@ -2003,6 +2003,9 @@ test.RWI <- readRDS( "outputs/gwbi_model/Lag4_cohort_re_clim/rwi_testdata.rds")
 test.GUESS <- readRDS( "outputs/gwbi_model/Lag4_cohort_re_clim/GUESS_testdata.rds")
 test.ED <- readRDS( "outputs/gwbi_model/Lag4_cohort_re_clim/ED_testdata.rds")
 
+train.RWI <- readRDS( "outputs/gwbi_model/Lag4_cohort_re_clim/rwi_traindata.rds")
+train.GUESS <- readRDS( "outputs/gwbi_model/Lag4_cohort_re_clim/GUESS_traindata.rds")
+train.ED <- readRDS( "outputs/gwbi_model/Lag4_cohort_re_clim/ED_traindata.rds")
 
 samp.rwi.period <- samp.rwi.period[[1]]
 samp.GUESS.period <- samp.GUESS.period[[1]]
@@ -2166,6 +2169,8 @@ b6.m.GUESS$model <- "LPJ-GUESS"
 
 
 # now combine all the beta1s together and make a modern past dotplot:
+a.m.TR$model <- "Tree Rings"
+a1.m <- bind_rows(a.m.TR, a.m.ED, a.m.GUESS)
 b1.m <- bind_rows(b1.m.TR, b1.m.ED, b1.m.GUESS)
 b2.m <- bind_rows(b2.m.TR, b2.m.ED, b2.m.GUESS)
 b3.m <- bind_rows(b3.m.TR, b3.m.ED, b3.m.GUESS)
@@ -2263,6 +2268,178 @@ plot_grid( b1.dot+theme(legend.position = "none", plot.margin = unit(c(-1, 0, 0,
            b5.dot+theme(legend.position = "none",plot.margin = unit(c(0, 0, 0, 0), "cm")),
            b6.dot+theme(legend.position = "none"), ncol = 3, align = "hv",axis = "tb", rel_heights = c(1,1,1,1,1,1))
 dev.off()
+
+
+# calculate mean differences between overall predicted tree growth under the same climate:
+precip.range <- c(-2.4571, 0.1661, 3.014)
+tmax.range <- c(-2.4571, 0.1661, 3.014)
+rel_gwbi_1<- c(0.05)
+rel_gwbi_2<- c(0.05)
+rel_gwbi_3<- c(0.05)
+rel_gwbi_4<- c(0.05)
+period_cd <- unique(test.ED$period_cd)
+model <- c("ED2", "LPJ-GUESS", "Tree Rings")
+meanMAP.sim.all <- expand.grid(precip.range, tmax.range, rel_gwbi_1, rel_gwbi_2, rel_gwbi_3, rel_gwbi_4, period_cd, model)
+colnames(meanMAP.sim.all) <- c("Precip", "tmax", "gwbi_1", "gwbi_2", "gwbi_3", "gwbi_4", "period", "model")
+
+head(samp.ED.period)
+head(samp.GUESS.period)
+head(samp.rwi.period)
+
+int.mcmc <- as.mcmc(samp.ED.period)
+int.mcmc.mat <- as.matrix(int.mcmc)
+int.mcmc.dat <- data.frame(int.mcmc.mat)
+
+meanMAP.sim <- meanMAP.sim.all[meanMAP.sim.all$model %in% "ED2",]
+meanMAP.sim<- expand.grid(precip.range, tmax.range, rel_gwbi_1, rel_gwbi_2, rel_gwbi_3, rel_gwbi_4, period_cd, model = "ED2", site.num = 1:220)
+colnames(meanMAP.sim) <- c("Precip", "tmax", "gwbi_1", "gwbi_2", "gwbi_3", "gwbi_4", "period", "model", "site.num")
+meanMAP.sim$site.num <- as.character(meanMAP.sim$site.num)
+
+int.1 <- matrix(rep(NA, nrow(int.mcmc.dat)*length(meanMAP.sim$tmax)), nrow = nrow(int.mcmc.dat))
+#meanMAP.sim.all <- expand.grid(precip.range, tmax.range, rel_gwbi_1, rel_gwbi_2, rel_gwbi_3, rel_gwbi_4, period_cd, model)
+#colnames(meanMAP.sim.all) <- c("Precip", "tmax", "gwbi_1", "gwbi_2", "gwbi_3", "gwbi_4", "period", "model")
+
+#test <- a1.m %>% group_by(num, variable) %>% spread(value, model)
+
+# use betas to generate pp given a value for site, structure, dbh, rwi1, rwi2, and varying T and MAP:
+
+for(i in 1:length(meanMAP.sim$tmax)){
+  # for struct.cohort == 1
+  int.1[,i] <- int.mcmc.dat[,paste0("alpha.", meanMAP.sim[i,"site.num"], ".")]+
+    int.mcmc.dat[,paste0("beta1.", meanMAP.sim[i,"period"], ".")]*meanMAP.sim[i,]$Precip+    
+    int.mcmc.dat[,paste0("beta2.", meanMAP.sim[i,"period"], ".")]*meanMAP.sim[i,"tmax"] + 
+    int.mcmc.dat[,paste0("beta3.", meanMAP.sim[i,"period"], ".")]*meanMAP.sim[i,"gwbi_1"]  + 
+    int.mcmc.dat[,paste0("beta4.", meanMAP.sim[i,"period"], ".")]*meanMAP.sim[i,"gwbi_2"] +
+    int.mcmc.dat[,paste0("beta5.", meanMAP.sim[i,"period"], ".")]*meanMAP.sim[i,"gwbi_3"] + 
+    int.mcmc.dat[,paste0("beta6.", meanMAP.sim[i,"period"], ".")] * (meanMAP.sim[i,"gwbi_4"])
+  
+  
+}
+
+
+# columns are the different degree-site scenario combinations
+meanMAP.sim$idval <- 1:length(meanMAP.sim$site)
+# rows are the mcmc values
+colnames(int.1) <- 1:length(meanMAP.sim$site)
+test.m <- melt(int.1)
+colnames(test.m) <- c("MCMC", "idval", "Ypred")
+full.pred <- left_join(test.m, meanMAP.sim, by = "idval")
+full.pred$RWI.pred <- full.pred$Ypred
+
+full.pred.ED <- full.pred
+
+# make predictions for GUESS:
+
+int.mcmc <- as.mcmc(samp.GUESS.period)
+int.mcmc.mat <- as.matrix(int.mcmc)
+int.mcmc.dat <- data.frame(int.mcmc.mat)
+
+meanMAP.sim <- meanMAP.sim.all[meanMAP.sim.all$model %in% "LPJ-GUESS",]
+meanMAP.sim<- expand.grid(precip.range, tmax.range, rel_gwbi_1, rel_gwbi_2, rel_gwbi_3, rel_gwbi_4, period_cd, model = "LPJ-GUESS", site.num = 1:220)
+colnames(meanMAP.sim) <- c("Precip", "tmax", "gwbi_1", "gwbi_2", "gwbi_3", "gwbi_4", "period", "model", "site.num")
+meanMAP.sim$site.num <- as.character(meanMAP.sim$site.num)
+
+int.1 <- matrix(rep(NA, nrow(int.mcmc.dat)*length(meanMAP.sim$tmax)), nrow = nrow(int.mcmc.dat))
+
+# use betas to generate pp given a value for site, structure, dbh, rwi1, rwi2, and varying T and MAP:
+
+for(i in 1:length(meanMAP.sim$tmax)){
+  # for struct.cohort == 1
+  int.1[,i] <- int.mcmc.dat[,paste0("alpha.", meanMAP.sim[i,"site.num"], ".")]+
+    int.mcmc.dat[,paste0("beta1.", meanMAP.sim[i,"period"], ".")]*meanMAP.sim[i,]$Precip+    
+    int.mcmc.dat[,paste0("beta2.", meanMAP.sim[i,"period"], ".")]*meanMAP.sim[i,"tmax"] + 
+    int.mcmc.dat[,paste0("beta3.", meanMAP.sim[i,"period"], ".")]*meanMAP.sim[i,"gwbi_1"]  + 
+    int.mcmc.dat[,paste0("beta4.", meanMAP.sim[i,"period"], ".")]*meanMAP.sim[i,"gwbi_2"] +
+    int.mcmc.dat[,paste0("beta5.", meanMAP.sim[i,"period"], ".")]*meanMAP.sim[i,"gwbi_3"] + 
+    int.mcmc.dat[,paste0("beta6.", meanMAP.sim[i,"period"], ".")] * (meanMAP.sim[i,"gwbi_4"])
+  
+  
+}
+
+
+# columns are the different degree-site scenario combinations
+meanMAP.sim$idval <- 1:length(meanMAP.sim$site)
+# rows are the mcmc values
+colnames(int.1) <- 1:length(meanMAP.sim$site)
+test.m <- melt(int.1)
+colnames(test.m) <- c("MCMC", "idval", "Ypred")
+full.pred <- left_join(test.m, meanMAP.sim, by = "idval")
+full.pred$RWI.pred <- full.pred$Ypred
+
+full.pred.GUESS <- full.pred
+
+
+# make predictions for RWI:
+
+
+int.mcmc <- as.mcmc(samp.rwi.period)
+int.mcmc.mat <- as.matrix(int.mcmc)
+int.mcmc.dat <- data.frame(int.mcmc.mat)
+
+meanMAP.sim <- meanMAP.sim.all[meanMAP.sim.all$model %in% "Tree Rings",]
+meanMAP.sim<- expand.grid(precip.range, tmax.range, rel_gwbi_1, rel_gwbi_2, rel_gwbi_3, rel_gwbi_4, period_cd, model = "Tree Rings", site.num = 1:16)
+colnames(meanMAP.sim) <- c("Precip", "tmax", "gwbi_1", "gwbi_2", "gwbi_3", "gwbi_4", "period", "model", "site.num")
+meanMAP.sim$site.num <- as.character(meanMAP.sim$site.num)
+
+int.1 <- matrix(rep(NA, nrow(int.mcmc.dat)*length(meanMAP.sim$tmax)), nrow = nrow(int.mcmc.dat))
+
+# use betas to generate pp given a value for site, structure, dbh, rwi1, rwi2, and varying T and MAP:
+
+for(i in 1:length(meanMAP.sim$tmax)){
+  # for struct.cohort == 1
+  int.1[,i] <- int.mcmc.dat[,paste0("alpha.", meanMAP.sim[i,"site.num"], ".")]+
+    int.mcmc.dat[,paste0("beta1.", meanMAP.sim[i,"period"], ".")]*meanMAP.sim[i,]$Precip+    
+    int.mcmc.dat[,paste0("beta2.", meanMAP.sim[i,"period"], ".")]*meanMAP.sim[i,"tmax"] + 
+    int.mcmc.dat[,paste0("beta3.", meanMAP.sim[i,"period"], ".")]*meanMAP.sim[i,"gwbi_1"]  + 
+    int.mcmc.dat[,paste0("beta4.", meanMAP.sim[i,"period"], ".")]*meanMAP.sim[i,"gwbi_2"] +
+    int.mcmc.dat[,paste0("beta5.", meanMAP.sim[i,"period"], ".")]*meanMAP.sim[i,"gwbi_3"] + 
+    int.mcmc.dat[,paste0("beta6.", meanMAP.sim[i,"period"], ".")] * (meanMAP.sim[i,"gwbi_4"])
+  
+  
+}
+
+
+# columns are the different degree-site scenario combinations
+meanMAP.sim$idval <- 1:length(meanMAP.sim$site)
+# rows are the mcmc values
+colnames(int.1) <- 1:length(meanMAP.sim$site)
+test.m <- melt(int.1)
+colnames(test.m) <- c("MCMC", "idval", "Ypred")
+full.pred <- left_join(test.m, meanMAP.sim, by = "idval")
+full.pred$RWI.pred <- full.pred$Ypred
+
+full.pred.TR <- full.pred
+
+full.pred.all <- rbind(full.pred.ED, full.pred.GUESS, full.pred.TR)
+
+
+allgrowth.summary <- full.pred.all %>% group_by(model,period) %>% dplyr::summarise(mean.pred = mean(exp(RWI.pred), na.rm =TRUE),
+                                                                             ci.low.pred=quantile(exp(RWI.pred), 0.025, na.rm =TRUE),
+                                                                             ci.high.pred=quantile(exp(RWI.pred), 0.975, na.rm =TRUE))
+
+
+ggplot(allgrowth.summary, aes(x=model,y= mean.pred, fill = period))+geom_bar(stat = "identity", position = "dodge")+
+  geom_errorbar(aes(ymin = ci.low.pred, ymax = ci.high.pred), position = "dodge")
+
+allgrowth.summary.byclim <- full.pred.all %>% group_by(model,period, tmax, Precip) %>% dplyr::summarise(mean.pred = mean(exp(RWI.pred), na.rm =TRUE),
+                                                                                   ci.low.pred=quantile(exp(RWI.pred), 0.025, na.rm =TRUE),
+                                                                                   ci.high.pred=quantile(exp(RWI.pred), 0.975, na.rm =TRUE))
+
+
+
+allgrowth.summary.byclim
+lowprecip<- allgrowth.summary.byclim[allgrowth.summary.byclim$Precip <= 0,]
+
+ggplot(lowprecip, aes(x=model,y= mean.pred, fill = period))+geom_bar(stat = "identity", position = "dodge")+
+  geom_errorbar(aes(ymin = ci.low.pred, ymax = ci.high.pred), position = "dodge")+facet_wrap(~tmax)
+
+allgrowth.summary.byclim$time<- ifelse(allgrowth.summary.byclim$period == 2, "1950-2011", "1895-1950")
+
+png(height = 5, width = 7, units = "in", res = 300, "outputs/gwbi_model/growth_model_comparison_all_models.png")
+ggplot(allgrowth.summary.byclim[allgrowth.summary.byclim$Precip == 0.1661 & allgrowth.summary.byclim$tmax == 0.1661,], aes(x=model,y= mean.pred, fill = time))+geom_bar(stat = "identity", position = "dodge")+
+  geom_errorbar(aes(ymin = ci.low.pred, ymax = ci.high.pred), position = position_dodge(width = 0.9), width = 0.3)+theme_bw(base_size = 20)+theme(panel.grid = element_blank())+ylab("Mean predicted Growth")+xlab("")+scale_fill_manual(values = c("blue", "red"), name = "Time Period")
+dev.off()
+
 # calculate mean differences between parameters:
 
 b1.class <- b1.m %>% group_by(num, model) %>% spread( key = variable, value = value)

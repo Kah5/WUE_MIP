@@ -1221,6 +1221,8 @@ saveRDS(RelDens, "outputs/data/GUESS/GUESS.RelDens.rds")
 # for model == "ED2"
 
 ED.reldens <- readRDS("outputs/data/ED2/ED2.RelDens.rds")
+ED.lai <- readRDS("Data/ED2/ED2.LAI.rds")
+ED.agb <- readRDS("Data/ED2/ED2.AGB.rds")
 ED.tair <- readRDS("Data/ED2/ED2.tair.rds")
 ED.precip <- readRDS("Data/ED2/ED2.precipf.rds")
 ED.IWUE <- readRDS("Data/ED2/ED2.IWUE.rds")
@@ -1243,9 +1245,12 @@ tair.y$Tair.C <- tair.y$Tair - 273.15
 precipf.y <- get.yrmeans(ED.precip, "precip")
 precipf.y$precip.mm <- precipf.y$precip*sec2yr # convert to mm
 
-IWUE.y <- get.yrmeans(ED.IWUE, "IWUE")
+IWUE.y <- get.yrmeans(df = ED.IWUE, var = "IWUE")
 WUEi.y <- get.yrmeans(ED.WUEi, "WUEi")
 WUEt.y <- get.yrmeans(ED.WUEt, "WUEt")
+WUEet.y <- get.yrmeans(ED.WUEet, "WUEet")
+LAI.y <- get.yrmeans(ED.lai, "LAI")
+AGB.y <- get.yrmeans(ED.agb, "AGB")
 CO2.y <- get.yrmeans(ED.CO2, "CO2")
 GPP.y <- get.yrmeans(ED.GPP, "GPP")
 evap.y <- get.yrmeans(ED.Evap, "Evap")
@@ -1254,7 +1259,7 @@ ET.y <- get.yrmeans(ED.ET, "ET")
 
 # use rGUESSuce to merge these all together
 all.y <- Reduce(function(x, y) merge(x, y, by = c("Year", "Site"),all=TRUE), list(reldens.y, IWUE.y, WUEt.y, WUEet.y,CO2.y,
-                                                                                  tair.y, precipf.y, ET.y, transp.y, evap.y, GPP.y))
+                                                                                  tair.y, precipf.y, ET.y, transp.y, evap.y, GPP.y, LAI.y, AGB.y))
 
 
 # use reduce to merge these all together
@@ -1382,11 +1387,16 @@ GUESS.precip <- readRDS("Data/LPJ-GUESS/lpj-guess.precipf.rds")
 #GUESS.IWUE <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.IWUE.rds")
 GUESS.WUEt <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.WUEt.rds")
 GUESS.WUEet <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.IWUEet.rds")
+#GUESS.LAI <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.LAI.rds")
+GUESS.LAI.PFT <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.LAI_PFT.rds")
+GUESS.AGB.PFT <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.AGB.rds")
 GUESS.GPP <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.GPP.rds")
 GUESS.Evap <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.Evap.rds")
 GUESS.Transp <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.Transp.rds")
 GUESS.ET <- GUESS.Evap + GUESS.Transp
 GUESS.CO2 <- ED2.CO2
+
+GUESS.LAI.PFT
 
 # get the mean relative density (not sure if this is right--double check)
 sec2yr <- 1*60*60*24*365.25
@@ -1402,6 +1412,8 @@ precipf.y$precip.mm <- precipf.y$precip*sec2yr # convert to mm
 #WUEi.y <- get.yrmeans(GUESS.WUEi, "WUEi")
 WUEt.y <- get.yrmeans(GUESS.WUEt, "WUEt")
 WUEet.y <- get.yrmeans(GUESS.WUEet, "WUEet")
+LAI.y <- get.yrmeans(GUESS.LAI, "LAI")
+AGB.y <- get.yrmeans(GUESS.AGB, "AGB")
 CO2.y <- get.yrmeans(GUESS.CO2, "CO2")
 GPP.y <- get.yrmeans(GUESS.GPP, "GPP")
 evap.y <- get.yrmeans(GUESS.Evap, "Evap")

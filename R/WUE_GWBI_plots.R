@@ -103,7 +103,9 @@ mean.850.1850 <- ED2.rm.site %>% group_by(lat, lon, Site, PFT) %>% filter(Year >
                                                                                                     ET.850.1850 = mean (ET, na.rm=TRUE),
                                                                                                     Transp.850.1850 = mean (Transp, na.rm=TRUE),
                                                                                                     Evap.850.1850 = mean (Evap, na.rm=TRUE),
-                                                                                                    Fcomp.850.1850 = mean(Fcomp, na.rm =TRUE))
+                                                                                                    Fcomp.850.1850 = mean(Fcomp, na.rm =TRUE),
+                                                                                                    Dens.850.1850 = mean(Dens, na.rm =TRUE), 
+                                                                                                    GS_agb.850.1850 =mean(GS_agb, na.rm = TRUE))
 
 
 
@@ -118,7 +120,9 @@ mean.1690.1850 <- ED2.rm.site %>% group_by(lat, lon, Site, PFT) %>% filter(Year 
                                                                                                        ET.1690.1850 = mean (ET, na.rm=TRUE),
                                                                                                        Transp.1690.1850 = mean (Transp, na.rm=TRUE),
                                                                                                        Evap.1690.1850 = mean (Evap, na.rm=TRUE),
-                                                                                                       Fcomp.1690.1850 = mean(Fcomp, na.rm =TRUE))
+                                                                                                       Fcomp.1690.1850 = mean(Fcomp, na.rm =TRUE),
+                                                                                                       Dens.1690.1850 = mean(Dens, na.rm =TRUE), 
+                                                                                                       GS_agb.1690.1850 =mean(GS_agb, na.rm = TRUE))
 
 
 
@@ -134,7 +138,9 @@ mean.1850.2011 <- ED2.rm.site %>% group_by(lat, lon, Site, PFT) %>% filter(Year 
                                                                                                       ET.1850.2011 = mean (ET, na.rm=TRUE),
                                                                                                       Transp.1850.2011 = mean (Transp, na.rm=TRUE),
                                                                                                       Evap.1850.2011 = mean (Evap, na.rm=TRUE),
-                                                                                                      Fcomp.1850.2011 = mean(Fcomp, na.rm =TRUE))
+                                                                                                      Fcomp.1850.2011 = mean(Fcomp, na.rm =TRUE),
+                                                                                                      Dens.1850.2011 = mean(Dens, na.rm =TRUE), 
+                                                                                                      GS_agb.1850.2011 =mean(GS_agb, na.rm = TRUE))
 
 
 
@@ -149,13 +155,15 @@ mean.1950.2011 <- ED2.rm.site %>% group_by(lat, lon, Site, PFT) %>% filter(Year 
                                                                                                        ET.1950.2011 = mean (ET, na.rm=TRUE),
                                                                                                        Transp.1950.2011 = mean (Transp, na.rm=TRUE),
                                                                                                        Evap.1950.2011 = mean (Evap, na.rm=TRUE),
-                                                                                                       Fcomp.1950.2011 = mean(Fcomp, na.rm =TRUE))
+                                                                                                       Fcomp.1950.2011 = mean(Fcomp, na.rm =TRUE),
+                                                                                                       Dens.1950.2011 = mean(Dens, na.rm =TRUE), 
+                                                                                                       GS_agb.1950.2011 =mean(GS_agb, na.rm = TRUE))
 
 
 
 
 
-# ggplot(mean.850.1850, aes(MAP.wy.850.1850, GWBI.850.1850, color = PFT))+geom_point()
+#ggplot(mean.850.1850, aes(MAP.wy.850.1850, Dens.850.1850))+geom_point()
 # ggplot(mean.850.1850, aes(IWUE.850.1850, GWBI.850.1850, color = PFT))+geom_point()
 # ggplot(mean.850.1850, aes(Tmax_6.850.1850, GWBI.850.1850, color = PFT))+geom_point()
 # ggplot(mean.850.1850, aes(Tmax_6.850.1850, MAP.wy.850.1850, color = IWUE.850.1850))+geom_point()
@@ -173,7 +181,9 @@ pct.change <- time.periods %>% group_by(lat, lon, Site, PFT) %>% summarise(IWUE.
                                                                            ET.change = mean(((ET.1950.2011 - ET.850.1850)/ET.850.1850)*100, na.rm=TRUE),
                                                                            Transp.change = mean(((Transp.1950.2011 - Transp.850.1850)/Transp.850.1850)*100, na.rm=TRUE), 
                                                                            Evap.change = mean(((Evap.1950.2011 - Evap.850.1850)/Evap.850.1850)*100, na.rm=TRUE),
-                                                                           Fcomp.change = mean(((Fcomp.1950.2011 - Fcomp.850.1850)/Fcomp.850.1850)*100, na.rm=TRUE))
+                                                                           Fcomp.change = mean(((Fcomp.1950.2011 - Fcomp.850.1850)/Fcomp.850.1850)*100, na.rm=TRUE),
+                                                                           Dens.change = mean(((Dens.1950.2011 - Dens.850.1850)/Dens.850.1850)*100, na.rm=TRUE),
+                                                                           GS_agb.change = mean(((GS_agb.1950.2011 - GS_agb.850.1850)/GS_agb.850.1850)*100, na.rm=TRUE))
 
 
 GWBI.WUE.change <- ggplot(pct.change, aes(IWUE.change, GWBI.change, color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())
@@ -197,6 +207,7 @@ WUE.t.temp.change <- ggplot(pct.change, aes(WUEt.change, tmax6_change, color = P
 GWBI.temp.change <- ggplot(pct.change, aes( tmax6_change, GWBI.change,color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())+xlab( "Change in Summer Maximum temperatures (degC)")+ylab("% change in GWBI")
 GWBI.precip.change <- ggplot(pct.change, aes( precip.change, GWBI.change,color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())+xlab( "% Change MAP")+ylab("% change in GWBI")
 
+ggplot(pct.change, aes(WUEet.change, Dens.change))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())
 
 
 # need to do this alsow for the full 20th century:
@@ -401,9 +412,84 @@ png(height = 4, width = 6, units = "in", res = 300, "outputs/preliminaryplots/ED
 Fcomp.tmax.change.prec
 dev.off()
 
+# correlation of WUE, tmax, and precip changes  with Density changes:
 
+dens.tmax6 <-  ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( tmax6_change, Dens.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+  #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
+  theme_bw()+theme(panel.grid = element_blank())+
+  scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("Change in Temperature DegC")+ylab("% change in Density")
 
-# plot the correlation of IWUE with climate variables:
+dens.precip <-  ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( precip.change, Dens.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
+   theme_bw()+theme(panel.grid = element_blank())+
+   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in Precipitation")+ylab("% change in Density")
+ 
+
+dens.IWUE <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( IWUE.change, Dens.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
+   theme_bw()+theme(panel.grid = element_blank())+
+   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in IWUE")+ylab("% change in Density")
+ 
+dens.WUEet <-  ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( WUEet.change, Dens.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
+   theme_bw()+theme(panel.grid = element_blank())+
+   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in WUEet")+ylab("% change in Density")
+ 
+dens.WUEt <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( WUEt.change, Dens.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
+   theme_bw()+theme(panel.grid = element_blank())+
+   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in WUEt")+ylab("% change in Density")
+
+legend.precip <- get_legend(dens.WUEt) 
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/ED2_density_changes_by_climate_wue_850_1850_compared1950_2011.png")
+plot_grid(dens.tmax6+theme(legend.position = "none"), 
+          dens.precip+theme(legend.position = "none"), 
+          dens.IWUE+theme(legend.position = "none"), 
+          dens.WUEet+theme(legend.position = "none"), 
+          dens.WUEt+theme(legend.position = "none"), 
+          legend.precip, ncol = 2)
+dev.off()
+
+ # correlation of WUE, tmax, and precip changes  with GS agb changes:
+ 
+AGB.tmax6 <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( tmax6_change, GS_agb.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
+   theme_bw()+theme(panel.grid = element_blank())+
+   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("Change in Temperature DegC")+ylab("% change in growing season AGB")
+ 
+AGB.precip <-  ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( precip.change, GS_agb.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
+   theme_bw()+theme(panel.grid = element_blank())+
+   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in Precipitation")+ylab("% change in growing season AGB")
+ 
+ 
+AGB.IWUE <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( IWUE.change, GS_agb.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
+   theme_bw()+theme(panel.grid = element_blank())+
+   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in IWUE")+ylab("% change in growing season AGB")
+ 
+AGB.WUEet <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( WUEet.change, GS_agb.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
+   theme_bw()+theme(panel.grid = element_blank())+
+   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in WUEet")+ylab("% change in growing season AGB")
+ 
+AGB.WUEt <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( WUEt.change, GS_agb.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
+   theme_bw()+theme(panel.grid = element_blank())+
+   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in WUEt")+ylab("% change in growing season AGB")
+ 
+
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/ED2_AGB_changes_by_climate_wue_850_1850_compared1950_2011.png")
+plot_grid(AGB.tmax6+theme(legend.position = "none"), 
+          AGB.precip+theme(legend.position = "none"), 
+          AGB.IWUE+theme(legend.position = "none"), 
+          AGB.WUEet+theme(legend.position = "none"), 
+          AGB.WUEt+theme(legend.position = "none"), 
+          legend.precip, ncol = 2)
+dev.off()
+ 
+ 
+ # plot the correlation of IWUE with climate variables:
 # for IWUE:
 precip.iwue.lm <- summary(lm(precip.change ~ IWUE.change, data = pct.change.site[pct.change.site$PFT %in% "conifer.late",]))
 IWUE.precip.change.prec <- ggplot(pct.change.site[pct.change.site$PFT %in% "conifer.late",], aes( precip.change, IWUE.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+theme_bw()+theme(panel.grid = element_blank())+
@@ -1110,9 +1196,33 @@ ggplot(GUESS.gwbi.clim.nona, aes(Year, GWBI, color = Site))+geom_point()+facet_w
 WUE.dens.dfs <- readRDS("outputs/data/GUESS/GUESS.alldat.yrmeans.rds")
 WUE.dens.dfs$Site <- substring(WUE.dens.dfs$Site, 2)
 
-GUESS <- left_join(WUE.dens.dfs, GUESS.gwbi.clim.nona, by = c("Site", "Year"))
+GUESS.df <- left_join(WUE.dens.dfs, GUESS.gwbi.clim.nona, by = c("Site", "Year"))
 
-hist(GUESS$WUEet)
+
+
+# read in PFT-level LAI and AGB, get totals, and save PFT level dfs:
+GUESS.LAI.PFT <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.LAI_PFT.rds")
+GUESS.AGB.PFT <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.AGB.rds")
+guess.pft.lab <- c("BNE", "BINE", "BNS", "BIBS", "TeBS", "TelBS", "TeBE",
+                   "TrBE", "TrlBE", "TrBR", "C3G", "C4G", "Total")
+load("Data/PalEON_siteInfo_all.RData")
+yrlyvar <- (0:1160) + 850
+dimnames(GUESS.LAI.PFT) <-  list(yrlyvar, paleon$num, guess.pft.lab)
+dimnames(GUESS.AGB.PFT) <-  list(yrlyvar, paleon$num, guess.pft.lab)
+
+GUESS.AGB.PFT.m <- melt(GUESS.AGB.PFT)
+GUESS.LAI.PFT.m <- melt(GUESS.LAI.PFT)
+colnames(GUESS.LAI.PFT.m) <- c("Year", "Site", "PFT", "LAI")
+colnames(GUESS.AGB.PFT.m) <- c("Year", "Site", "PFT", "AGB")
+
+ggplot(GUESS.AGB.PFT.m[GUESS.AGB.PFT.m$Site %in% "1",], aes(Year, AGB, color = PFT))+geom_point()
+ggplot(GUESS.LAI.PFT.m[GUESS.LAI.PFT.m$Site %in% "1",], aes(Year,LAI, color = PFT))+geom_point()
+
+LAI.tot <- GUESS.LAI.PFT.m %>% filter(PFT %in% "Total") %>% select(Year, Site, LAI)
+AGB.tot <- GUESS.AGB.PFT.m %>% filter(PFT %in% "Total")%>% select(Year, Site, PFT)
+
+GUESS.df2 <- merge(GUESS.df, LAI.tot, by = c("Site", "Year"))
+GUESS <- merge(GUESS.df2, AGB.tot, by = c("Site", "Year"))
 
 # read in Fcomp for ED2:
 GUESS.fcomp <- readRDS( "Data/GUESS.Fcomp.pft.rds")

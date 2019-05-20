@@ -1221,6 +1221,8 @@ saveRDS(RelDens, "outputs/data/GUESS/GUESS.RelDens.rds")
 # for model == "ED2"
 
 ED.reldens <- readRDS("outputs/data/ED2/ED2.RelDens.rds")
+ED.dens <- readRDS("Data/ED2/ED2.Dens.rds")
+#ED.dens <- readRDS("Data/ED2.Dens.pftonly.rds")
 ED.lai <- readRDS("Data/ED2/ED2.LAI.rds")
 ED.agb <- readRDS("Data/ED2/ED2.AGB.rds")
 ED.tair <- readRDS("Data/ED2/ED2.tair.rds")
@@ -1235,10 +1237,46 @@ ED.Evap <- readRDS("Data/ED2/ED2.Evap.rds")
 ED.Transp <- readRDS("Data/ED2/ED2.transp.rds")
 ED.ET <-  ED.Transp - ED.Evap
 
-# get the mean relative density (not sure if this is right--double check)
+
+timevec <- 1:13932
+month <- rep(1:12, 1161)
+yearsince  <- rep(0:1160, each =12)
+year <- yearsince + 850
+
+#convert list to array
+pft.lab=c("grass.c4", "tropic.early", "tropic.mid", "tropic.late", "grass.c3.temp", "pine.north", "pine.south", "conifer.late", "temp.decid.early", "temp.decid.mid", "temp.decid.late","ag1", "ag2", "ag3", "ag4","grass.c3.subtrop","Araucaria")
+dimnames(ED.dens) <- list(timevec, paleon$num, pft.lab)
+ED.dens.m <- melt(ED.dens)
+colnames(ED.dens.m) <- c("timevec", "Site", "PFT", "Dens")
+
+ggplot(ED.dens.m[ED.dens.m$Site %in% "1",], aes(Year, Dens, color = PFT))+geom_point()
+ED.DensTotal <- ED.dens.m %>% group_by(timevec, Site) %>% summarise (Dens = sum(Dens, na.rm =TRUE))
+ED.density <- dcast(ED.DensTotal, timevec ~ Site, value.var = "Dens")
+ED.density <- ED.density %>% select(-timevec)
+
+list.pft.dens <- function(x){
+  cat(x)
+  df <- ED.dens.m %>% filter(PFT %in% x) %>% select(-PFT)
+  PFT.density <- dcast(df, timevec ~ Site, FUN = mean, value.var = "Dens")
+  PFT.dens <- PFT.density %>% select(-timevec)
+  PFT.dens
+}
+
+list.pft <- c(pft.lab)
+PFT.density <- lapply(X = list.pft, FUN = list.pft.dens)
+
 sec2yr <- 1*60*60*24*365.25
 source("R/get.yrmeans.R")
+PFT.yr.dens <- lapply(PFT.density, FUN = get.yrmeans, var = "Dens")
+names(PFT.yr.dens) <- list.pft
+PFT.yr.dens.df <- do.call(rbind, PFT.yr.dens)
+PFT.yr.dens.df$PFT <- rep(names(PFT.yr.dens), sapply(PFT.yr.dens, nrow)) # add the site names
 
+saveRDS(PFT.yr.dens.df, "outputs/data/ED2/ED2_density_by_PFT.rds")
+
+
+# get the mean for each year:
+dens.y <- get.yrmeans(ED.density , "Dens")
 reldens.y <- get.yrmeans(ED.reldens, "Rel.Dens")
 tair.y <- get.yrmeans(ED.tair, "Tair")
 tair.y$Tair.C <- tair.y$Tair - 273.15
@@ -1258,7 +1296,7 @@ transp.y <- get.yrmeans(ED.Transp, "Transp")
 ET.y <- get.yrmeans(ED.ET, "ET")
 
 # use rGUESSuce to merge these all together
-all.y <- Reduce(function(x, y) merge(x, y, by = c("Year", "Site"),all=TRUE), list(reldens.y, IWUE.y, WUEt.y, WUEet.y,CO2.y,
+all.y <- Reduce(function(x, y) merge(x, y, by = c("Year", "Site"),all=TRUE), list(reldens.y, dens.y,IWUE.y, WUEt.y, WUEet.y,CO2.y,
                                                                                   tair.y, precipf.y, ET.y, transp.y, evap.y, GPP.y, LAI.y, AGB.y))
 
 
@@ -1335,7 +1373,7 @@ dev.off()
 # read in the agbi + total dens as well:
 dens.agbi.site <- readRDS( "outputs/data/ED2/ED2.agbi.dens.site.rds")
 #dens.agbi <- readRDS( "outputs/data/ED2/ED2.agbi.rds")
-
+dens.agbi.site <- dens.agbi.site %>% select(-Dens) # Dens is in both dfs that we join, and it is the same
 all.df <- left_join(all.y, dens.agbi.site, by = c("Year", "Site"))
 
 # in general, CO2, precip, and Tair all affect agbi at sites:
@@ -1382,6 +1420,7 @@ saveRDS(all.df, "outputs/data/ED2/dens_agbi_climate_ED2.rds")
 
 
 GUESS.reldens <- readRDS("outputs/data/GUESS/GUESS.RelDens.rds")
+GUESS.dens <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.Dens.rds")
 GUESS.tair <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.tair.rds")
 GUESS.precip <- readRDS("Data/LPJ-GUESS/lpj-guess.precipf.rds")
 #GUESS.IWUE <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.IWUE.rds")

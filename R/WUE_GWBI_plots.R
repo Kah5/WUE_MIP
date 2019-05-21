@@ -1909,6 +1909,7 @@ AGB.ABG <- ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], aes( 
 ggplot(pct.change.site, aes( Fcomp.change, AGB.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("Mean AGB 850-1850")+ylab("% change in AGB")
+dev.off()
 
 png(height = 12, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_AGB_changes_by_climate_wue_850_1850_compared1950_2011.png")
 plot_grid(AGB.tmax6+theme(legend.position = "none"), 
@@ -1975,6 +1976,78 @@ ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], aes( LAI.change,
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in LAI")+ylab("% change in Density")
 
+
+# assessment of which species are driving changes in Density in ED:
+# get all PFTs but Total Density
+GUESS.pfts.density <- GUESS.Dens.PFT.m  %>% filter(PFT %in% c("BNE", "BINE", "BNS", "BIBS", "TeBS", "TelBS", "TeBE",
+                                        "TrBE", "TrlBE", "TrBR", "C3G", "C4G"))# obj from above 
+colnames(GUESS.pfts.density) <- c("Year", "Site", "PFT", "PFTDens")
+
+# merge together all the total AGB, LAI, and Density 
+GUESS.wue <- merge(WUE.dens.dfs, Dens.tot, by = c("Site", "Year"))
+GUESS.wue2 <-  merge(GUESS.wue, AGB.tot, by = c("Site", "Year"))
+GUESS.yr <-  merge(GUESS.wue2, LAI.tot, by = c("Site", "Year"))
+
+# merge yearly total table with Density by PFT table:
+GUESS.dens.pfts.m <- merge(GUESS.dens.pft.m, GUESS.yr, by = c("Site", "Year"))
+ggplot(GUESS.dens.pfts.m, aes(Dens, PFTDens, color = PFT))+geom_point()+facet_wrap(~PFT)
+
+# get the grid cells increaseing in density & plot trajectory by PFT over the 20th century:
+pct.change.unique <- pct.change %>% select(lat, lon, Site, Dens.change, precip.change, AGB.change, LAI.change)
+pct.change.unique <- unique(pct.change.unique)
+GUESS.dens.pfts.change <- merge(GUESS.dens.pfts.m, pct.change.unique, by = c("Site"))
+
+
+# plot the PFT density by the % change in overall density
+all.change.dens.1750.2011 <- ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BNE", "BINE", "TeBS", "TelBS", "TeBE", "BelBS", "BIBS") & GUESS.dens.pfts.change$Year >=1750,], aes(Year, PFTDens, color = Dens.change))+
+  geom_point()+facet_wrap(~PFT)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "% change in Density")
+
+GUESS.dens.pfts.change$dens.change.facet <- ifelse(GUESS.dens.pfts.change$Dens.change >=15, ">=15%", "<=15%")
+
+change.dens.1750.2011 <- ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BNE", "BINE", "TeBS", "TelBS", "TeBE", "BelBS", "BIBS") & GUESS.dens.pfts.change$Year >=1750,], aes(Year, PFTDens, color = Dens.change))+
+  geom_point()+facet_grid(~PFT+dens.change.facet)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "% change in Density")
+
+
+ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BNE", "BINE", "TeBS", "TelBS", "TeBE", "BelBS", "BIBS") & GUESS.dens.pfts.change$Year >=1750,], aes(dens.change.facet, PFTDens, fill = PFT))+geom_boxplot()
+
+greaterthan25changedens<- ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BNE", "BINE", "TeBS", "TelBS", "TeBE", "BelBS", "BIBS") & GUESS.dens.pfts.change$Year >=1750 & GUESS.dens.pfts.change$dens.change.facet %in% ">=15%",], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
+#ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & GUESS.dens.pfts.change$Year >=1750 & GUESS.dens.pfts.change$Dens.change >= 15,], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
+#ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & GUESS.dens.pfts.change$Year >=1750 & GUESS.dens.pfts.change$Dens.change <= 10,], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
+lessthan0changedens <- ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BNE", "BINE", "TeBS", "TelBS", "TeBE", "BelBS", "BIBS") & GUESS.dens.pfts.change$Year >=1750 & GUESS.dens.pfts.change$Dens.change <= 0,], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
+
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_Dens_changes_by_site_declining_dens_850_1850_compared1950_2011.png")
+lessthan0changedens
+dev.off()
+
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_Dens_changes_by_site_15pctincreasing_dens_850_1850_compared1950_2011.png")
+greaterthan25changedens
+dev.off()
+
+
+#ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("conifer.late") & GUESS.dens.pfts.change$Year >=1750,], aes(LAI, Dens, color = precip.mm))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "MAP (mm)")
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_Dens_LAI_byPrecip_1750.png")
+ggplot(na.omit(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BINE") & GUESS.dens.pfts.change$Year >=1750,]), aes(LAI, Dens, color = precip.mm))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "MAP (mm)")
+dev.off()
+
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_Dens_Precip_byLAI_1750.png")
+ggplot(na.omit(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BINE") & GUESS.dens.pfts.change$Year >=1750,]), aes(precip.mm, Dens, color = LAI))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "LAI")
+dev.off()
+
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_Dens_AGB_byLAI_1750.png")
+ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BINE") & GUESS.dens.pfts.change$Year >=1750,], aes(AGB, Dens, color = LAI))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "LAI")
+dev.off()
+
+
+GUESS.dens.pfts.change$year.facet <- ifelse(GUESS.dens.pfts.change$Year >= 1950, ">1950", 
+                                         ifelse(GUESS.dens.pfts.change$Year >= 1850 & GUESS.dens.pfts.change$Year <= 1950, "1850-1950", 
+                                                "pre-1850"))
+png(height = 10, width = 8, units = "in", res = 300, "outputs/preliminaryplots/GUESS_Dens_AGB_byPrecip_timeperiod_facet.png")
+ggplot(na.omit(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BINE"),]), aes(AGB, Dens, color = precip))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "MAP (mm)")+facet_wrap(~year.facet)
+dev.off()
+
+png(height = 10, width = 8, units = "in", res = 300, "outputs/preliminaryplots/GUESS_Dens_LAI_byPrecip_timeperiod_facet.png")
+ggplot(na.omit(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BINE"),]), aes(LAI, Dens, color = precip))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "MAP (mm)")+facet_wrap(~year.facet)
+dev.off()
 
 # plot the correlation of WUEet with climate variables:
 # for WUEet:

@@ -22,17 +22,18 @@ rwl.itrdb.clim.nona.jun.scaled = scale(rwl.itrdb.clim.nona$tmax_06, center = TRU
 taxa.trans <- read.csv("Data/ITRDB/SPEC.CODE.TAXA.TRANSLATION.csv", stringsAsFactors = FALSE)
 rwl.itrdb.clim.pft <- left_join(rwl.itrdb.clim.nona, taxa.trans, by = "SPEC.CODE")
 
+rwl.itrdb.clim.pft$RWI <- as.numeric(rwl.itrdb.clim.pft$RWI) # why is rwi numeric
 
 #splits <- unlist(strsplit(unique(ED.sort_lag$Site), "X"))
-covert_site_codes <- data.frame(site_num = 1:length(unique(rwl.itrdb.clim.nona$studyCode)),
-                                studyCode = unique(rwl.itrdb.clim.nona$studyCode))
+covert_site_codes <- data.frame(site_num = 1:length(unique(rwl.itrdb.clim.pft$studyCode)),
+                                studyCode = unique(rwl.itrdb.clim.pft$studyCode))
 
-covert_spec_codes <- data.frame(spec = 1:length(unique(rwl.itrdb.clim.nona$LPJ.GUESS.PFT)),
-                                SPEC.CODE = unique(rwl.itrdb.clim.nona$LPJ.GUESS.PFT))
+covert_spec_codes <- data.frame(spec = 1:length(unique(rwl.itrdb.clim.pft$LPJ.GUESS.PFT)),
+                                LPJ.GUESS.PFT = unique(rwl.itrdb.clim.pft$LPJ.GUESS.PFT))
 
 
-rwl.itrdb.clim.nona <- left_join(rwl.itrdb.clim.nona, covert_site_codes, by = "studyCode")
-rwl.itrdb.clim.nona <- left_join(rwl.itrdb.clim.nona, covert_spec_codes, by = "LPJ.GUESS.PFT")
+rwl.itrdb.clim.pft1 <- left_join(rwl.itrdb.clim.pft, covert_site_codes, by = "studyCode")
+rwl.itrdb.clim.nona <- left_join(rwl.itrdb.clim.pft1, covert_spec_codes, by = "LPJ.GUESS.PFT")
 
 
 # clean up the data and split testing and training:
@@ -44,7 +45,7 @@ rwl.full$Age <- as.numeric(rwl.full$Age)
 
 # also get rid of 0 values??
 rwl.full <- rwl.full[!rwl.full$RWI == 0, ]
-
+head(rwl.full)
 
 # develop function to split testing and training datasets by species:
 split.test.train.spec <- function( spec){

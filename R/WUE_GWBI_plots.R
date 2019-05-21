@@ -644,12 +644,48 @@ change.dens.1750.2011 <- ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in%
 
 ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & ED.dens.pfts.change$Year >=1750,], aes(dens.change.facet, PFTDens, fill = PFT))+geom_boxplot()
   
-ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & ED.dens.pfts.change$Year >=1750 & ED.dens.pfts.change$dens.change.facet %in% ">=25%",], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
-ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & ED.dens.pfts.change$Year >=1750 & ED.dens.pfts.change$Dens.change >= 15,], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
-ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & ED.dens.pfts.change$Year >=1750 & ED.dens.pfts.change$Dens.change <= 10,], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
-ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & ED.dens.pfts.change$Year >=1750 & ED.dens.pfts.change$Dens.change <= 0,], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
+greaterthan25changedens<- ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & ED.dens.pfts.change$Year >=1750 & ED.dens.pfts.change$dens.change.facet %in% ">=25%",], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
+#ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & ED.dens.pfts.change$Year >=1750 & ED.dens.pfts.change$Dens.change >= 15,], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
+#ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & ED.dens.pfts.change$Year >=1750 & ED.dens.pfts.change$Dens.change <= 10,], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
+lessthan0changedens <- ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & ED.dens.pfts.change$Year >=1750 & ED.dens.pfts.change$Dens.change <= 0,], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
 
- # plot the correlation of IWUE with climate variables:
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/ED2_Dens_changes_by_site_declining_dens_850_1850_compared1950_2011.png")
+lessthan0changedens
+dev.off()
+
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/ED2_Dens_changes_by_site_25pctincreasing_dens_850_1850_compared1950_2011.png")
+greaterthan25changedens
+dev.off()
+
+
+#ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late") & ED.dens.pfts.change$Year >=1750,], aes(LAI, Dens, color = precip.mm))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "MAP (mm)")
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/ED2_Dens_LAI_byPrecip_1750.png")
+ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late") & ED.dens.pfts.change$Year >=1750,], aes(LAI, Dens, color = precip.mm))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "MAP (mm)")
+dev.off()
+
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/ED2_Dens_Precip_byLAI_1750.png")
+ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late") & ED.dens.pfts.change$Year >=1750,], aes(precip.mm, Dens, color = LAI))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "LAI")
+dev.off()
+
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/ED2_Dens_AGB_byLAI_1750.png")
+ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late") & ED.dens.pfts.change$Year >=1750,], aes(AGB, Dens, color = LAI))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "LAI")
+dev.off()
+
+
+ED.dens.pfts.change$year.facet <- ifelse(ED.dens.pfts.change$Year >= 1950, ">1950", 
+                                         ifelse(ED.dens.pfts.change$Year >= 1850 & ED.dens.pfts.change$Year <= 1950, "1850-1950", 
+                                                "pre-1850"))
+png(height = 10, width = 8, units = "in", res = 300, "outputs/preliminaryplots/ED2_Dens_AGB_byPrecip_timeperiod_facet.png")
+ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late"),], aes(AGB, Dens, color = precip))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "MAP (mm)")+facet_wrap(~year.facet)
+dev.off()
+
+png(height = 10, width = 8, units = "in", res = 300, "outputs/preliminaryplots/ED2_Dens_LAI_byPrecip_timeperiod_facet.png")
+ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late"),], aes(LAI, Dens, color = precip))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "MAP (mm)")+facet_wrap(~year.facet)
+dev.off()
+#ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late") & ED.dens.pfts.change$Year >=1750,], aes(LAI, Dens, color = precip.mm))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "MAP (mm)")+facet_wrap(~Site)
+
+
+# plot the correlation of IWUE with climate variables:
 # for IWUE:
 precip.iwue.lm <- summary(lm(precip.change ~ IWUE.change, data = pct.change.site[pct.change.site$PFT %in% "conifer.late",]))
 IWUE.precip.change.prec <- ggplot(pct.change.site[pct.change.site$PFT %in% "conifer.late",], aes( precip.change, IWUE.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+theme_bw()+theme(panel.grid = element_blank())+

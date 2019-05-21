@@ -622,8 +622,32 @@ ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], ae
  
 # assessment of which species are driving changes in Density in ED:
 ED.dens.pft <- readRDS("outputs/data/ED2/ED2_density_by_PFT.rds")
+ED.dens.all <- readRDS("outputs/data/ED2/dens_agbi_climate_ED2.rds")
+colnames(ED.dens.pft) <- c("Year", "Site", "PFTDens", "PFT")
+ED.dens.pfts <- merge(ED.dens.all, ED.dens.pft, by = c("Year", "Site"), all.y = TRUE)
+pct.change.site.fcomp$Site <- paste0("X",pct.change.site.fcomp$Site)
+
+ED.dens.pfts.change <- merge(ED.dens.pfts, pct.change.site.fcomp, by = c("Site", "PFT"))
+ggplot(ED.dens.pfts, aes(Dens, PFTDens, color = PFT))+geom_point()+facet_wrap(~PFT)
+
+# get the grid cells increaseing in density & plot trajectory by PFT over the 20th century:
+ggplot(ED.dens.pfts[ED.dens.pfts$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid"),], aes(Dens, PFTDens, color = PFT))+geom_point()+facet_wrap(~PFT)
+
+# plot the PFT density by the % change in overall density
+all.change.dens.1750.2011<- ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & ED.dens.pfts.change$Year >=1750,], aes(Year, PFTDens, color = Dens.change))+
+  geom_point()+facet_wrap(~PFT)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "% change in Density")
+ED.dens.pfts.change$dens.change.facet <- ifelse(ED.dens.pfts.change$Dens.change >=25, ">=25%", "<=25%")
+
+change.dens.1750.2011 <- ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & ED.dens.pfts.change$Year >=1750,], aes(Year, PFTDens, color = Dens.change))+
+  geom_point()+facet_grid(~PFT+dens.change.facet)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "% change in Density")
 
 
+ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & ED.dens.pfts.change$Year >=1750,], aes(dens.change.facet, PFTDens, fill = PFT))+geom_boxplot()
+  
+ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & ED.dens.pfts.change$Year >=1750 & ED.dens.pfts.change$dens.change.facet %in% ">=25%",], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
+ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & ED.dens.pfts.change$Year >=1750 & ED.dens.pfts.change$Dens.change >= 15,], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
+ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & ED.dens.pfts.change$Year >=1750 & ED.dens.pfts.change$Dens.change <= 10,], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
+ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & ED.dens.pfts.change$Year >=1750 & ED.dens.pfts.change$Dens.change <= 0,], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
 
  # plot the correlation of IWUE with climate variables:
 # for IWUE:

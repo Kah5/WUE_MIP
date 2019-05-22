@@ -28,12 +28,12 @@ rwl.itrdb.clim.pft$RWI <- as.numeric(rwl.itrdb.clim.pft$RWI) # why is rwi numeri
 covert_site_codes <- data.frame(site_num = 1:length(unique(rwl.itrdb.clim.pft$studyCode)),
                                 studyCode = unique(rwl.itrdb.clim.pft$studyCode))
 
-covert_spec_codes <- data.frame(spec = 1:length(unique(rwl.itrdb.clim.pft$LPJ.GUESS.PFT)),
-                                LPJ.GUESS.PFT = unique(rwl.itrdb.clim.pft$LPJ.GUESS.PFT))
+covert_spec_codes <- data.frame(spec = 1:length(unique(rwl.itrdb.clim.pft$ED.PFT)),
+                                ED.PFT = unique(rwl.itrdb.clim.pft$ED.PFT))
 
 
 rwl.itrdb.clim.pft1 <- left_join(rwl.itrdb.clim.pft, covert_site_codes, by = "studyCode")
-rwl.itrdb.clim.nona <- left_join(rwl.itrdb.clim.pft1, covert_spec_codes, by = "LPJ.GUESS.PFT")
+rwl.itrdb.clim.nona <- left_join(rwl.itrdb.clim.pft1, covert_spec_codes, by = "ED.PFT")
 
 
 # clean up the data and split testing and training:
@@ -48,14 +48,14 @@ rwl.full <- rwl.full[!rwl.full$RWI == 0, ]
 head(rwl.full)
 
 # save rwl.full with GUESS PFTS:
-saveRDS(rwl.full, "Data/ITRDB/full.clim.prism.GUESS.PFTS.rds")
+saveRDS(rwl.full, "Data/ITRDB/full.clim.prism.ED.PFTS.rds")
 
 # develop function to split testing and training datasets by species:
 split.test.train.spec <- function( spec){
 
-      spec.full <- rwl.full[rwl.full$LPJ.GUESS.PFT %in% spec,]
+      spec.full <- rwl.full[rwl.full$ED.PFT %in% spec,]
       
-      spec.full$spec <- ifelse(spec.full$LPJ.GUESS.PFT %in% spec, 1, 2)
+      spec.full$spec <- ifelse(spec.full$ED.PFT %in% spec, 1, 2)
       
       covert_site_codes.spec <- data.frame(site_num.spec = 1:length(unique(spec.full$studyCode)),
                                            studyCode = unique(spec.full$studyCode))
@@ -68,14 +68,14 @@ split.test.train.spec <- function( spec){
       test.spec <- spec.df[!msk,]
       
       
-      saveRDS(test.spec, paste0("outputs/ITRDB_models/train_test_data/GUESS_PFT_train_", spec, "_nimble.rds"))
-      saveRDS(test.spec, paste0("outputs/ITRDB_models/train_test_data/GUESS_PFT_test_", spec, "_nimble.rds"))
+      saveRDS(test.spec, paste0("outputs/ITRDB_models/train_test_data/ED_PFT_train_", spec, "_nimble.rds"))
+      saveRDS(test.spec, paste0("outputs/ITRDB_models/train_test_data/ED_PFT_test_", spec, "_nimble.rds"))
 
       cat(spec)
 }
 
 
-spec.list  <- as.character( unique(rwl.full$LPJ.GUESS.PFT))
+spec.list  <- as.character( unique(rwl.full$ED.PFT))
 
 
 for(i in 1:length(spec.list)){

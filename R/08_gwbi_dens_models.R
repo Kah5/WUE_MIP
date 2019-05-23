@@ -2435,6 +2435,7 @@ ggplot(lowprecip, aes(x=model,y= mean.pred, fill = period))+geom_bar(stat = "ide
 
 allgrowth.summary.byclim$time<- ifelse(allgrowth.summary.byclim$period == 2, "1950-2011", "1895-1950")
 
+
 png(height = 5, width = 7, units = "in", res = 300, "outputs/gwbi_model/growth_model_comparison_all_models.png")
 ggplot(allgrowth.summary.byclim[allgrowth.summary.byclim$Precip == 0.1661 & allgrowth.summary.byclim$tmax == 0.1661,], aes(x=model,y= mean.pred, fill = time))+geom_bar(stat = "identity", position = "dodge")+
   geom_errorbar(aes(ymin = ci.low.pred, ymax = ci.high.pred), position = position_dodge(width = 0.9), width = 0.3)+theme_bw(base_size = 20)+theme(panel.grid = element_blank())+ylab("Mean predicted Growth")+xlab("")+scale_fill_manual(values = c("blue", "red"), name = "Time Period")

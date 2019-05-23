@@ -149,7 +149,7 @@ run.nimble.spec <- function(spec, train.test.dir,niter, burnin, thin, nchains){
 for(i in 1:length(spec.list)){
 run.nimble.spec(spec = spec.list[i], 
                 train.test.dir = "outputs/ITRDB_models/train_test_data/",
-                niter = 25000, burnin= 200, thin = 20, nchains = 3)
+                niter = 5000, burnin= 200, thin = 1, nchains = 3)
   
   
 

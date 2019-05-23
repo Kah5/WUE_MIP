@@ -21,6 +21,17 @@ all.summaries <- lapply(all.params.chain1, summary)
 
 names(all.params.chain1) <-c("BeIBS.gwbi", "BIBS.gwbi","BINE.gwbi", "BINE.gwbi", "TeBE.gwbi", "TeBS.gwbi", "Total.gwbi") #spec #spec
 
+all.params.chains.df <- lapply(all.params.chain1, function(x){dfmcmc <- data.frame(x)})
+for(i in 1:length(names(all.params.chain1))){
+  all.params.chains.df[[i]]$mcmc <- 1:1240
+}
+names(all.params.chains.df) <-c("BeIBS.gwbi", "BIBS.gwbi","BINE.gwbi", "BINE.gwbi", "TeBE.gwbi", "TeBS.gwbi", "Total.gwbi") #spec #spec
+all.params.chains.dfs <- do.call(rbind, all.params.chains.df)
+all.params.chains.dfs$species <- rep(names(all.params.chains.df), sapply(all.params.chains.df, nrow)) # add the species code names
+
+write.csv(all.params.chains.dfs, "outputs/gwbi_model/LPJ_GUESS_time_re/parameters_full_mcmc.csv", row.names = FALSE)
+
+
 # save traceplots
 for(i in 1:length(spec)){
   png(height = 6, width = 12, units = "in", res = 200, paste0("outputs/gwbi_model/LPJ_GUESS_time_re/traceplot_", spec[i],".png"))

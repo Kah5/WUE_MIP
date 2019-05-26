@@ -67,6 +67,11 @@ ggplot(na.omit(pft.summary[pft.summary$variable2 %in% "beta1",]), aes(timeclass,
   ylab("Precipitation Sensitivity(Beta1) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~decidious, ncol = 2, scales = "free_y")
 
 
+ggplot(na.omit(pft.summary[pft.summary$variable2 %in% "beta2",]), aes(timeclass, mean, color = model))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = model), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+  ylab("Tmax Sensitivity(Beta1) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~species, ncol = 2, scales = "free_y")
+
+
 # calculate the difference between climate sensitivities between guess and itrdb
 
 
@@ -100,6 +105,8 @@ params.class <- b1.class %>% select (model, mcmc,  species, parameter, grouped_i
 
 params.class$pct_change <- ((params.class$Modern - params.class$Past))
 
+
+
 params.diff <- params.class %>% group_by(model, species, parameter) %>% summarise(mean = mean(pct_change, na.rm=TRUE),
                                                          ci.low = quantile(pct_change, 0.025, na.rm=TRUE), 
                                                          ci.high = quantile(pct_change, 0.975, na.rm=TRUE))
@@ -109,8 +116,10 @@ params.diff$species2 <- ifelse(params.diff$species %in% c("BNE", "BINE"),"BNE/BI
 # while the actual parameter estimates vary across GUESS and ITRDB datasets, the direction of drought sensitivity differences between the two time periods are similar in some species. 
 
 # plot average change in drought sensitivity
+
+params.diff$model <- factor(params.diff$model, levels = c("LPJ-GUESS", "ITRDB"))
 pct.drought.change <- ggplot(params.diff[params.diff$parameter %in% "beta1" & !params.diff$species2 %in% c("Total", NA),], aes( x=model, y = mean, fill = model))+geom_bar(stat="identity")+geom_errorbar( aes(ymin = ci.low, ymax = ci.high, width = 0.25), size = 1.5, position = position_dodge(width=0.5))+
-  scale_fill_manual(values = c('#1b9e77','#d95f02', '#7570b3'))+theme_bw(base_size = 35)+theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+  scale_fill_manual(values = c('#d95f02', '#7570b3'))+theme_bw(base_size = 35)+theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("drought sensitvity change \n between Modern and Past")+facet_wrap(~species2, scales = "free_y")
 
 png(height = 9, width = 20, units = "in", res = 300, "outputs/itrdb_model_compare/pct_change_drought_senstivity_ITRDB_GUESS_PFTS.png")
@@ -118,7 +127,7 @@ pct.drought.change
 dev.off()
 
 pct.temp.change <- ggplot(params.diff[params.diff$parameter %in% "beta2" & !params.diff$species2 %in% c("Total", NA),], aes( x=model, y = mean, fill = model))+geom_bar(stat="identity")+geom_errorbar( aes(ymin = ci.low, ymax = ci.high, width = 0.25), size = 1.5, position = position_dodge(width=0.5))+
-  scale_fill_manual(values = c('#1b9e77','#d95f02', '#7570b3'))+theme_bw(base_size = 35)+theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+  scale_fill_manual(values = c('#d95f02', '#7570b3'))+theme_bw(base_size = 35)+theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("June Tmax sensitvity change \n between Modern and Past")+facet_wrap(~species2, scales = "free_y")
 
 png(height = 9, width = 20, units = "in", res = 300, "outputs/itrdb_model_compare/pct_change_tmax_senstivity_ITRDB_GUESS_PFTS.png")
@@ -127,15 +136,15 @@ dev.off()
 
 
 pct.lag1.change <- ggplot(params.diff[params.diff$parameter %in% "beta3" & !params.diff$species2 %in% c("Total", NA),], aes( x=model, y = mean, fill = model))+geom_bar(stat="identity")+geom_errorbar( aes(ymin = ci.low, ymax = ci.high, width = 0.25), size = 1.5, position = position_dodge(width=0.5))+
-  scale_fill_manual(values = c('#1b9e77','#d95f02', '#7570b3'))+theme_bw(base_size = 35)+theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+  scale_fill_manual(values = c('#d95f02', '#7570b3'))+theme_bw(base_size = 35)+theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("change in lag -1 parameter \n between Modern and Past")+facet_wrap(~species2, scales = "free_y")
 
 png(height = 9, width = 20, units = "in", res = 300, "outputs/itrdb_model_compare/pct_change_lag1_senstivity_ITRDB_GUESS_PFTS.png")
 pct.lag1.change
 dev.off()
 
-pct.lag1.change <- ggplot(params.diff[params.diff$parameter %in% "beta4" & !params.diff$species2 %in% c("Total", NA),], aes( x=model, y = mean, fill = model))+geom_bar(stat="identity")+geom_errorbar( aes(ymin = ci.low, ymax = ci.high, width = 0.25), size = 1.5, position = position_dodge(width=0.5))+
-  scale_fill_manual(values = c('#1b9e77','#d95f02', '#7570b3'))+theme_bw(base_size = 35)+theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+pct.lag2.change <- ggplot(params.diff[params.diff$parameter %in% "beta4" & !params.diff$species2 %in% c("Total", NA),], aes( x=model, y = mean, fill = model))+geom_bar(stat="identity")+geom_errorbar( aes(ymin = ci.low, ymax = ci.high, width = 0.25), size = 1.5, position = position_dodge(width=0.5))+
+  scale_fill_manual(values = c('#d95f02', '#7570b3'))+theme_bw(base_size = 35)+theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("change in lag -1 parameter \n between Modern and Past")+facet_wrap(~species2, scales = "free_y")
 
 png(height = 9, width = 20, units = "in", res = 300, "outputs/itrdb_model_compare/pct_change_lag2_senstivity_ITRDB_GUESS_PFTS.png")
@@ -143,7 +152,7 @@ pct.lag2.change
 dev.off()
 
 pct.lag3.change <- ggplot(params.diff[params.diff$parameter %in% "beta5" & !params.diff$species2 %in% c("Total", NA),], aes( x=model, y = mean, fill = model))+geom_bar(stat="identity")+geom_errorbar( aes(ymin = ci.low, ymax = ci.high, width = 0.25), size = 1.5, position = position_dodge(width=0.5))+
-  scale_fill_manual(values = c('#1b9e77','#d95f02', '#7570b3'))+theme_bw(base_size = 35)+theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+  scale_fill_manual(values = c('#d95f02', '#7570b3'))+theme_bw(base_size = 35)+theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("change in lag -1 parameter \n between Modern and Past")+facet_wrap(~species2, scales = "free_y")
 
 png(height = 9, width = 20, units = "in", res = 300, "outputs/itrdb_model_compare/pct_change_lag3_senstivity_ITRDB_GUESS_PFTS.png")

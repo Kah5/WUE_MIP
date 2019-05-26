@@ -2475,28 +2475,31 @@ pct.temp.change <- ggplot(beta2.diff, aes( x=model, y = mean, fill = model))+geo
 
 
 #---------------WUE response to climate in models and in data-----------------
-mod <- lm(IWUE ~ gwbi + Precip.scaled + Temp.jja.scaled  + Site, data = train.GUESS)
+mod <- lm(WUEet ~ gwbi + Precip.scaled + Temp.jja.scaled  + Site, data = train.GUESS)
 summary(mod)
 
 
 
 
-mod <- lm(rel.IWUE ~ Precip.scaled + Temp.jja.scaled+ CO2+ Site, data = train.GUESS)
+mod <- lm(rel.WUEet ~ Precip.scaled + Temp.jja.scaled+ CO2+ Site, data = train.GUESS)
 summary(mod)
 
-modED <- lm(IWUE ~  Precip.scaled + Temp.jja.scaled + CO2 + Site, data = train.ED[!is.infinite(train.ED$IWUE),])
+modED <- lm(WUEet ~  Precip.scaled + Temp.jja.scaled + CO2 + Site, data = train.ED[!is.infinite(train.ED$IWUE),])
 summary(modED)
 
-ggplot(train.ED[train.ED$WUEt <= 100,], aes(Year, IWUE))+geom_point()
-ggplot(train.GUESS, aes(Year, IWUE))+geom_point()
+ggplot(train.ED[train.ED$WUEt <= 100,], aes(Year, WUEet))+geom_point()
+ggplot(train.GUESS, aes(Year, WUEet))+geom_point()
 
 
 # estimate mean iWUE by cohort:
 
-DiffIWUE <- train.ED %>% group_by(period) %>% summarise(IWUE = mean(IWUE, na.rm = TRUE),
-                                                        IWUEt = mean(WUEt, na.rm = TRUE))
+DiffIWUE <- full.df %>% group_by(period, Model, Site) %>% summarise(WUEet = mean(WUEet, na.rm = TRUE),
+                                                        IWUEt = mean(WUEt, na.rm = TRUE)) %>% select(-IWUEt) %>%  spread(period, WUEet)
 
-DiffIWUE.GUESS <- train.GUESS %>% group_by(period) %>% summarise(IWUE = mean(IWUE, na.rm = TRUE),
+
+DiffIWUE$WUEetdiff <- DiffIWUE$`modern-industrial` - DiffIWUE$`industrial-past`
+
+DiffIWUE.GUESS <- train.GUESS %>% group_by(period) %>% summarise(WUEet = mean(WUEet, na.rm = TRUE),
                                                                  IWUEt = mean(WUEt, na.rm = TRUE))
 
 

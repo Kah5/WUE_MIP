@@ -420,7 +420,8 @@ guess.gwbi.clim.nona$Temp.jun.scaled = as.vector(scale(guess.gwbi.clim.nona$tair
 guess.gwbi.clim.nona.jun.scaled = scale(guess.gwbi.clim.nona$tair_max_6, center = TRUE, scale = TRUE)
 
 saveRDS(guess.gwbi.clim.nona, "Data/GUESS_gwbi_pft_clim.rds")
-#splits <- unlist(strsplit(unique(ED.sort_lag$Site), "X"))
+guess.gwbi.clim.nona <- readRDS( "Data/GUESS_gwbi_pft_clim.rds")
+
 covert_site_codes <- data.frame(site_num = 1:length(unique(guess.gwbi.clim.nona$Site)),
                                 Site = unique(guess.gwbi.clim.nona$Site))
 
@@ -461,7 +462,7 @@ split.test.train.spec <- function( spec ){
   test.spec <- spec.df[!msk,]
   
   
-  saveRDS(test.spec, paste0("outputs/gwbi_model/train_test_data/train_LPJ", spec, "_nimble.rds"))
+  saveRDS(train.spec, paste0("outputs/gwbi_model/train_test_data/train_LPJ", spec, "_nimble.rds"))
   saveRDS(test.spec, paste0("outputs/gwbi_model/train_test_data/test_LPJ", spec, "_nimble.rds"))
   
   cat(spec)
@@ -497,7 +498,7 @@ split.test.train.spec.recent <- function( spec ){
   test.spec <- spec.df[!msk,]
   
   
-  saveRDS(test.spec, paste0("outputs/gwbi_model/train_test_data/train_LPJ_recent", spec, "_nimble.rds"))
+  saveRDS(train.spec, paste0("outputs/gwbi_model/train_test_data/train_LPJ_recent", spec, "_nimble.rds"))
   saveRDS(test.spec, paste0("outputs/gwbi_model/train_test_data/test_LPJ_recent", spec, "_nimble.rds"))
   
   cat(spec)
@@ -505,7 +506,7 @@ split.test.train.spec.recent <- function( spec ){
 
 
 spec.list  <- as.character( unique(rwl.recent$PFT))
-
+#split.test.train.spec.recent("Total.gwbi")
 
 for(i in 1:length(spec.list)){
   split.test.train.spec.recent(spec.list[i])

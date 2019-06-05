@@ -483,7 +483,7 @@ split.test.train.spec <- function( spec ){
   test.spec <- spec.df[!msk,]
   
   
-  saveRDS(test.spec, paste0("outputs/gwbi_model/train_test_data/train_ED2", spec, "_nimble.rds"))
+  saveRDS(train.spec, paste0("outputs/gwbi_model/train_test_data/train_ED2", spec, "_nimble.rds"))
   saveRDS(test.spec, paste0("outputs/gwbi_model/train_test_data/test_ED2", spec, "_nimble.rds"))
   
   cat(spec)
@@ -518,8 +518,7 @@ split.test.train.spec.recent <- function( spec ){
   train.spec <- spec.df[msk,]
   test.spec <- spec.df[!msk,]
   
-  
-  saveRDS(test.spec, paste0("outputs/gwbi_model/train_test_data/train_ED2_recent", spec, "_nimble.rds"))
+  saveRDS(train.spec, paste0("outputs/gwbi_model/train_test_data/train_ED2_recent", spec, "_nimble.rds"))
   saveRDS(test.spec, paste0("outputs/gwbi_model/train_test_data/test_ED2_recent", spec, "_nimble.rds"))
   
   cat(spec)

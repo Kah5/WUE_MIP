@@ -90,8 +90,10 @@ ggplot(all.met.summary, aes(lon, lat, fill = Mean_tair_max_6))+geom_raster()
 
 ED2.rm.site <- left_join(all.met.summary, ED2.rm , by = c("lon", "lat"))
 
-ggplot(ED2.rm.site[ED2.rm.site$Site %in% "1",], aes(Year, IWUE, color = Mean_tair_max_6))+geom_point()+geom_line()+stat_smooth()
+ggplot(ED2.rm.site[ED2.rm.site$Site %in% "5",], aes(Year, WUEet, color = Mean_tair_max_6))+geom_point()+geom_line()+stat_smooth()
 
+# for ED, remove WUE values that are over 
+ED2.rm.site<- ED2.rm.site %>% filter(WUEet >= 0  & WUEet <=100)
 # get the change in %WUE over between 850-1850 and 1950-present
 mean.850.1850 <- ED2.rm.site %>% group_by(lat, lon, Site, PFT) %>% filter(Year >= 1849) %>% summarise(IWUE.850.1850 = mean(IWUE, na.rm=TRUE),
                                                                                                       WUE.et.850.1850 = mean(WUEet, na.rm=TRUE),
@@ -429,38 +431,48 @@ dens.tmax6 <-  ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "coni
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("Change in Temperature DegC")+ylab("% change in Density")
+dens.tmax6.lm <- summary(lm(Dens.change ~ tmax6_change,pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
 
 dens.precip <-  ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( precip.change, Dens.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
    #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
    theme_bw()+theme(panel.grid = element_blank())+
    scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in Precipitation")+ylab("% change in Density")
- 
+dens.precip.lm <- summary(lm(Dens.change ~ precip.change,pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
+
 
 dens.IWUE <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( IWUE.change, Dens.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
    #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
    theme_bw()+theme(panel.grid = element_blank())+
    scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in IWUE")+ylab("% change in Density")
- 
+dens.IWUE.lm <- summary(lm(Dens.change ~ IWUE.change, pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
+
+
 dens.WUEet <-  ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( WUEet.change, Dens.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
    #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
    theme_bw()+theme(panel.grid = element_blank())+
    scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in WUEet")+ylab("% change in Density")
- 
+dens.WUEet.lm <- summary(lm(Dens.change ~ WUEet.change,pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
+
+
 dens.WUEt <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( WUEt.change, Dens.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
    #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
    theme_bw()+theme(panel.grid = element_blank())+
    scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in WUEt")+ylab("% change in Density")
+dens.WUEt.lm <- summary(lm(Dens.change ~ WUEt.change, pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
 
 
 dens.AGB <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( AGB.change, Dens.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in AGB")+ylab("% change in Density")
+dens.AGB.lm <- summary(lm(Dens.change ~ AGB.change, pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
+
 
 dens.LAI <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( AGB.change, Dens.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in LAI")+ylab("% change in Density")
+dens.LAI.lm <- summary(lm(Dens.change ~ LAI.change, pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
 
 
 dens.fcomp <- ggplot(pct.change.site.fcomp, aes( Dens.change, Fcomp.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
@@ -488,42 +500,56 @@ AGB.tmax6 <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conife
    #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
    theme_bw()+theme(panel.grid = element_blank())+
    scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("Change in Temperature DegC")+ylab("% change in AGB")
+AGB.tmax6.lm <- summary(lm(AGB.change ~ tmax6_change,pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
+
  
 AGB.precip <-  ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( precip.change, AGB.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
    #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
    theme_bw()+theme(panel.grid = element_blank())+
    scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in Precipitation")+ylab("% change in AGB")
- 
+AGB.precip.lm <- summary(lm(AGB.change ~ precip.change,pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
+
  
 AGB.IWUE <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( IWUE.change, AGB.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
    #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
    theme_bw()+theme(panel.grid = element_blank())+
    scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in IWUE")+ylab("% change in AGB")
- 
+AGB.IWUE.lm <- summary(lm(AGB.change ~ IWUE.change,pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
+
+
 AGB.WUEet <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( WUEet.change, AGB.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
    #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
    theme_bw()+theme(panel.grid = element_blank())+
    scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in WUEet")+ylab("% change in AGB")
+AGB.WUEet.lm <- summary(lm(AGB.change ~ WUEet.change,pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
+
  
 AGB.WUEt <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( WUEt.change, AGB.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
    #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
    theme_bw()+theme(panel.grid = element_blank())+
    scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in WUEt")+ylab("% change in AGB")
+AGB.WUEt.lm <- summary(lm(AGB.change ~ WUEt.change,pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
+
  
 AGB.ABG <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( AGB.orig, AGB.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("Mean AGB 850-1850")+ylab("% change in AGB")
+AGB.AGB.lm <- summary(lm(AGB.change ~ AGB.orig, pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
+
 
 AGB.dens <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes(  Dens.change,AGB.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in Density")+ylab("% change in AGB")
+AGB.dens.lm <- summary(lm(AGB.change ~ Dens.change,pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
+
 
 AGB.LAI <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( LAI.change, AGB.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in LAI")+ylab("% change in AGB")
+AGB.LAI.lm <- summary(lm(AGB.change ~ LAI.change,pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
 
 
 agb.fcomp <- ggplot(pct.change.site.fcomp, aes( AGB.change, Fcomp.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
@@ -540,6 +566,7 @@ ggplot(pct.change.site.fcomp, aes( Dens.change, AGB.change, color = Mean_MAP.wy)
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("Mean AGB 850-1850")+ylab("% change in AGB")
 
+dev.off()
 
 png(height = 12, width = 6, units = "in", res = 300, "outputs/preliminaryplots/ED2_AGB_changes_by_climate_wue_850_1850_compared1950_2011.png")
 plot_grid(AGB.tmax6+theme(legend.position = "none"), 
@@ -561,38 +588,47 @@ LAI.tmax6 <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conife
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("Change in Temperature DegC")+ylab("% change in LAI")
+LAI.tmax6.lm <- summary(lm(LAI.change ~ tmax6_change,pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
 
 LAI.precip <-  ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( precip.change, LAI.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in Precipitation")+ylab("% change in LAI")
+LAI.precip.lm <- summary(lm(LAI.change ~ precip.change, pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
 
 
 LAI.IWUE <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( IWUE.change, LAI.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in IWUE")+ylab("% change in LAI")
+LAI.IWUE.lm <- summary(lm(LAI.change ~ IWUE.change, pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
+
 
 LAI.WUEet <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( WUEet.change, LAI.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in WUEet")+ylab("% change in LAI")
+LAI.WUEet.lm <- summary(lm(LAI.change ~ WUEet.change, pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
+
 
 LAI.WUEt <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( WUEt.change, LAI.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in WUEt")+ylab("% change in LAI")
+LAI.WUEt.lm <- summary(lm(LAI.change ~ WUEt.change, pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
+
 
 LAI.dens <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes(  Dens.change,LAI.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in Density")+ylab("% change in LAI")
+LAI.dens.lm <- summary(lm(LAI.change ~ Dens.change, pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
+
 
 LAI.AGB <- ggplot(pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",], aes( AGB.change, LAI.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
-  #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
-  theme_bw()+theme(panel.grid = element_blank())+
+    theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in AGB")+ylab("% change in LAI")
-
+LAI.AGB.lm <- summary(lm(LAI.change ~ AGB.change, pct.change.site.fcomp[pct.change.site.fcomp$PFT %in% "conifer.late",]))
 
 LAI.fcomp <- ggplot(pct.change.site.fcomp, aes( LAI.change, Fcomp.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
@@ -601,7 +637,7 @@ LAI.fcomp <- ggplot(pct.change.site.fcomp, aes( LAI.change, Fcomp.change, color 
 
 
 png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/ED2_LAI_changes_by_climate_wue_850_1850_compared1950_2011.png")
-plot_grid(LAI.tmax6+theme(legend.position = "none"), 
+plot_grid(LAI.tmax6+theme(legend.position = "none") , 
           LAI.precip+theme(legend.position = "none"), 
           LAI.IWUE+theme(legend.position = "none"), 
           LAI.WUEet+theme(legend.position = "none"), 
@@ -615,20 +651,42 @@ dev.off()
 
 png(height = 12, width = 12, units = "in", res = 300, "outputs/preliminaryplots/ED2_LAI_AGB_Dens_changes_by_climate_850_1850_compared1950_2011.png")
 
-plot_grid(dens.WUEet, 
-          dens.tmax6,
-          dens.precip,
+plot_grid(dens.WUEet + annotate(geom = "text", x = 1, y = 55, label = paste("p = ", round(dens.WUEet.lm$coefficients[2,4], 5), "\n",
+                                                                            ifelse(round(dens.WUEet.lm$coefficients[2,4], 5) >= 0, paste("Rsq = ", round(dens.WUEet.lm$r.squared, 3)), " "))), 
           
-          LAI.WUEet, 
-          LAI.tmax6, 
-          LAI.precip, 
+          dens.tmax6+ annotate(geom = "text", x = 1, y = 55, label = paste("p = ", round(dens.tmax6.lm$coefficients[2,4], 5), "\n",
+                                                                           ifelse(round(dens.tmax6.lm$coefficients[2,4], 5) >= 0, paste("Rsq = ", round(dens.tmax6.lm$r.squared, 3)), " "))), 
           
-          AGB.WUEet, 
-          AGB.tmax6, 
-          AGB.precip, 
-          AGB.dens, 
-          LAI.AGB, 
-          LAI.dens,
+          dens.precip+ annotate(geom = "text", x = 1, y = 55, label = paste("p = ", round(dens.tmax6.lm$coefficients[2,4], 5), "\n",
+                                                                            ifelse(round(dens.tmax6.lm$coefficients[2,4], 5) >= 0, paste("Rsq = ", round(dens.tmax6.lm$r.squared, 3)), " "))), 
+          
+          LAI.WUEet+ annotate(geom = "text", x = 1, y = 55, label = paste("p = ", round(LAI.WUEet.lm$coefficients[2,4], 5), "\n",
+                              ifelse(round(LAI.WUEet.lm$coefficients[2,4], 5) >= 0, paste("Rsq = ", round(LAI.WUEet.lm$r.squared, 3)), " "))), 
+          
+          LAI.tmax6 + annotate(geom = "text", x = 1, y = 55, label = paste("p = ", round(LAI.tmax6.lm$coefficients[2,4], 5),  "\n",
+                               ifelse(round(LAI.tmax6.lm$coefficients[2,4], 5) >= 0, paste("Rsq = ", round(LAI.tmax6.lm$r.squared, 3)), " "))),
+          
+          LAI.precip+ annotate(geom = "text", x = 1, y = 55, label = paste("p = ", round(LAI.precip.lm$coefficients[2,4], 5),  "\n",
+                                ifelse(round(LAI.precip.lm$coefficients[2,4], 5) >= 0, paste("Rsq = ", round(LAI.precip.lm$r.squared, 3)), " "))),
+          
+          AGB.WUEet+ylim(-16, 60)+ annotate(geom = "text", x = 1, y = 55, label = paste("p = ", round(AGB.WUEet.lm$coefficients[2,4], 5),  "\n",
+                                                                          ifelse(round(AGB.WUEet.lm$coefficients[2,4], 5) >= 0, paste("Rsq = ", round(AGB.WUEet.lm$r.squared, 3)), " "))),
+          
+          AGB.tmax6+ylim(-16, 60)+ annotate(geom = "text", x = 1, y = 55, label = paste("p = ", round(AGB.tmax6.lm$coefficients[2,4], 5),  "\n",
+                                                                          ifelse(round(AGB.tmax6.lm$coefficients[2,4], 5) >= 0, paste("Rsq = ", round(AGB.tmax6.lm$r.squared, 3)), " "))),
+          
+          AGB.precip+ylim(-16, 60)+ annotate(geom = "text", x = 1, y = 55, label = paste("p = ", round(AGB.precip.lm$coefficients[2,4], 5),  "\n",
+                                                                           ifelse(round(AGB.precip.lm$coefficients[2,4], 5) >= 0, paste("Rsq = ", round(AGB.precip.lm$r.squared, 3)), " "))),
+          
+          AGB.dens+ylim(-16, 60)+ annotate(geom = "text", x = 5, y = 55, label = paste("p = ", round(AGB.dens.lm$coefficients[2,4], 5),  "\n",
+                                                                         ifelse(round(AGB.precip.lm$coefficients[2,4], 5) >= 0, paste("Rsq = ", round(AGB.precip.lm$r.squared, 3)), " "))),
+          
+          LAI.AGB+ylim(-16, 60)+ annotate(geom = "text", x = 5, y = 55, label = paste("p = ", round(LAI.AGB.lm$coefficients[2,4], 5),  "\n",
+                                                                        ifelse(round(LAI.AGB.lm$coefficients[2,4], 5) >= 0, paste("Rsq = ", round(LAI.AGB.lm$r.squared, 3)), " "))),
+          
+          LAI.dens+ylim(-16, 60)+ annotate(geom = "text", x = 5, y = 55, label = paste("p = ", round(LAI.dens.lm$coefficients[2,4], 5),  "\n",
+                                                                         ifelse(round(LAI.dens.lm$coefficients[2,4], 5) >= 0, paste("Rsq = ", round(LAI.dens.lm$r.squared, 3)), " "))),
+          
           ncol = 3)
 
 dev.off()
@@ -1413,7 +1471,7 @@ WUE.dens.dfs$Site <- substring(WUE.dens.dfs$Site, 2)
 
 GUESS.df <- left_join(WUE.dens.dfs, GUESS.gwbi.clim.nona, by = c("Site", "Year"))
 
-
+summary(GUESS.df$WUEet)
 
 # read in PFT-level LAI and AGB, get totals, and save PFT level dfs:
 GUESS.LAI.PFT <- readRDS("Data/LPJ-GUESS/LPJ-GUESS.LAI_PFT.rds")
@@ -1458,7 +1516,7 @@ GUESS.full <- left_join(GUESS, GUESS.fcomp, by = c("Year", "Site", "PFT"))
 
 
 # remove the outliers:
-GUESS.rm <- GUESS.full[GUESS.full$WUEet <= 500, ]
+GUESS.rm <- GUESS.full[GUESS.full$WUEet <= 500 & GUESS.full$WUEet > 0, ]
 
 # remove the outliers:
 # remove the outliers:
@@ -1653,9 +1711,9 @@ Fcomp.WUEt.change <- ggplot(pct.change, aes(WUEt.change, Fcomp.change, color = P
 GWBI.temp.change <- ggplot(pct.change, aes( tmax6_change, GWBI.change,color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())+xlab( "Change in Summer Maximum temperatures (degC)")+ylab("% change in GWBI")
 GWBI.precip.change <- ggplot(pct.change, aes( precip.change, GWBI.change,color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())+xlab( "% Change MAP")+ylab("% change in GWBI")
 
-ggplot(pct.change, aes( tmax6_change,Dens.change, color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())
-ggplot(pct.change, aes( precip.change, Dens.change, color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())
-ggplot(pct.change, aes( precip.change, LAI.change, color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())
+#ggplot(pct.change, aes( tmax6_change,Dens.change, color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())
+#ggplot(pct.change, aes( precip.change, Dens.change, color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())
+#ggplot(pct.change, aes( precip.change, LAI.change, color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())
 
 
 # need to do this alsow for the full 20th century:
@@ -1867,11 +1925,13 @@ dens.tmax6 <-  ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], a
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("Change in Temperature DegC")+ylab("% change in Density")
+dens.tmax6.lm <- summary(lm(Dens.change ~ tmax6_change, data = pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]))
 
 dens.precip <-  ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], aes( precip.change, Dens.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in Precipitation")+ylab("% change in Density")
+dens.precip.lm <- summary(lm(Dens.change ~ precip.change, data = pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]))
 
 
 
@@ -1879,11 +1939,13 @@ dens.WUEet <-  ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], a
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in WUEet")+ylab("% change in Density")
+dens.WUEet.lm <- summary(lm(Dens.change ~ WUEet.change, data = pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]))
 
 dens.WUEt <- ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], aes( WUEt.change, Dens.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in WUEt")+ylab("% change in Density")
+dens.WUEt.lm <- summary(lm(Dens.change ~ WUEt.change, data = pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]))
 
 legend.precip <- get_legend(dens.WUEt) 
 png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_density_changes_by_climate_wue_850_1850_compared1950_2011.png")
@@ -1901,11 +1963,14 @@ AGB.tmax6 <- ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], aes
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("Change in Temperature DegC")+ylab("% change in AGB")
+AGB.tmax6.lm <- summary(lm(AGB.change ~ tmax6_change, data = pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]))
+
 
 AGB.precip <-  ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], aes( precip.change, AGB.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in Precipitation")+ylab("% change in AGB")
+AGB.precip.lm <- summary(lm(AGB.change ~ precip.change, data = pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]))
 
 
 
@@ -1913,21 +1978,26 @@ AGB.WUEet <- ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], aes
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in WUEet")+ylab("% change in AGB")
+AGB.WUEet.lm <- summary(lm(AGB.change ~ WUEet.change, data = pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]))
+
 
 AGB.WUEt <- ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], aes( WUEt.change, AGB.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in WUEt")+ylab("% change in AGB")
+AGB.WUEt.lm <- summary(lm(AGB.change ~ WUEt.change, data = pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]))
 
 AGB.ABG <- ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], aes( AGB.orig, AGB.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("Mean AGB 850-1850")+ylab("% change in AGB")
+AGB.AGB.lm <- summary(lm(AGB.change ~ AGB.orig, data = pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]))
 
 AGB.dens <- ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], aes(Dens.change , AGB.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% change in Density")+ylab("% change in AGB")
+AGB.dens.lm <- summary(lm(AGB.change ~ Dens.change, data = pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]))
 
 
 ggplot(pct.change.site, aes( Fcomp.change, AGB.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+
@@ -1952,37 +2022,37 @@ LAI.tmax6 <- ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], aes
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("Change in Temperature DegC")+ylab("% change in LAI")
+LAI.tmax6.lm <- summary(lm(LAI.change ~ tmax6_change, data = pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]))
 
 LAI.precip <-  ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], aes( precip.change, LAI.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in Precipitation")+ylab("% change in LAI")
-
-
-LAI.IWUE <- ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], aes( IWUE.change, LAI.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
-  #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
-  theme_bw()+theme(panel.grid = element_blank())+
-  scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in IWUE")+ylab("% change in LAI")
+LAI.precip.lm <- summary(lm(LAI.change ~ precip.change, data = pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]))
 
 LAI.WUEet <- ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], aes( WUEet.change, LAI.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in WUEet")+ylab("% change in LAI")
+LAI.WUEet.lm <- summary(lm(LAI.change ~ WUEet.change, data = pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]))
 
 LAI.WUEt <- ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], aes( WUEt.change, LAI.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% Change in WUEt")+ylab("% change in LAI")
+LAI.WUEt.lm <- summary(lm(LAI.change ~ WUEt.change, data = pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]))
 
 LAI.dens <- ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], aes(Dens.change , LAI.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% change in Density")+ylab("% change in LAI")
+LAI.dens.lm <- summary(lm(LAI.change ~ Dens.change, data = pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]))
 
 LAI.AGB <- ggplot(pct.change.site[pct.change.site$PFT %in% "Total.gwbi",], aes(AGB.change , LAI.change, color = Mean_MAP.wy))+geom_point(size = 0.5)+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   #geom_text(data = p.vals.tmax6.m , aes(label = paste("p =", value, sig), x = 1, y = -75), color = "black")+
   theme_bw()+theme(panel.grid = element_blank())+
   scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Site MAP")+xlab("% change in AGB")+ylab("% change in LAI")
+LAI.AGB.lm <- summary(lm(LAI.change ~ AGB.change, data = pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]))
 
 
 png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_LAI_changes_by_climate_wue_850_1850_compared1950_2011.png")
@@ -1996,20 +2066,42 @@ dev.off()
 
 png(height = 12, width = 12, units = "in", res = 300, "outputs/preliminaryplots/GUESS_LAI_AGB_Dens_changes_by_climate_850_1850_compared1950_2011.png")
 
-plot_grid(dens.WUEet, 
-          dens.tmax6,
-          dens.precip,
+plot_grid(dens.WUEet+ylim(-16, 60)+annotate(geom = "text", x = 5, y = 45, label = paste("p = ", round(dens.WUEet.lm$coefficients[2,4], 5), "\n",
+                                                                            ifelse(round(dens.WUEet.lm$coefficients[2,4], 5) <= 0.05, paste("Rsq = ", round(dens.WUEet.lm$r.squared, 3)), " "))), 
           
-          LAI.WUEet, 
-          LAI.tmax6, 
-          LAI.precip, 
+          dens.tmax6+ylim(-16, 60)+ annotate(geom = "text", x = 1, y = 45, label = paste("p = ", round(dens.tmax6.lm$coefficients[2,4], 5), "\n",
+                                                                           ifelse(round(dens.tmax6.lm$coefficients[2,4], 5) <= 0.05, paste("Rsq = ", round(dens.tmax6.lm$r.squared, 3)), " "))), 
           
-          AGB.WUEet, 
-          AGB.tmax6, 
-          AGB.precip, 
-          AGB.dens, 
-          LAI.AGB, 
-          LAI.dens,
+          dens.precip+ylim(-16, 60)+ annotate(geom = "text", x = 1, y = 45, label = paste("p = ", round(dens.tmax6.lm$coefficients[2,4], 5), "\n",
+                                                                            ifelse(round(dens.tmax6.lm$coefficients[2,4], 5) <= 0.05, paste("Rsq = ", round(dens.tmax6.lm$r.squared, 3)), " "))), 
+          
+          LAI.WUEet+ylim(-16, 60)+annotate(geom = "text", x = 5, y = 45, label = paste("p = ", round(LAI.WUEet.lm$coefficients[2,4], 5), "\n",
+                                                                          ifelse(round(LAI.WUEet.lm$coefficients[2,4], 5) <= 0.05, paste("Rsq = ", round(LAI.WUEet.lm$r.squared, 3)), " "))), 
+          
+          LAI.tmax6 +ylim(-16, 60)+ annotate(geom = "text", x = 1, y = 45, label = paste("p = ", round(LAI.tmax6.lm$coefficients[2,4], 5),  "\n",
+                                                                           ifelse(round(LAI.tmax6.lm$coefficients[2,4], 5) <= 0.05, paste("Rsq = ", round(LAI.tmax6.lm$r.squared, 3)), " "))),
+          
+          LAI.precip+ylim(-16, 60)+ annotate(geom = "text", x = 1, y = 45, label = paste("p = ", round(LAI.precip.lm$coefficients[2,4], 5),  "\n",
+                                                                           ifelse(round(LAI.precip.lm$coefficients[2,4], 5) <= 0.05, paste("Rsq = ", round(LAI.precip.lm$r.squared, 3)), " "))),
+          
+          AGB.WUEet+ylim(-16, 60)+ annotate(geom = "text", x = 5, y = 45, label = paste("p = ", round(AGB.WUEet.lm$coefficients[2,4], 5),  "\n",
+                                                                                        ifelse(round(AGB.WUEet.lm$coefficients[2,4], 5) <= 0.05, paste("Rsq = ", round(AGB.WUEet.lm$r.squared, 3)), " "))),
+          
+          AGB.tmax6+ylim(-16, 60)+ annotate(geom = "text", x = 1, y = 45, label = paste("p = ", round(AGB.tmax6.lm$coefficients[2,4], 5),  "\n",
+                                                                                        ifelse(round(AGB.tmax6.lm$coefficients[2,4], 5) <= 0.05, paste("Rsq = ", round(AGB.tmax6.lm$r.squared, 3)), " "))),
+          
+          AGB.precip+ylim(-16, 60)+ annotate(geom = "text", x = 1, y = 45, label = paste("p = ", round(AGB.precip.lm$coefficients[2,4], 5),  "\n",
+                                                                                         ifelse(round(AGB.precip.lm$coefficients[2,4], 5) <= 0.05, paste("Rsq = ", round(AGB.precip.lm$r.squared, 3)), " "))),
+          
+          AGB.dens+ylim(-16, 60)+ annotate(geom = "text", x = 5, y = 45, label = paste("p = ", round(AGB.dens.lm$coefficients[2,4], 5),  "\n",
+                                                                                       ifelse(round(AGB.precip.lm$coefficients[2,4], 5) <= 0.05, paste("Rsq = ", round(AGB.precip.lm$r.squared, 3)), " "))),
+          
+          LAI.AGB+ylim(-16, 60)+ annotate(geom = "text", x = 5, y = 45, label = paste("p = ", round(LAI.AGB.lm$coefficients[2,4], 5),  "\n",
+                                                                                      ifelse(round(LAI.AGB.lm$coefficients[2,4], 5) <= 0.05, paste("Rsq = ", round(LAI.AGB.lm$r.squared, 3)), " "))),
+          
+          LAI.dens+ylim(-16, 60)+ annotate(geom = "text", x = 5, y = 45, label = paste("p = ", round(LAI.dens.lm$coefficients[2,4], 5),  "\n",
+                                                                                       ifelse(round(LAI.dens.lm$coefficients[2,4], 5) <= 0.05, paste("Rsq = ", round(LAI.dens.lm$r.squared, 3)), " "))),
+          
           ncol = 3)
 
 dev.off()
@@ -2042,7 +2134,7 @@ GUESS.wue2 <-  merge(GUESS.wue, AGB.tot, by = c("Site", "Year"))
 GUESS.yr <-  merge(GUESS.wue2, LAI.tot, by = c("Site", "Year"))
 
 # merge yearly total table with Density by PFT table:
-GUESS.dens.pfts.m <- merge(GUESS.dens.pft.m, GUESS.yr, by = c("Site", "Year"))
+GUESS.dens.pfts.m <- merge(GUESS.Dens.PFT.m, GUESS.yr, by = c("Site", "Year"))
 ggplot(GUESS.dens.pfts.m, aes(Dens, PFTDens, color = PFT))+geom_point()+facet_wrap(~PFT)
 
 # get the grid cells increaseing in density & plot trajectory by PFT over the 20th century:

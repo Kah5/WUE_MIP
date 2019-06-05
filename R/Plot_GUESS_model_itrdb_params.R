@@ -36,38 +36,52 @@ itrdb.guess.pft.summary$model <- "ITRDB"
 
 pft.summary <- rbind(guess.pft.summary, itrdb.guess.pft.summary)
 
-ggplot(pft.summary [pft.summary $variable2 %in% "beta1",], aes(species, mean, color = timeclass))+geom_point()+
+beta1 <- ggplot(pft.summary [pft.summary $variable2 %in% "beta1" & !is.na(pft.summary$species),], aes(species, mean, color = timeclass))+geom_point()+
   geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = timeclass), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
-  ylab("Precipitation Sensitivity(Beta1) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~model, ncol = 1, scales = "free_y")
+  ylab("Precipitation Sensitivity \n (Beta1) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")+facet_wrap(~model, ncol = 2, scales = "free_y")
+
+beta2 <- ggplot(pft.summary [pft.summary $variable2 %in% "beta2" & !is.na(pft.summary$species),], aes(species, mean, color = timeclass))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = timeclass), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+  ylab("Temperature Sensitivity \n (Beta2) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")+facet_wrap(~model, ncol = 2, scales = "free_y")
+
+beta3 <- ggplot(pft.summary [pft.summary $variable2 %in% "beta3" & !is.na(pft.summary$species),], aes(species, mean, color = timeclass))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = timeclass), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+  ylab("Lag(-1) \n (Beta3) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")+facet_wrap(~model, ncol = 2, scales = "free_y")
+
+beta4 <- ggplot(pft.summary [pft.summary $variable2 %in% "beta4" & !is.na(pft.summary$species),], aes(species, mean, color = timeclass))+geom_point()+
+  geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = timeclass), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+  ylab("Lag(-2) \n (Beta4) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")+facet_wrap(~model, ncol = 2, scales = "free_y")
 
 
+png(height = 12, width = 6, units = "in", res = 300, "outputs/itrdb_model_compare/GUESS_model_parameter_dotplots.png")
+plot_grid(beta1, beta2, beta3, beta4, ncol = 1, labels = "AUTO")
+dev.off()
 
-
-ggplot(pft.summary [pft.summary $variable2 %in% "beta1",], aes(timeclass, mean, color = biome))+geom_point()+
+ggplot(pft.summary [pft.summary $variable2 %in% "beta1"& !is.na(pft.summary$species),], aes(timeclass, mean, color = biome))+geom_point()+
   geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = biome), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("Precipitation Sensitivity(Beta1) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~model, ncol = 1, scales = "free_y")
 
 
 
 # color by leaf type
-ggplot(na.omit(pft.summary[pft.summary$variable2 %in% "beta1",]), aes(timeclass, mean, color = leaf))+geom_point()+
+ggplot(na.omit(pft.summary[pft.summary$variable2 %in% "beta1"& !is.na(pft.summary$species),]), aes(timeclass, mean, color = leaf))+geom_point()+
   geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = leaf), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("Precipitation Sensitivity(Beta1) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~model, ncol = 2, scales = "free_y")
 
 
 
 # color by decidiousness
-ggplot(na.omit(pft.summary[pft.summary$variable2 %in% "beta1",]), aes(timeclass, mean, color = decidious))+geom_point()+
+ggplot(na.omit(pft.summary[pft.summary$variable2 %in% "beta1"& !is.na(pft.summary$species),]), aes(timeclass, mean, color = decidious))+geom_point()+
   geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = decidious), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("Precipitation Sensitivity(Beta1) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~model, ncol = 2, scales = "free_y")
 
 
-ggplot(na.omit(pft.summary[pft.summary$variable2 %in% "beta1",]), aes(timeclass, mean, color = model))+geom_point()+
+ggplot(na.omit(pft.summary[pft.summary$variable2 %in% "beta1"& !is.na(pft.summary$species),]), aes(timeclass, mean, color = model))+geom_point()+
   geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = model), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("Precipitation Sensitivity(Beta1) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~decidious, ncol = 2, scales = "free_y")
 
 
-ggplot(na.omit(pft.summary[pft.summary$variable2 %in% "beta2",]), aes(timeclass, mean, color = model))+geom_point()+
+ggplot(na.omit(pft.summary[pft.summary$variable2 %in% "beta2"& !is.na(pft.summary$species),]), aes(timeclass, mean, color = model))+geom_point()+
   geom_point()+geom_errorbar(aes(min = Ci.low, max = Ci.high, color = model), width = 0.1)+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("Tmax Sensitivity(Beta1) Estimate")+xlab("Species")+theme_bw(base_size = 15)+theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))+facet_wrap(~species, ncol = 2, scales = "free_y")
 
@@ -120,7 +134,7 @@ params.diff$species2 <- ifelse(params.diff$species %in% c("BNE", "BINE"),"BNE/BI
 params.diff$model <- factor(params.diff$model, levels = c("LPJ-GUESS", "ITRDB"))
 pct.drought.change <- ggplot(params.diff[params.diff$parameter %in% "beta1" & !params.diff$species2 %in% c("Total", NA),], aes( x=model, y = mean, fill = model))+geom_bar(stat="identity")+geom_errorbar( aes(ymin = ci.low, ymax = ci.high, width = 0.25), size = 1.5, position = position_dodge(width=0.5))+
   scale_fill_manual(values = c('#d95f02', '#7570b3'))+theme_bw(base_size = 35)+theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
-  ylab("drought sensitvity change \n between Modern and Past")+facet_wrap(~species2, scales = "free_y")
+  ylab("drought sensitvity change \n between Modern and Past")+facet_wrap(~species2)
 
 png(height = 9, width = 20, units = "in", res = 300, "outputs/itrdb_model_compare/pct_change_drought_senstivity_ITRDB_GUESS_PFTS.png")
 pct.drought.change
@@ -128,7 +142,7 @@ dev.off()
 
 pct.temp.change <- ggplot(params.diff[params.diff$parameter %in% "beta2" & !params.diff$species2 %in% c("Total", NA),], aes( x=model, y = mean, fill = model))+geom_bar(stat="identity")+geom_errorbar( aes(ymin = ci.low, ymax = ci.high, width = 0.25), size = 1.5, position = position_dodge(width=0.5))+
   scale_fill_manual(values = c('#d95f02', '#7570b3'))+theme_bw(base_size = 35)+theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
-  ylab("June Tmax sensitvity change \n between Modern and Past")+facet_wrap(~species2, scales = "free_y")
+  ylab("June Tmax sensitvity change \n between Modern and Past")+facet_wrap(~species2)
 
 png(height = 9, width = 20, units = "in", res = 300, "outputs/itrdb_model_compare/pct_change_tmax_senstivity_ITRDB_GUESS_PFTS.png")
 pct.temp.change
@@ -137,7 +151,7 @@ dev.off()
 
 pct.lag1.change <- ggplot(params.diff[params.diff$parameter %in% "beta3" & !params.diff$species2 %in% c("Total", NA),], aes( x=model, y = mean, fill = model))+geom_bar(stat="identity")+geom_errorbar( aes(ymin = ci.low, ymax = ci.high, width = 0.25), size = 1.5, position = position_dodge(width=0.5))+
   scale_fill_manual(values = c('#d95f02', '#7570b3'))+theme_bw(base_size = 35)+theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
-  ylab("change in lag -1 parameter \n between Modern and Past")+facet_wrap(~species2, scales = "free_y")
+  ylab("change in lag -1 parameter \n between Modern and Past")+facet_wrap(~species2)
 
 png(height = 9, width = 20, units = "in", res = 300, "outputs/itrdb_model_compare/pct_change_lag1_senstivity_ITRDB_GUESS_PFTS.png")
 pct.lag1.change

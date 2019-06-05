@@ -1,0 +1,30 @@
+---
+title: "ITRDB_MIP_Tables"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, results="asis", echo=FALSE, message = FALSE, warnings = FALSE}
+library(xtable, quietly = TRUE)
+library(tidyr, quietly = TRUE)
+library(dplyr, quietly = TRUE)
+library(reshape2, quietly = TRUE)
+library(kableExtra, quietly = TRUE)
+library(knitr, quietly = TRUE)
+
+rwl.age.ll <- readRDS("/Users/kah/Documents/WUE_MIP/WUE_MIP/Data/ITRDB/rwl.ages.df.nona_spatial.rds")
+
+nseries.spec <- rwl.age.ll %>% group_by(SPEC.CODE, SPEC.NAME) %>% dplyr::summarise(number_sites = length(unique(site)), 
+                                                                       number_series = length(unique(ID)))
+
+ntrees.total <- rwl.age.ll %>% dplyr::summarise(number_trees = length(unique(ID)))
+nsites.total <- rwl.age.ll %>% dplyr::summarise(number_trees = length(unique(site)))
+nspec.total <- rwl.age.ll %>% dplyr::summarise(number_trees = length(unique(SPEC.CODE)))
+
+colnames(nseries.spec) <- c("Species Code", "Species Name", "Number of Sites", "Number of Series")
+kable(nseries.spec, "latex", align=c("l", "l", "c", "c"), booktabs = T, caption = "ITRDB records by species")
+
+```

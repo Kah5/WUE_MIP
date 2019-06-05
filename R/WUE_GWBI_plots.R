@@ -737,16 +737,41 @@ dev.off()
 
 #ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late") & ED.dens.pfts.change$Year >=1750,], aes(LAI, Dens, color = precip.mm))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "MAP (mm)")
 png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/ED2_Dens_LAI_byPrecip_1750.png")
-ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late") & ED.dens.pfts.change$Year >=1750,], aes(LAI, Dens, color = precip.mm))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "MAP (mm)")
+DENS.LAI.ED <- ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late") & ED.dens.pfts.change$Year >=1750,], aes(LAI, Dens, color = precip.mm))+
+  geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Mean \n Annual \n precipitation \n (mm)")+theme_bw()+ylab("ED2 Tree Density")+xlab("ED2 LAI")
+DENS.LAI.ED
 dev.off()
 
-png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/ED2_Dens_Precip_byLAI_1750.png")
-ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late") & ED.dens.pfts.change$Year >=1750,], aes(precip.mm, Dens, color = LAI))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "LAI")
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/ED2_Dens_Precip_byprecip_1750.png")
+DENS.MAP.ED <- ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late") & ED.dens.pfts.change$Year >=1750,], aes(precip.mm, Dens, color = precip.mm))+
+  geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Mean \n Annual \n precipitation \n (mm)")+theme_bw()+ylab("ED2 Tree Density")+xlab("Mean Annual Precipitation (mm)")
+DENS.MAP.ED
 dev.off()
 
-png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/ED2_Dens_AGB_byLAI_1750.png")
-ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late") & ED.dens.pfts.change$Year >=1750,], aes(AGB, Dens, color = LAI))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "LAI")
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/ED2_Dens_AGB_byprecip_1750.png")
+DENS.AGB.ED <- ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late") & ED.dens.pfts.change$Year >=1750,], aes(AGB, Dens, color = precip.mm))+
+  geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Mean \n Annual \n precipitation \n (mm)")+theme_bw()+ylab("ED2 Tree Density")+xlab("ED2 AGB")
+DENS.AGB.ED
 dev.off()
+
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/ED2_AGB_LAI_byLAI_1750.png")
+AGB.LAI.ED <- ggplot(ED.dens.pfts.change[ED.dens.pfts.change$PFT %in% c("conifer.late") & ED.dens.pfts.change$Year >=1750,], aes(AGB, LAI, color = precip.mm))+
+  geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Mean \n Annual \n precipitation \n (mm)")+theme_bw()+ylab("ED2 AGB")+xlab("ED2 LAI")
+AGB.LAI.ED
+dev.off()
+
+emerg.leg <- get_legend(AGB.LAI.ED)
+
+
+# save all emergent relationships to one png
+png(height = 10, width = 6*3, units = "in", res = 300, "outputs/preliminaryplots/ED2_AGB_DENS_LAI_emergent.png")
+plot_grid(DENS.AGB.ED +theme_bw(base_size = 18)+ theme(legend.position = "none"), 
+          DENS.LAI.ED+theme_bw(base_size = 18)+ theme(legend.position = "none"), 
+          AGB.LAI.ED+theme_bw(base_size = 18)+ theme(legend.position = "none"),
+  emerg.leg, rel_widths = c(1,1,1,0.25),
+  ncol = 4, align = "hv")
+dev.off()
+
 
 
 ED.dens.pfts.change$year.facet <- ifelse(ED.dens.pfts.change$Year >= 1950, ">1950", 
@@ -3118,4 +3143,96 @@ GPP.ET.mod <- ggplot(model.unique, aes(x=GPP.ET.diff, y=model, fill = model,adju
 
 png(height = 5, width = 5, units = "in", res = 300, "outputs/preliminaryplots/change_GPP_change_ET_mods.png")
 GPP.ET.mod
+dev.off()
+
+
+
+
+# assessment of which species are driving changes in Density in ED:
+head(GUESS.dens.pfts.m)
+pct.change.site.fcomp$Site <- paste0("X",pct.change.site.fcomp$Site)
+GUESS.dens.pfts.m$Site <- paste0("X",GUESS.dens.pfts.m$Site)
+GUESS.dens.pfts.m$PFT <- paste0(GUESS.dens.pfts.m$PFT , ".gwbi")
+GUESS.dens.pfts.change <- merge(GUESS.dens.pfts.m, pct.change.site.fcomp, by = c("Site", "PFT"))
+
+#ggplot(ED.dens.pfts, aes(Dens, PFTDens, color = PFT))+geom_point()+facet_wrap(~PFT)
+
+# get the grid cells increaseing in density & plot trajectory by PFT over the 20th century:
+#ggplot(ED.dens.pfts[ED.dens.pfts$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid"),], aes(Dens, PFTDens, color = PFT))+geom_point()+facet_wrap(~PFT)
+
+# plot the PFT density by the % change in overall density
+all.change.dens.1750.2011<- ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BIBS.gwbi", "BINE.gwbi", "BNE.gwbi",  "TeBS.gwbi", "TeBE.gwbi") & GUESS.dens.pfts.change$Year >=1750,], aes(Year, Dens.x, color = Dens.change))+
+  geom_point()+facet_wrap(~PFT)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "% change in Density")
+GUESS.dens.pfts.change$dens.change.facet <- ifelse(GUESS.dens.pfts.change$Dens.change >=25, ">=25%", "<=25%")
+
+change.dens.1750.2011 <- ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BIBS.gwbi", "BINE.gwbi", "BNE.gwbi",  "TeBS.gwbi", "TeBE.gwbi") & GUESS.dens.pfts.change$Year >=1750,], aes(Year, Dens.x, color = Dens.change))+
+  geom_point()+facet_grid(~PFT+dens.change.facet)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "% change in Density")
+
+
+ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("conifer.late", "pine.north", "temp.decid.early","temp.decid.late", "temp.decid.mid") & GUESS.dens.pfts.change$Year >=1750,], aes(dens.change.facet, PFTDens, fill = PFT))+geom_boxplot()
+
+greaterthan25changedens<- ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BIBS.gwbi", "BINE.gwbi", "BNE.gwbi",  "TeBS.gwbi", "TeBE.gwbi") & GUESS.dens.pfts.change$Year >=1750 & GUESS.dens.pfts.change$dens.change.facet %in% ">=25%",], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
+lessthan0changedens <- ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BIBS.gwbi", "BINE.gwbi", "BNE.gwbi",  "TeBS.gwbi", "TeBE.gwbi") & GUESS.dens.pfts.change$Year >=1750 & GUESS.dens.pfts.change$Dens.change <= 0,], aes(Year, PFTDens, color = PFT))+geom_point()+facet_wrap(~Site)
+
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_Dens_changes_by_site_declining_dens_850_1850_compared1950_2011.png")
+lessthan0changedens
+dev.off()
+
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_Dens_changes_by_site_25pctincreasing_dens_850_1850_compared1950_2011.png")
+greaterthan25changedens
+dev.off()
+
+
+#ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("conifer.late") & GUESS.dens.pfts.change$Year >=1750,], aes(LAI, Dens, color = precip.mm))+geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "MAP (mm)")
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_Dens_LAI_byPrecip_1750.png")
+DENS.LAI.GUESS <- ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BIBS.gwbi") & GUESS.dens.pfts.change$Year >=1750,], aes(LAI, Dens.y, color = precip.mm))+
+  geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Mean \n Annual \n precipitation \n (mm)")+theme_bw()+ylab("GUESS Tree Density")+xlab("GUESS LAI")
+DENS.LAI.GUESS
+dev.off()
+
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_Dens_Precip_byprecip_1750.png")
+DENS.MAP.GUESS <- ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BIBS.gwbi") & GUESS.dens.pfts.change$Year >=1750,], aes(precip.mm, Dens.y, color = precip.mm))+
+  geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Mean \n Annual \n precipitation \n (mm)")+theme_bw()+ylab("GUESS Tree Density")+xlab("Mean Annual Precipitation (mm)")
+DENS.MAP.GUESS
+dev.off()
+
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_Dens_AGB_byprecip_1750.png")
+DENS.AGB.GUESS <- ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BIBS.gwbi") & GUESS.dens.pfts.change$Year >=1750,], aes(AGB, Dens.y, color = precip.mm))+
+  geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Mean \n Annual \n precipitation \n (mm)")+theme_bw()+ylab("GUESS Tree Density")+xlab("GUESS AGB")
+DENS.AGB.GUESS
+dev.off()
+
+png(height = 10, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_AGB_LAI_byLAI_1750.png")
+AGB.LAI.GUESS <- ggplot(GUESS.dens.pfts.change[GUESS.dens.pfts.change$PFT %in% c("BIBS.gwbi") & GUESS.dens.pfts.change$Year >=1750,], aes(AGB, LAI, color = precip.mm))+
+  geom_point(size = 0.25)+scale_colour_gradientn(colours = rev(colorRamps::blue2red(10)), name = "Mean \n Annual \n precipitation \n (mm)")+theme_bw()+ylab("GUESS AGB")+xlab("GUESS LAI")
+AGB.LAI.GUESS
+dev.off()
+
+emerg.leg <- get_legend(AGB.LAI.GUESS+theme_bw(base_size = 18))
+
+
+# save all emergent relationships to one png
+png(height = 10, width = 6*3, units = "in", res = 300, "outputs/preliminaryplots/GUESS_AGB_DENS_LAI_emergent.png")
+plot_grid(DENS.AGB.GUESS +theme_bw(base_size = 18)+ theme(legend.position = "none"), 
+          DENS.LAI.GUESS+theme_bw(base_size = 18)+ theme(legend.position = "none"), 
+          AGB.LAI.GUESS+theme_bw(base_size = 18)+ theme(legend.position = "none"),
+          emerg.leg, rel_widths = c(1,1,1,0.25),
+          ncol = 4, align = "hv")
+dev.off()
+
+
+# plot all ED2 and lpj-guess together
+png(height = 10, width = 6*3, units = "in", res = 300, "outputs/preliminaryplots/GUESS_ED_AGB_DENS_LAI_emergent.png")
+plot_grid(
+plot_grid(DENS.AGB.ED +theme_bw(base_size = 18)+ theme(legend.position = "none"), 
+          DENS.LAI.ED+theme_bw(base_size = 18)+ theme(legend.position = "none"), 
+          AGB.LAI.ED+theme_bw(base_size = 18)+ theme(legend.position = "none"),
+          
+          DENS.AGB.GUESS +theme_bw(base_size = 18)+ theme(legend.position = "none"), 
+          DENS.LAI.GUESS+theme_bw(base_size = 18)+ theme(legend.position = "none"), 
+          AGB.LAI.GUESS+theme_bw(base_size = 18)+ theme(legend.position = "none"),
+          
+          ncol = 3, align = "hv", labels = "AUTO"),
+emerg.leg, rel_widths = c(1,0.15)
+)
 dev.off()

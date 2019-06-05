@@ -2359,7 +2359,7 @@ library(car)
 library(rgl)
 
 # 1. changes in WUE vs temperature and precip, colored by mean MAP
-pct <- pct.change.site[pct.change.site$PFT %in% "BIBS.gwbi",]
+pct <- pct.change.site[pct.change.site$PFT %in% "Total.gwbi",]
 #rgl::plot3d( pct$precip.change, pct$WUEet.change,  pct$tmax6_change,)
 
 
@@ -2381,11 +2381,15 @@ deltaGWBI <- pct$GWBI.change
 # scatter plot
 plot.angle <- 65
 
-png(height = 5.5, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_delta_wue_precip_tmax_3D_850_1850_compared1950_2011.png")
+png(height = 5.5, width = 6, units = "in", res = 300, "outputs/preliminaryplots/GUESS_delta_wueet_precip_tmax_3D_850_1850_compared1950_2011.png")
 
 scatterplot3d(deltaWUE, deltaPrecip, deltatmax, type="h", angle=plot.angle, color=colcode, pch=20, cex.symbols=1,
               col.axis="gray", col.grid="gray", xlab = "% change in WUEet", ylab = "% change in Precip", zlab = "Change in Tmax (DegC)", mar=c(5, 3, 5, 7)+0.1) 
 
+# dims <- par("usr")
+# x <- dims[1]+ 0.9*diff(dims[1:2])
+# y <- dims[3]+ 0.08*diff(dims[3:4])
+# text(x,y,"% change in Precip",srt=70)
 par(mar=c(5, 4, 4, 2) + 0.1) 
 fields::image.plot( legend.only=TRUE, zlim= c(min(plotvar), max(plotvar)), nlevel=8, 
                     col=brewer.pal(nclr,"RdYlBu"), legend.args=list( text="   Site MAP (mm)",

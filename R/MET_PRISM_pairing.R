@@ -169,7 +169,7 @@ ne_lakes <- ne_download(scale = 50, type = 'lakes', category = 'physical')
 sp::plot(ne_lakes, col = 'blue')
 
 # rivers
-ne_rivers <- ne_download(scale = 110, type = 'rivers_lake_centerlines', category = 'physical')
+ne_rivers <- ne_download(scale = 10, type = 'rivers_lake_centerlines', category = 'physical')
 sp::plot(ne_rivers, col = 'blue')
 
 # coast:
@@ -209,6 +209,7 @@ state.subset <- quick.subset(ne_state, c(-105,-61, 35, 49))
 ED.pft.map <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
   geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
   geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_line(data = river.subset, aes(x = long, y = lat, group = group), color = "blue")+
   geom_raster(data = ED.fcomp.means[ED.fcomp.means$ED.PFT %in% ed.trees,], aes(lon, lat, fill = Fcomp))+
   geom_point(data = rwl.itrdb.ed.pft, aes(Longitude, Latitude), color = "red", pch = 18, size = 4)+facet_wrap(~ED.PFT, ncol = 1)+
   scale_fill_gradientn(colors = c("#edf8b1",
@@ -408,6 +409,9 @@ met.tmax.map<- ggplot(merged.met.itrdb.xy.nona, aes(tmax_06, Tmax_6_met-273.15))
 png(height = 4, width = 8, units = "in", res = 300, "outputs/itrdb_model_compare/MET_prism_driver.plots.png")
 plot_grid(met.prism.map, met.tmax.map)
 dev.off()
+
+#-------- compare  correlations of ITRDB data with MET data and with prism data:-------------
+# need to read in detrended ITRDB data:
 
 
 

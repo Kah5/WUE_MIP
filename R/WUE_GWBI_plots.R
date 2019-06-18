@@ -1523,9 +1523,9 @@ ggplot(GUESS.AGB.PFT.m[GUESS.AGB.PFT.m$Site %in% "1",], aes(Year, AGB, color = P
 ggplot(GUESS.LAI.PFT.m[GUESS.LAI.PFT.m$Site %in% "1",], aes(Year,LAI, color = PFT))+geom_point()
 ggplot(GUESS.Dens.PFT.m[GUESS.Dens.PFT.m$Site %in% "7",], aes(Year,Dens, color = PFT))+geom_point()
 
-LAI.tot <- GUESS.LAI.PFT.m %>% filter(PFT %in% "Total") %>% select(Year, Site, LAI)
-AGB.tot <- GUESS.AGB.PFT.m %>% filter(PFT %in% "Total")%>% select(Year, Site, AGB)
-Dens.tot <- GUESS.Dens.PFT.m %>% filter(PFT %in% "Total")%>% select(Year, Site, Dens)
+LAI.tot <- GUESS.LAI.PFT.m %>% filter(PFT %in% "Total") %>% dplyr::select(Year, Site, LAI)
+AGB.tot <- GUESS.AGB.PFT.m %>% filter(PFT %in% "Total")%>% dplyr::select(Year, Site, AGB)
+Dens.tot <- GUESS.Dens.PFT.m %>% filter(PFT %in% "Total")%>% dplyr::select(Year, Site, Dens)
 
 GUESS.df1 <- merge(GUESS.df, Dens.tot, by = c("Site", "Year"))
 GUESS.df2 <- merge(GUESS.df1, LAI.tot, by = c("Site", "Year"))
@@ -2163,7 +2163,7 @@ GUESS.dens.pfts.m <- merge(GUESS.Dens.PFT.m, GUESS.yr, by = c("Site", "Year"))
 ggplot(GUESS.dens.pfts.m, aes(Dens, PFTDens, color = PFT))+geom_point()+facet_wrap(~PFT)
 
 # get the grid cells increaseing in density & plot trajectory by PFT over the 20th century:
-pct.change.unique <- pct.change %>% select(lat, lon, Site, Dens.change, precip.change, AGB.change, LAI.change)
+pct.change.unique <- pct.change %>%dplyr::select(lat, lon, Site, Dens.change, precip.change, AGB.change, LAI.change)
 pct.change.unique <- unique(pct.change.unique)
 GUESS.dens.pfts.change <- merge(GUESS.dens.pfts.m, pct.change.unique, by = c("Site"))
 
@@ -3034,7 +3034,7 @@ ggplot(data = mean.diff.change)+geom_histogram(data = mean.diff.change, aes(GPP.
   facet_wrap(~model)+geom_vline(aes(xintercept = 0), color = "grey", linetype = "dashed")+xlim(-10,10)
 
 
-mean.diff.change.1pft <- mean.diff.change %>% select(-PFT, -Fcomp.change)
+mean.diff.change.1pft <- mean.diff.change %>%dplyr::select(-PFT, -Fcomp.change)
 
 GPP.ET.diff.unique <- unique(mean.diff.change.1pft)
 library(ggridges)
@@ -3071,7 +3071,7 @@ time.periods.both <- rbind(ED2.time.periods, guess.time.periods)
 time.periods.both $model <- as.factor(time.periods.both$model)
 
 # reformat to plot with geom_density ridges:
-time.periods.gpp.et.mean <- time.periods.both %>% select(model, lon, lat, Site,ET.1950.2011, ET.850.1850, GPP.1950.2011, GPP.850.1850)%>%group_by(model, lon, lat, Site) %>%
+time.periods.gpp.et.mean <- time.periods.both %>%dplyr::select(model, lon, lat, Site,ET.1950.2011, ET.850.1850, GPP.1950.2011, GPP.850.1850)%>%group_by(model, lon, lat, Site) %>%
   gather(key = "timeperiod", value = "ET.GPP", ET.1950.2011:GPP.850.1850 )
 time.periods.both <- time.periods.gpp.et.mean %>% separate(timeperiod, c("variable", "timestart", "timeend")) %>% unite(period, c(timestart, timeend), sep = "-")
 

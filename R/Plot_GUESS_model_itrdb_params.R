@@ -4,6 +4,8 @@ itrdb.guess.pft.summary <- read.csv( "outputs/ITRDB_models/ITRDB_GUESS_PFT_time_
 guess.pft.summary <- read.csv( "outputs/gwbi_model/LPJ_GUESS_time_re/all_parameter_mean_CI.csv")
 guess.pft.summary$species <- do.call(rbind, strsplit(as.character(guess.pft.summary$species),".gwbi"))
 
+guess.pft.summary$species <- ifelse(guess.pft.summary$species %in% "BeIBS", "TeIBS", guess.pft.summary$species)
+
 unique(guess.pft.summary$species)
 
 GUESS.PFT.convert <- data.frame(
@@ -101,6 +103,9 @@ ITRDB.params$model <- "ITRDB"
 GUESS.params$species <- do.call(rbind, strsplit(as.character(GUESS.params$species),".gwbi"))
 ITRDB.params$species <- as.character(ITRDB.params$species )
 
+GUESS.params$species <- ifelse(GUESS.params$species %in% "BeIBS", "TeIBS", GUESS.params$species)
+summary(GUESS.params %>% filter(mcmc >=500))
+
 params <- rbind(GUESS.params, ITRDB.params)
 
 params.m <- melt(params, id.vars = c("mcmc", "model", "species"))
@@ -125,8 +130,8 @@ params.diff <- params.class %>% group_by(model, species, parameter) %>% summaris
                                                          ci.low = quantile(pct_change, 0.025, na.rm=TRUE), 
                                                          ci.high = quantile(pct_change, 0.975, na.rm=TRUE))
 
-params.diff$species2 <- ifelse(params.diff$species %in% c("BNE", "BINE"),"BNE/BINE", params.diff$species)
-
+#params.diff$species2 <- ifelse(params.diff$species %in% c("BNE", "BINE"),"BNE/BINE", params.diff$species)
+params.diff$species2 <- params.diff$species
 # while the actual parameter estimates vary across GUESS and ITRDB datasets, the direction of drought sensitivity differences between the two time periods are similar in some species. 
 
 # plot average change in drought sensitivity

@@ -73,7 +73,7 @@ crn.summary %>% filter(yearmn <= 1850 & yearmx >= 1970) %>% dplyr::summarise(n()
 
 modern.ish <- crn.summary %>% filter(yearmn <= 1895 & yearmx >= 1970) 
 
-crn.wide <- crn.df %>% select(year, site, xxxstd) %>% filter(year >= 1895 & year <=1970) %>% spread(key = site, value = xxxstd, drop = TRUE)
+crn.wide <- crn.df %>% dplyr::select(year, site, xxxstd) %>% filter(year >= 1895 & year <=1970) %>% spread(key = site, value = xxxstd, drop = TRUE)
 crn.common <- crn.wide[,names(crn.wide) %in% c(unique(modern.ish$site), 'year')]
 #crn.common.nona <- crn.common[!is.na(crn.common)]
 
@@ -509,3 +509,4 @@ dev.off()
 
 
 # 5. Site level correlations of detrended data with multiple climate parameters & do cluster analysis on the corelation output
+

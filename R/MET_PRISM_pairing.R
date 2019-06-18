@@ -2,6 +2,7 @@
 library(tidyr)
 library(dplyr)
 library(ggplot2)
+library(reshape2)
 all.met <- readRDS( paste0(getwd(),"/Data/MET/all.met.summary.rds"))
 # merge climate and growth for ED2:
 colnames(all.met)[3] <- "Year"
@@ -117,6 +118,298 @@ met.short <- grid.met.summary #%>% dplyr::select(lon, lat, wtryr_bins, wtr.mids,
 common_envts <- merge(prism.short, met.short, by = c("wtryr_bins","wtr.mids", "tmax_06_bins", "tmax06.mids"))
 
 saveRDS(common_envts, "outputs/data/ITRDB_MET_common_envts.rds")
+
+
+#---------------------Plot mean Fcomp by PFT for the models with ITRDB by PFT in the models-----------------------------
+
+# read in ED fcomp and map means across space
+ED.fcomp <- readRDS("outputs/data/ED2/ED2_mean_yearly_fcomp.rds")
+ED.fcomp.m <- melt(ED.fcomp, id.vars = c("Site", "Year"))
+ED.fcomp.means <- ED.fcomp.m %>% group_by(variable, Site) %>% summarise(Fcomp = mean(value, na.rm = TRUE))
+ED.fcomp.means$Site <- as.character(ED.fcomp.means$Site)
+ED.fcomp.means <- left_join(ED.fcomp.means, paleon, by = "Site")
+
+ed.trees <- c("pine.north", "conifer.late", "temp.decid.early", "temp.decid.late", "temp.decid.mid")
+
+ggplot(ED.fcomp.means[ED.fcomp.means$variable %in% ed.trees,], aes(lon, lat, fill = Fcomp))+geom_raster()+facet_wrap(~variable)
+
+# read in ITRDB lat long + pft categorie:
+taxa.trans <- read.csv("Data/ITRDB/SPEC.CODE.TAXA.TRANSLATION.csv", stringsAsFactors = FALSE)
+rwl.itrdb.pft <- left_join(rwl.itrdb.clim.nona, taxa.trans, by = "SPEC.CODE")
+rwl.itrdb.ed.pft <- rwl.itrdb.pft %>% select("Longitude", "Latitude", "SPEC.CODE","ED.PFT")
+rwl.itrdb.ed.pft <- unique(rwl.itrdb.ed.pft)
+colnames(ED.fcomp.means)[1] <- "ED.PFT"
+
+library(maps)
+library(sp)
+library(rgeos)
+
+all_states <- map_data("state")
+states <- subset(all_states, region %in% c(  'minnesota','wisconsin','michigan',"illinois",  'indiana') )
+coordinates(all_states)<-~long+lat
+class(all_states)
+
+ca = map_data("world", "Canada")
+coordinates(ca)<-~long+lat
+ca.data <- data.frame(ca)
+mapdata <- data.frame(all_states)
+
+library(raster)
+library(rgdal)
+library(ggplot2)
+library(reshape2)
+library(plyr)
+library(rnaturalearth)
+#  Assuming you have a path 'Maps' that you store your spatial files in.  This
+#  is all downloaded from <a href=>http://www.naturalearthdata.com/downloads/</a> using the
+#  1:50m "Medium" scale data.
+
+# lakes
+ne_lakes <- ne_download(scale = 50, type = 'lakes', category = 'physical')
+sp::plot(ne_lakes, col = 'blue')
+
+# rivers
+ne_rivers <- ne_download(scale = 110, type = 'rivers_lake_centerlines', category = 'physical')
+sp::plot(ne_rivers, col = 'blue')
+
+# coast:
+ne_coast <- ne_download(scale = 110, type = 'coastline', category = 'physical')
+sp::plot(ne_coast, col = 'blue')
+
+# states:
+ne_state <- ne_download(scale = 110, type = 'states', category = 'cultural')
+
+nat.earth <- stack('/Users/kah/Documents/TreeRings/data/NE2_50M_SR_W/NE2_50M_SR_W/NE2_50M_SR_W.tif')
+
+
+
+#  I have a domain I'm interested in
+quick.subset <- function(x, longlat){
+  
+  # longlat should be a vector of four values: c(xmin, xmax, ymin, ymax)
+  x@data$id <- rownames(x@data)
+  
+  x.f = fortify(x, region="id")
+  x.join = plyr::join(x.f, x@data, by="id")
+  
+  x.subset <- subset(x.join, x.join$long > longlat[1] & x.join$long < longlat[2] &
+                       x.join$lat > longlat[3] & x.join$lat < longlat[4])
+  
+  x.subset
+}
+
+
+domain <- c(-100,-61, 35, 49)
+lakes.subset <- quick.subset(ne_lakes, domain)
+river.subset <- quick.subset(ne_rivers, domain)
+coast.subset <- quick.subset(ne_coast, domain)
+state.subset <- quick.subset(ne_state, c(-105,-61, 35, 49))
+
+
+ED.pft.map <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = ED.fcomp.means[ED.fcomp.means$ED.PFT %in% ed.trees,], aes(lon, lat, fill = Fcomp))+
+  geom_point(data = rwl.itrdb.ed.pft, aes(Longitude, Latitude), color = "red", pch = 18, size = 4)+facet_wrap(~ED.PFT, ncol = 1)+
+  scale_fill_gradientn(colors = c("#edf8b1",
+    "#c7e9b4",
+    "#7fcdbb",
+    "#41b6c4",
+    "#1d91c0",
+    "#225ea8",
+    "#0c2c84"), limits= c(0,1)  )+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))+theme_bw(base_size = 14)
+
+
+png(height = 15, width = 5, units = "in", res = 300, "outputs/itrdb_model_compare/ed2_fcomp_itrdb_sites.png")
+ED.pft.map 
+dev.off()
+
+# map LPJ-GUESS taxa:
+
+# read in ED fcomp and map means across space
+GUESS.fcomp <- readRDS("Data/GUESS.Fcomp.pft.rds")
+#GUESS.fcomp.m <- melt(GUESS.fcomp, id.vars = c("Site", "Year"))
+GUESS.fcomp.means <- GUESS.fcomp %>% group_by(PFT, Site) %>% dplyr::summarise(Fcomp = mean(Fcomp, na.rm = TRUE))
+GUESS.fcomp.means$Site <- as.character(GUESS.fcomp.means$Site)
+GUESS.fcomp.means <- left_join(GUESS.fcomp.means, paleon, by = "Site")
+
+GUESS.trees <- c("BNE","BINE","BIBS", "TeBS", "TelBS")
+
+ggplot(GUESS.fcomp.means[GUESS.fcomp.means$PFT %in% GUESS.trees,], aes(lon, lat, fill = Fcomp))+geom_raster()+facet_wrap(~PFT)
+
+
+# read in ITRDB lat long + pft categories:
+taxa.trans <- read.csv("Data/ITRDB/SPEC.CODE.TAXA.TRANSLATION.csv", stringsAsFactors = FALSE)
+rwl.itrdb.pft <- left_join(rwl.itrdb.clim.nona, taxa.trans, by = "SPEC.CODE")
+rwl.itrdb.GUESS.pft <- rwl.itrdb.pft %>% dplyr::select("Longitude", "Latitude", "SPEC.CODE","LPJ.GUESS.PFT")
+rwl.itrdb.GUESS.pft <- unique(rwl.itrdb.GUESS.pft)
+colnames(GUESS.fcomp.means)[1] <- "spec"
+
+
+GUESS.PFT.convert <- data.frame(
+  spec.abb = c("TeIB", 
+               "TeBS", 
+               "TeBE", 
+               "BNE", 
+               "BINE", 
+               "BIBS"),
+  
+  spec = c("TelBS", 
+           "TeBS", 
+           "TeBE", 
+           "BNE", 
+           "BINE", 
+           "BIBS"),
+  full.spec = c("Temperate broadleaved summergreen (shade intolerant)",
+                "Temperate broadleaved summergreen", 
+                "Temperate broadleved evergreen", 
+                "Boreal needleleaved evergreen", 
+                "Boreal needleleaved evergreen (shade intolerant)", 
+                "Boreal broadleaved summergreen (shade intolerant)")
+  #biome = c("Temperate", "Temperate","Temperate","Boreal"),
+  #leaf = c("Broadleaved", "Broadleaved","Broadleaved","Needleleaved"),
+  #decidious = c("decidious", "decidious", "evergreen", "evergreen")
+)
+
+# merge rwl + names
+rwl.itrdb.GUESS.pft <- merge(rwl.itrdb.GUESS.pft, GUESS.PFT.convert, by.x = "LPJ.GUESS.PFT", by.y = "full.spec")
+
+# merge fcomp + names
+GUESS.fcomp.means <- merge(GUESS.fcomp.means, GUESS.PFT.convert, by= "spec")
+
+colnames(GUESS.fcomp.means)[14] <- "LPJ.GUESS.PFT"
+GUESS.pft.map <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = GUESS.fcomp.means[GUESS.fcomp.means$spec %in% GUESS.trees,], aes(lon, lat, fill = Fcomp))+
+  geom_point(data = rwl.itrdb.GUESS.pft, aes(Longitude, Latitude), color = "red", pch = 18, size = 4)+facet_wrap(~LPJ.GUESS.PFT, ncol = 1)+
+  scale_fill_gradientn(colors = c("#edf8b1",
+                                  "#c7e9b4",
+                                  "#7fcdbb",
+                                  "#41b6c4",
+                                  "#1d91c0",
+                                  "#225ea8",
+                                  "#0c2c84"), limits= c(0,1)  )+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))+theme_bw(base_size = 14)
+
+GUESS.pft.map
+
+png(height = 16, width = 16, units = "in", res = 300, "outputs/itrdb_model_compare/GUESS_ED_ITRDB_fcomp.png")
+cowplot::plot_grid(GUESS.pft.map, ED.pft.map, ncol = 2)
+dev.off()
+
+
+
+
+
+
+#-----------------------------Now compare relative autocorrelation by site and taxa----------------------------
+
+unique(all.met)
+#acf(x = all.met[all.met$lon == unique(all.met[,c("lat", "lon")])[1,2] & all.met$lat == unique(all.met[,c("lat", "lon")])[1,1],]$precip_total_wtr_yr.mm,type = "correlation", lag.max = 5)
+
+all.met.sub <- all.met %>% filter(Year >= 1895 )
+head(all.met.sub)
+
+all.met.sub.acf <- all.met.sub %>% group_by(lat, lon) %>% arrange(Year) %>% dplyr::summarise(acf.1 = acf(precip_total_wtr_yr.mm, lag.max = 1, plot = FALSE)$acf[2],
+                                                                           acf.2 = acf(precip_total_wtr_yr.mm, lag.max = 2, plot = FALSE)$acf[3])
+
+
+
+ggplot(all.met.sub.acf, aes(lon, lat, fill = acf.1))+geom_raster()
+
+# for ITRDB sites:
+
+all.prism.sub <- rwl.itrdb.clim.nona %>% filter(year >= 1895 )
+head(all.prism.sub)
+
+all.prism.sub.acf <- all.prism.sub %>% group_by(Latitude, Longitude, studyCode) %>%  dplyr::summarise(acf.1 = acf(x = year, y = ppt_MAP.wy, lag.max = 1, plot = FALSE)$acf[2],
+                                                                           acf.2 = acf(x = year, y = ppt_MAP.wy, lag.max = 2, plot = FALSE)$acf[3], 
+                                                                           acf.5 = acf(x = year, y = ppt_MAP.wy, lag.max = 5, plot = FALSE)$acf[6])
+
+
+
+
+
+ggplot(all.prism.sub.acf, aes(Longitude, Latitude, color = acf.1))+geom_point()
+
+ggplot(all.prism.sub.acf, aes(acf.1))+geom_histogram()
+ggplot(all.met.sub.acf, aes(acf.1))+geom_histogram()
+
+
+# extract point MIP climate drivers 
+# get the coordinates for the paleon grid cells of itrdb
+sites.coords <- readRDS(paste0("Data/ITRDB/PRISM/tmax/Tmax_1895_2016_extracted_ITRDB_sites_only.rds"))
+test.prism <- merge(all.prism.sub.acf, sites.coords, by = c("studyCode", "Latitude", "Longitude"))
+test <- merge(test.prism, all.met.sub, by.x = c("Latitude", "Longitude"), by.y = c("lat", "lon"))
+
+
+rwl.age.ll <- readRDS( "Data/ITRDB/rwl.ages.df.nona_spatial.rds")
+rwl.age.ll.unique <- unique(rwl.age.ll[, c("Longitude", "Latitude", "studyCode", "SPEC.CODE")])
+
+# get the LatLon for the grid cell:
+toRaster <- "/Users/kah/Documents/WUE_MIP/WUE_MIP/Data/paleon.unit.ll_01.tif"
+paleon.ll <- raster("/Users/kah/Documents/WUE_MIP/WUE_MIP/Data/paleon.unit.ll_01.tif")
+values(paleon.ll) <- 1:ncell(paleon.ll)
+
+
+all.prism.unique <- unique(all.prism.sub[,c("Longitude", "Latitude")])
+lat.lon <- raster::extract(paleon.ll, all.prism.unique[,c("Longitude", "Latitude")], cellnumber = TRUE, df = TRUE, method = "simple")
+#y <- data.frame(rasterToPoints(paleon.ll))
+
+xy <- xyFromCell(paleon.ll, cell = lat.lon$cells)
+
+lat.lon$x <- xy[,"x"]
+lat.lon$y <- xy[,"y"]
+lat.lon$Longitude <- all.prism.unique$Longitude
+lat.lon$Latitude <- all.prism.unique$Latitude
+
+all.met_wide.precip <- data.frame(all.met.sub) %>% dplyr::select(lon, lat, Year, precip_total_wtr_yr.mm) %>% group_by(lon, lat) %>% spread(key = Year, value = precip_total_wtr_yr.mm)
+all.met_wide.temp <- data.frame(all.met.sub) %>% dplyr::select(lon, lat, Year, tair_max_6) %>% group_by(lon, lat) %>% spread(key = Year, value = tair_max_6)
+
+#all.met.unique <- unique(all.met.sub[all.met.sub$Year ==1985,c("lon", "lat","precip_total_wtr_yr.mm")])
+
+coordinates(all.met_wide.precip)  <- ~ lon + lat
+gridded(all.met_wide.precip) <- TRUE
+proj4string(all.met_wide.precip) <- "+proj=longlat +ellps=WGS84 +no_defs"
+all.met.rast <- stack(all.met_wide.precip)
+met.rast <- projectRaster(all.met.rast , to = paleon.ll)
+met.rast.extracted <- data.frame(raster::extract(all.met.rast,lat.lon[, c("x", "y")]))
+met.rast.extracted$x <- lat.lon$Longitude
+met.rast.extracted$y <- lat.lon$Latitude
+ggplot(met.rast.extracted, aes(x,y, fill = X2010))+geom_point()
+met.rast.extracted.m <- melt(met.rast.extracted, id.vars = c("x", "y"))
+
+
+coordinates(all.met_wide.temp)  <- ~ lon + lat
+gridded(all.met_wide.temp) <- TRUE
+proj4string(all.met_wide.temp) <- "+proj=longlat +ellps=WGS84 +no_defs"
+all.met.rast <- stack(all.met_wide.temp)
+met.rast <- projectRaster(all.met.rast , to = paleon.ll)
+met.rast.extracted.t <- data.frame(raster::extract(all.met.rast,lat.lon[, c("x", "y")]))
+met.rast.extracted.t$x <- lat.lon$Longitude
+met.rast.extracted.t$y <- lat.lon$Latitude
+ggplot(met.rast.extracted.t, aes(x,y, color = X2010))+geom_point()
+met.rast.extracted.temp.m <- melt(met.rast.extracted.t, id.vars = c("x", "y"))
+colnames(met.rast.extracted.temp.m) <- c("x", "y", "Year", "Tmax_6_met")
+colnames(met.rast.extracted.m) <- c("x", "y", "Year", "Total_WY_precip_met")
+
+
+merged.met.xy <- merge(met.rast.extracted.m, met.rast.extracted.temp.m, by = c("x", "y", "Year"))
+
+all.prism.sub$Year <- paste0("X",all.prism.sub$year)
+
+# finally merge together!
+merged.met.itrdb.xy <- merge(merged.met.xy, unique(all.prism.sub[,c("Longitude", "Latitude", "Year", "year", "ppt_MAP.wy", "tmax_06")]), by.x = c("x", "y", "Year"),  by.y = c("Longitude", "Latitude", "Year"))
+merged.met.itrdb.xy.nona <- merged.met.itrdb.xy[merged.met.itrdb.xy$Total_WY_precip_met > 0,]
+met.prism.map <- ggplot(merged.met.itrdb.xy.nona, aes(ppt_MAP.wy, Total_WY_precip_met))+geom_point(size = 0.5)+geom_abline(aes(intercept = 0, slope = 1), color = "red", linetype = "dashed")+ylab("Met Driver Total Annual Precip")+xlab("Prism Total Annual Precip")
+
+met.tmax.map<- ggplot(merged.met.itrdb.xy.nona, aes(tmax_06, Tmax_6_met-273.15))+geom_point(size = 0.5)+geom_abline(aes(intercept = 0, slope = 1), color = "red", linetype = "dashed")+ylab("Met Driver June Tmax")+xlab("Prism June Tmax")
+
+png(height = 4, width = 8, units = "in", res = 300, "outputs/itrdb_model_compare/MET_prism_driver.plots.png")
+plot_grid(met.prism.map, met.tmax.map)
+dev.off()
+
+
 
 #------------Read in pearson correlation coefficients and compare correlations across common envts------------------
 

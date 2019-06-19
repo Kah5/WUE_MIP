@@ -5,6 +5,9 @@ library(dplyr)
 library(data.table)
 ED2.gwbi.clim.nona <- readRDS("Data/ED2_gwbi_pft_clim.rds")
 
+# does growth increase overall?
+
+
 #ggplot(ED2.gwbi.clim.nona, aes(Year, GWBI, color = Site))+geom_point()+facet_wrap(~PFT)
 
 # read in dataframe with WUE
@@ -19,9 +22,9 @@ ED2.fcomp.yr <- ED2.fcomp %>% group_by(Year, Site) %>% gather(key = "PFT", value
 #ED2.fcomp.yr <-  ED2.fcomp.yr %>% filter(PFT %in% unique(ED2.gwbi.clim.nona$PFT))
 ED2.fcomp.yr$Site <- as.character(ED2.fcomp.yr$Site)
 
- png(height = 26, width = 16, units = "in", res = 300, "outputs/preliminaryplots/ED2_GPP_vs_ET.png")
- ggplot(na.omit(ED2), aes(GPP, ET, color = Year))+geom_point()+stat_smooth()+facet_wrap(~Site)#+xlim(0,0.0075)+ylim(0,0.000075)#
- dev.off()
+ #png(height = 26, width = 16, units = "in", res = 300, "outputs/preliminaryplots/ED2_GPP_vs_ET.png")
+ #ggplot(na.omit(ED2), aes(GPP, ET, color = Year))+geom_point()+stat_smooth()+facet_wrap(~Site)#+xlim(0,0.0075)+ylim(0,0.000075)#
+ #dev.off()
 
 ED2.full <- left_join(ED2, ED2.fcomp.yr, by = c("Year", "Site", "PFT"))
 
@@ -36,18 +39,18 @@ ED2.rm <- ED2.rm[!is.na(ED2.rm$PFT), ]
 #ggplot(ED2.rm, aes(IWUE, Rel.Dens))+geom_point(size = 0.5)
 ED2.IWUE.GWBI.PFT <- ggplot(ED2.rm, aes(IWUE, GWBI, color = PFT))+geom_point(size = 0.5)+facet_wrap(~PFT)
 
-png(height = 6, width = 7, units = "in", res = 300, "outputs/preliminaryplots/ED2_GWBI_IWUE_by_pft.png")
-ED2.IWUE.GWBI.PFT
-dev.off()
+#png(height = 6, width = 7, units = "in", res = 300, "outputs/preliminaryplots/ED2_GWBI_IWUE_by_pft.png")
+#ED2.IWUE.GWBI.PFT
+#dev.off()
 
 # plot out effects of IWUE, climate on GWBI:
 
 
 ED2.precip.GWBI.PFT <- ggplot(ED2.rm, aes( precip_total.mm, GWBI,color = PFT))+geom_point(size = 0.5)+stat_smooth(color = "black")+facet_wrap(~PFT)
 
-png(height = 6, width = 7, units = "in", res = 300, "outputs/preliminaryplots/ED2_GWBI_precip_by_pft.png")
-ED2.precip.GWBI.PFT
-dev.off()
+#png(height = 6, width = 7, units = "in", res = 300, "outputs/preliminaryplots/ED2_GWBI_precip_by_pft.png")
+#ED2.precip.GWBI.PFT
+#dev.off()
 
 
 
@@ -55,9 +58,9 @@ dev.off()
 
 ED2.tmax.GWBI.PFT <- ggplot(ED2.rm, aes( tair_max_6, GWBI,color = PFT))+geom_point(size = 0.5)+stat_smooth(color = "black")+facet_wrap(~PFT)
 
-png(height = 6, width = 7, units = "in", res = 300, "outputs/preliminaryplots/ED2_GWBI_tmax_by_pft.png")
-ED2.tmax.GWBI.PFT
-dev.off()
+# png(height = 6, width = 7, units = "in", res = 300, "outputs/preliminaryplots/ED2_GWBI_tmax_by_pft.png")
+# ED2.tmax.GWBI.PFT
+# dev.off()
 
 # do places with lower precipitation have higher increases in WUE? & which species does this benefit?
 
@@ -82,15 +85,15 @@ all.met.summary <- all.met %>% group_by(lon, lat) %>% summarise(Mean_MAP = mean(
                                                                 Mean_tair_max_11 = mean(tair_max_11, na.rm=TRUE),
                                                                 Mean_tair_max_12 = mean(tair_max_12, na.rm=TRUE))
 
-ggplot(all.met.summary, aes(lon, lat, fill = Mean_MAP.wy))+geom_raster()
-ggplot(all.met.summary, aes(lon, lat, fill = Mean_tair_max_6))+geom_raster()
+#ggplot(all.met.summary, aes(lon, lat, fill = Mean_MAP.wy))+geom_raster()
+#ggplot(all.met.summary, aes(lon, lat, fill = Mean_tair_max_6))+geom_raster()
 
 
 # join the site means to the sites:
 
 ED2.rm.site <- left_join(all.met.summary, ED2.rm , by = c("lon", "lat"))
 
-ggplot(ED2.rm.site[ED2.rm.site$Site %in% "5",], aes(Year, WUEet, color = Mean_tair_max_6))+geom_point()+geom_line()+stat_smooth()
+#ggplot(ED2.rm.site[ED2.rm.site$Site %in% "5",], aes(Year, WUEet, color = Mean_tair_max_6))+geom_point()+geom_line()+stat_smooth()
 
 # for ED, remove WUE values that are over 
 ED2.rm.site<- ED2.rm.site %>% filter(WUEet >= 0  & WUEet <=100)
@@ -197,6 +200,15 @@ pct.change <- time.periods %>% group_by(lat, lon, Site, PFT) %>% summarise(IWUE.
                                                                            AGB.change = mean(((AGB.1950.2011 - AGB.850.1850)/AGB.850.1850)*100, na.rm=TRUE),
                                                                            LAI.change = mean(((LAI.1950.2011 - LAI.850.1850)/LAI.850.1850)*100, na.rm=TRUE),
                                                                            AGB.orig = mean(AGB.850.1850, na.rm = TRUE))
+
+ggplot(pct.change, aes(PFT, GWBI.change, fill = PFT))+geom_boxplot()+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")
+
+# save the pct change df so we can make plots of them all together:
+saveRDS(pct.change, "outputs/itrdb_model_compare/ED2_pct_change_vars.rds")
+
+saveRDS(mean.1950.2011, "outputs/itrdb_model_compare/ED2_mean_1950_2011_vars.rds")
+saveRDS(mean.850.1850, "outputs/itrdb_model_compare/ED2_mean_850_1850_vars.rds")
+saveRDS(mean.1690.1850, "outputs/itrdb_model_compare/ED2_mean_1690.1850_vars.rds")
 
 
 GWBI.WUE.change <- ggplot(pct.change, aes(IWUE.change, GWBI.change, color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())
@@ -1551,12 +1563,12 @@ ggplot(GUESS.rm, aes(Tair.C, WUEet))+geom_point()
 
 GUESS.rm <- GUESS.rm[!is.na(GUESS.rm$PFT), ]
 
-ggplot(GUESS.rm, aes(WUEet, Rel.Dens))+geom_point(size = 0.5)
- GUESS.WUEet.GWBI.PFT <- ggplot(GUESS.rm, aes(WUEet, GWBI, color = PFT))+geom_point(size = 0.5)+facet_wrap(~PFT)
+#ggplot(GUESS.rm, aes(WUEet, Rel.Dens))+geom_point(size = 0.5)
+ #GUESS.WUEet.GWBI.PFT <- ggplot(GUESS.rm, aes(WUEet, GWBI, color = PFT))+geom_point(size = 0.5)+facet_wrap(~PFT)
  
- png(height = 6, width = 7, units = "in", res = 300, "outputs/preliminaryplots/GUESS_GWBI_WUEet_by_pft.png")
- GUESS.WUEet.GWBI.PFT
- dev.off()
+ # png(height = 6, width = 7, units = "in", res = 300, "outputs/preliminaryplots/GUESS_GWBI_WUEet_by_pft.png")
+ # GUESS.WUEet.GWBI.PFT
+ # dev.off()
 
 # plot out effects of WUEet, climate on GWBI:
 
@@ -1714,6 +1726,14 @@ pct.change <- time.periods %>% group_by(lat, lon, Site, PFT) %>% summarise(#IWUE
                                                                            AGB.change = mean(((AGB.1950.2011 - AGB.850.1850)/AGB.850.1850)*100, na.rm=TRUE),
                                                                            LAI.change = mean(((LAI.1950.2011 - LAI.850.1850)/LAI.850.1850)*100, na.rm=TRUE),
                                                                            AGB.orig = mean(AGB.850.1850, na.rm = TRUE))
+
+
+saveRDS(pct.change, "outputs/itrdb_model_compare/GUESS_pct_change_vars.rds")
+
+saveRDS(mean.1950.2011, "outputs/itrdb_model_compare/GUESS_mean_1950_2011_vars.rds")
+saveRDS(mean.850.1850, "outputs/itrdb_model_compare/GUESS_mean_850_1850_vars.rds")
+saveRDS(mean.1690.1850, "outputs/itrdb_model_compare/GUESS_mean_1690.1850_vars.rds")
+
 
 
 #GWBI.WUE.change <- ggplot(pct.change, aes(WUEet.change, GWBI.change, color = PFT))+geom_point()+stat_smooth(method = "lm", color = "black")+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+facet_wrap(~PFT)+theme_bw()+theme(panel.grid = element_blank())

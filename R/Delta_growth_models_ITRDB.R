@@ -173,13 +173,75 @@ dev.off()
 
 
 
-ggplot(pct.change.ed, aes(lon, lat,fill = GWBI.change))+geom_raster()+facet_wrap(~PFT)+
-  scale_fill_gradient2(midpoint = 0, low = "blue", mid = "white", high = "red", space = "Lab" )
 
-ggplot(pct.change.guess, aes(lon, lat,fill = GWBI.change))+geom_raster()+facet_wrap(~PFT)+
-  scale_fill_gradient2(midpoint = 0, low = "blue", mid = "white", high = "red", space = "Lab" )
+# map out the % change in GWBI:
+
+library(maps)
+library(sp)
+library(rgeos)
+
+all_states <- map_data("state")
+states <- subset(all_states, region %in% c(  'minnesota','wisconsin','michigan',"illinois",  'indiana') )
+coordinates(all_states)<-~long+lat
+class(all_states)
+
+ca = map_data("world", "Canada")
+coordinates(ca)<-~long+lat
+ca.data <- data.frame(ca)
+mapdata <- data.frame(all_states)
+library(rnaturalearth)
+#  is all downloaded from <a href=>http://www.naturalearthdata.com/downloads/</a> using the
+#  1:50m "Medium" scale data.
+
+# lakes
+ne_lakes <- ne_download(scale = 50, type = 'lakes', category = 'physical')
+sp::plot(ne_lakes, col = 'blue')
+quick.subset <- function(x, longlat){
+  
+  # longlat should be a vector of four values: c(xmin, xmax, ymin, ymax)
+  x@data$id <- rownames(x@data)
+  
+  x.f = fortify(x, region="id")
+  x.join = plyr::join(x.f, x@data, by="id")
+  
+  x.subset <- subset(x.join, x.join$long > longlat[1] & x.join$long < longlat[2] &
+                       x.join$lat > longlat[3] & x.join$lat < longlat[4])
+  
+  x.subset
+}
 
 
+domain <- c(-100,-61, 35, 49)
+lakes.subset <- quick.subset(ne_lakes, domain)
+
+# ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+#   geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+#   geom_raster(data = pct, aes(lon, lat, fill = IWUE.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+delta.WUEet.change <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct, aes(lon, lat, fill = WUEet.change))+scale_fill_gradientn(colours = rev(heat.colors(10)))+theme_bw()+coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))
+
+pct.change.ed$PFT <- ifelse(pct.change.ed$PFT %in% "mean.gwbi", "Total", pct.change.ed$PFT)
+
+
+ED.pft.gwbi.map <- ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct.change.ed, aes(lon, lat,fill = GWBI.change))+facet_wrap(~PFT)+
+  scale_fill_gradient2(midpoint = 0, low = "blue", mid = "white", high = "red", space = "Lab", name = "% GWBI change \n ED2") +coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))+theme_bw(base_size = 16)+theme(panel.grid = element_blank(), axis.title = element_blank())
+
+pct.change.guess.plot<- pct.change.guess
+pct.change.guess.plot$PFT <- as.factor(pct.change.guess.plot$PFT)
+levels(pct.change.guess.plot$PFT) <- c("BeIBS", "BIBS", "BINE", "BNE", "TeBE", "TeBS", "Total", "TrIBE")
+
+GUESS.pft.gwbi.map <-ggplot()+geom_polygon( data = mapdata, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+
+  geom_polygon( data = ca.data, aes(group = group,x=long, y =lat),colour="darkgrey", fill = NA)+geom_polygon(data=lakes.subset, aes(x = long, y = lat, group = group), fill = '#a6bddb')+ 
+  geom_raster(data = pct.change.guess.plot[!pct.change.guess.plot$PFT %in% c("TrIBE", "TeBE"),], aes(lon, lat,fill = GWBI.change))+facet_wrap(~PFT)+
+  scale_fill_gradient2(midpoint = 0, low = "blue", mid = "white", high = "red", space = "Lab" , name = "% GWBI change \n LPJ-GUESS") +coord_cartesian(ylim = c(35, 49), xlim= c(-100,-61))+theme_bw(base_size= 16)+theme(panel.grid = element_blank(), axis.title = element_blank())
+
+png(height = 13, width = 18, units = "in", res = 300, "outputs/itrdb_model_compare/pct_change_growth_pfts_ED_GUESS_maps.png")
+plot_grid(ED.pft.gwbi.map, GUESS.pft.gwbi.map, nrow = 2, labels = "AUTO")
+dev.off()
 
 # read in growth model parameters for the models by taxa, and ITRDB
 #------------------------------------- LPJ-GUESS pfts-------------------------------------------
@@ -218,6 +280,8 @@ beta.summaries.guess <- b1.class %>% group_by(model, species, parameter, timecla
                                                                                               Ci.low = quantile(value, 0.025, na.rm =TRUE),
                                                                                               Ci.high = quantile(value, 0.975, na.rm=TRUE))
 
+
+beta.summaries.guess$timeclass <- factor(beta.summaries.guess$timeclass, levels = c("Past","Modern", "No re"))
 
 #beta.summaries.guess$species <- factor(beta.summaries.guess$species, levels = c("BINE",  "BNE" ,  "TeBS",  "TeIBS",     "BIBS",  "TeBE" , "Total"))
 beta1.guess <- ggplot(data.frame(beta.summaries.guess[beta.summaries.guess$parameter %in% "beta1" & beta.summaries.guess$model %in% "LPJ-GUESS" & !beta.summaries.guess$species %in% c(NA, "Total"),]), aes(x = species, y = mean, color = timeclass), size =  5)+
@@ -342,27 +406,28 @@ beta.summaries.ed <- b1.class.ed %>% group_by(model, species, parameter, timecla
                                                                                                          Ci.high = quantile(value, 0.975, na.rm=TRUE))
 
 
+beta.summaries.ed$timeclass <- factor(beta.summaries.ed$timeclass, levels = c("Past","Modern", "No re"))
 #beta.summaries.guess$species <- factor(beta.summaries.guess$species, levels = c("BINE",  "BNE" ,  "TeBS",  "TeIBS",     "BIBS",  "TeBE" , "Total"))
-beta1.ed <- ggplot(data.frame(beta.summaries.ed[beta.summaries.ed$parameter %in% "beta1" & beta.summaries.ed$model %in% "ED2" & !beta.summaries.ed$species %in% c(NA, "Total"),]), aes(x = species, y = mean, color = timeclass), size =  5)+
+beta1.ed <- ggplot(data.frame(beta.summaries.ed[beta.summaries.ed$parameter %in% "beta1" & beta.summaries.ed$model %in% "ED2" & !beta.summaries.ed$species %in% c(NA, "mean.gwbi"),]), aes(x = species, y = mean, color = timeclass), size =  5)+
   geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size =  5, position = position_dodge(width=0.5))+
   geom_point(position=position_dodge(width=0.5), size =  10)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+
   ylab("Precipitation Sensitivity") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 25)+theme( axis.title.x = element_blank(), panel.grid = element_blank())#+ylim(-0.150,0)
 beta1.ed
 
-beta1.e.itrdb <- ggplot(data.frame(beta.summaries.ed[beta.summaries.ed$parameter %in% "beta1" & beta.summaries.ed$model %in% "ITRDB" & !beta.summaries.ed$species %in% c(NA, "Total"),]), aes(x = species, y = mean, color = timeclass), size =  5)+
+beta1.e.itrdb <- ggplot(data.frame(beta.summaries.ed[beta.summaries.ed$parameter %in% "beta1" & beta.summaries.ed$model %in% "ITRDB" & !beta.summaries.ed$species %in% c(NA, "mean.gwbi"),]), aes(x = species, y = mean, color = timeclass), size =  5)+
   geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size =  5, position = position_dodge(width=0.5))+
   geom_point(position=position_dodge(width=0.5), size =  10)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+
   ylab("Precipitation Sensitivity") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 25)+theme( axis.title.x = element_blank(), panel.grid = element_blank())#+ylim(-0.150,0)
 beta1.e.itrdb
 
 
-beta2.ed <- ggplot(data.frame(beta.summaries.ed[beta.summaries.ed$parameter %in% "beta2" & beta.summaries.ed$model %in% "ED2" & !beta.summaries.ed$species %in% c(NA, "Total"),]), aes(x = species, y = mean, color = timeclass), size =  5)+
+beta2.ed <- ggplot(data.frame(beta.summaries.ed[beta.summaries.ed$parameter %in% "beta2" & beta.summaries.ed$model %in% "ED2" & !beta.summaries.ed$species %in% c(NA, "mean.gwbi"),]), aes(x = species, y = mean, color = timeclass), size =  5)+
   geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size =  5, position = position_dodge(width=0.5))+
   geom_point(position=position_dodge(width=0.5), size =  10)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+
   ylab("Tmax Sensitivity") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 25)+theme( axis.title.x = element_blank(), panel.grid = element_blank())#+ylim(-0.150,0)
 beta2.ed
 
-beta2.e.itrdb <- ggplot(data.frame(beta.summaries.ed[beta.summaries.ed$parameter %in% "beta2" & beta.summaries.ed$model %in% "ITRDB" & !beta.summaries.ed$species %in% c(NA, "Total"),]), aes(x = species, y = mean, color = timeclass), size =  5)+
+beta2.e.itrdb <- ggplot(data.frame(beta.summaries.ed[beta.summaries.ed$parameter %in% "beta2" & beta.summaries.ed$model %in% "ITRDB" & !beta.summaries.ed$species %in% c(NA, "mean.gwbi"),]), aes(x = species, y = mean, color = timeclass), size =  5)+
   geom_errorbar( aes(ymin = Ci.low, ymax = Ci.high, width = 0), size =  5, position = position_dodge(width=0.5))+
   geom_point(position=position_dodge(width=0.5), size =  10)+geom_abline(aes(intercept = 0, slope = 0), linetype = "dashed")+scale_color_manual(values = c("Past" = "blue","Modern" = "red"), name = " ")+
   ylab("Tmax Sensitivity") + geom_vline(xintercept = 0, linetype = "dashed")+theme_bw(base_size = 25)+theme( axis.title.x = element_blank(), panel.grid = element_blank())#+ylim(-0.150,0)
@@ -394,7 +459,7 @@ pct.drought.change.ed
 #dev.off()
 
 pct.drought.change.ed.full <- ggplot(params.diff[params.diff$parameter %in% "beta1" & !params.diff$species %in% c("mean.gwbi"),], aes( x=species, y = mean, fill = model))+geom_bar(stat="identity", position = position_dodge(width = 1))+geom_errorbar( aes(ymin = ci.low, ymax = ci.high, width = 0.25), size = 1.5, position = position_dodge(width=1))+
-  scale_fill_manual(values = c("ED2"='#1b9e77', "ITRDB"='#7570b3', "LPJ-GUESS"='#d95f02', "Ecological" = "#b2abd2"))+theme_bw(base_size = 35)+theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
+  scale_fill_manual(values = c("ED2"='#1b9e77', "ITRDB"='#7570b3', "LPJ-GUESS"='#d95f02', "Ecological" = "#b2abd2"), drop = FALSE)+theme_bw(base_size = 35)+theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())+geom_hline(aes(yintercept = 0), color = "grey", linetype = "dashed")+
   ylab("Change in \n Precip. sensitvity")#+facet_wrap(~species)
 
 #png(height = 9, width = 20, units = "in", res = 300, "outputs/itrdb_model_compare/pct_change_drought_senstivity_ITRDB_ED_PFTS.png")
@@ -436,18 +501,27 @@ pct.lag2.change.ed
 
 # put all togther in one big figure:
 
+# get legends:
+pct.drought.change.legend <- get_legend(Total.gwbi.change+theme_bw())
+past.mod.legend <- get_legend(beta1.ed+theme_bw())
+
+
 theme.all <- theme_bw(base_size = 15)+theme(legend.position = "none", panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1), axis.title.x = element_blank())
 
-png(height = 16, width = 14, units = "in", res = 300, "outputs/itrdb_model_compare/climate_sens_params_and_change_ED_GUESS_ITRDB.png")
-plot_grid(
-  beta1.ed+ylab("ED2 precipitation sensitivity")+theme.all, beta1.e.itrdb+ylab("ITRDB precipitation sensitivity")+theme.all, pct.drought.change.ed.full+theme.all,
-  beta1.guess+ylab("LPJ-GUESS precipitation sensitivity")+theme.all, beta1.g.itrdb+ylab("ITRDB precipitation sensitivity")+theme.all, pct.drought.change.guess.full+theme.all,
-  
-  beta2.ed+ylab("ED2 Tmax sensitivity")+theme.all, beta2.e.itrdb+ylab("ITRDB Tmax sensitivity")+theme.all, pct.temp.change.ed.full+theme.all,
-  beta2.guess+ylab("LPJ-GUESS Tmax sensitivity")+theme.all, beta2.g.itrdb+ylab("ITRDB Tmax sensitivity")+theme.all, pct.temp.change.guess.full+theme.all,
-  
-  ncol = 3, align = "hv"
-)
-
 dev.off()
+
+png(height = 18, width = 14, units = "in", res = 300, "outputs/itrdb_model_compare/climate_sens_params_and_change_ED_GUESS_ITRDB.png")
+plot_grid(
+plot_grid(
+  beta1.ed+ylab("ED2 precipitation sensitivity")+ylim(-0.2, 0.6)+theme.all, beta1.e.itrdb+ylab("ITRDB precipitation sensitivity")+ylim(-0.2, 0.6)+theme.all, pct.drought.change.ed.full+theme.all,
+  beta1.guess+ylab("LPJ-GUESS precipitation sensitivity")+ylim(-0.2, 0.45)+theme.all, beta1.g.itrdb+ylab("ITRDB precipitation sensitivity")+ylim(-0.2, 0.45)+theme.all, pct.drought.change.guess.full+theme.all,
+  
+  beta2.ed+ylab("ED2 Tmax sensitivity")+ylim(-0.5, 0.2)+theme.all, beta2.e.itrdb+ylab("ITRDB Tmax sensitivity")+ylim(-0.5, 0.2)+theme.all, pct.temp.change.ed.full+theme.all,
+  beta2.guess+ylab("LPJ-GUESS Tmax sensitivity")+ylim(-0.5, 0.5)+theme.all, beta2.g.itrdb+ylab("ITRDB Tmax sensitivity")+ylim(-0.5, 0.5)+theme.all, pct.temp.change.guess.full+theme.all,
+  
+  ncol = 3, align = "hv", labels = "AUTO"), 
+plot_grid( NULL,past.mod.legend, pct.drought.change.legend, rel_widths = c(0.5,1, 1), ncol = 3), 
+nrow = 2, rel_heights = c(1, 0.1))
+dev.off()
+
 
